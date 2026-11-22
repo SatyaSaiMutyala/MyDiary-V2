@@ -3,6 +3,7 @@ import { config } from '../config.js';
 import { DEFAULT_INTEGRATIONS } from '../data/integrations.js';
 import { Integration, syncLabel } from '../models/Integration.js';
 import { conflict, notFound } from '../utils/errors.js';
+import { seedingAllowed as seedGuard } from './seedGuard.js';
 
 /**
  * The Integrations register: which third-party tools are switched on. Switching one on only writes this
@@ -23,7 +24,8 @@ export async function findIntegrationOr404(id) {
  * database (MONGODB_URI empty) or a test database. Against a real connection string it waits for an
  * explicit `SEED_INTEGRATIONS=true`, so booting the API against production never seeds by itself.
  */
-const seedingAllowed = () => config.isTest || !config.mongodbUri || process.env.SEED_INTEGRATIONS === 'true';
+// One rule for the whole app — see services/seedGuard.js.
+const seedingAllowed = seedGuard;
 
 /**
  * Creates the 15 starting rows when the collection is empty — like ensureDefaultAdmin() on boot.

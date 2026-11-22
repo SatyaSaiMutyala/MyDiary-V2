@@ -8,6 +8,7 @@ import { badRequest, notFound } from '../utils/errors.js';
 import { listResponse, pickFields } from '../utils/paginate.js';
 import { MODULE_LABELS } from './audit.js';
 import { nameClause, plusDays, todayStr } from './people.js';
+import { seedingAllowed as seedGuard } from './seedGuard.js';
 
 /** The Activity Log module label every project change is filed under. */
 export const PROJECT_MODULE = MODULE_LABELS.projects;
@@ -472,11 +473,7 @@ function projectSeedDoc(s) {
  * Atlas connection string, say — is left exactly as it is, even on a completely empty collection.
  * @param {string} [uri]
  */
-export function seedingAllowed(uri = config.mongodbUri) {
-  if (config.isTest) return true;
-  if (!uri) return true; // the embedded dev database
-  return /^mongodb:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/.test(uri);
-}
+export const seedingAllowed = seedGuard;
 
 /**
  * Puts the 12 templates and the 9 sample projects in place the first time each collection is empty — the same

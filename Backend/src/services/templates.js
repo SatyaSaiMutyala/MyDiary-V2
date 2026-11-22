@@ -3,6 +3,7 @@ import { config } from '../config.js';
 import { SEED_USED_COUNT, TEMPLATE_SEED } from '../data/templates.js';
 import { Template } from '../models/Template.js';
 import { notFound } from '../utils/errors.js';
+import { seedingAllowed as seedGuard } from './seedGuard.js';
 
 /** @param {string} id */
 export async function findTemplateOr404(id) {
@@ -23,7 +24,8 @@ export async function findTemplateOr404(id) {
  * database (MONGODB_URI empty) or a test database. Against a real connection string it waits for an
  * explicit `SEED_TEMPLATES=true`, so opening this page against production never seeds by itself.
  */
-const seedingAllowed = () => config.isTest || !config.mongodbUri || process.env.SEED_TEMPLATES === 'true';
+// One rule for the whole app — see services/seedGuard.js.
+const seedingAllowed = seedGuard;
 
 export async function ensureTemplateSeed() {
   if (!seedingAllowed()) return 0;

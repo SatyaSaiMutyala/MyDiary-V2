@@ -2,13 +2,12 @@ import http from 'node:http';
 import { createApp } from './app.js';
 import { config } from './config.js';
 import { connectDb } from './db.js';
-import { ensureDefaultIntegrations } from './services/integrations.js';
-import { ensureDefaultAdmin } from './services/users.js';
 
+// Startup connects to MongoDB and serves HTTP. It deliberately creates no records: no first admin, no
+// starting integrations, no demo rows. The first administrator is made by hand with
+// `node scripts/create-admin.js`; see Backend/README.md.
 async function main() {
   const db = await connectDb();
-  await ensureDefaultAdmin();
-  await ensureDefaultIntegrations();
 
   const server = http.createServer(createApp());
   await new Promise((resolve, reject) => {
