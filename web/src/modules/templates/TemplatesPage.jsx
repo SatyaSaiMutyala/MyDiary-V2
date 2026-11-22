@@ -1,0 +1,59 @@
+import { Box, Typography } from '@mui/material';
+import Grid from '@mui/material/Grid';
+import { useNavigate } from 'react-router-dom';
+import { useAppStore } from '../../store/AppStore';
+import { PageHeader, Btn } from '../../components';
+import { TYPES } from '../../data/meetings';
+import { tokens, fonts } from '../../theme/tokens';
+
+const ORDER = ['internal', 'customer', 'supplier', 'consultants', 'board'];
+const LEFT = { customer: tokens.blue, supplier: tokens.orange, board: tokens.yellow, consultants: tokens.purple };
+
+/** 📋 Agenda Templates Library (prototype view-templates + renderTemplates / applyTemplate) */
+export default function TemplatesPage() {
+  const { state } = useAppStore();
+  const navigate = useNavigate();
+
+  const grouped = {};
+  state.templates.forEach(t => { if (!grouped[t.type]) grouped[t.type] = []; grouped[t.type].push(t); });
+
+  const applyTemplate = (id) => {
+    const t = state.templates.find(x => x.id === id);
+    if (!t) return;
+    if (confirm('Use template "' + t.name + '"? This will pre-fill a new ' + t.type + ' meeting with its ' + t.agendaCount + ' agenda items.')) {
+      navigate('/meetings/new', { state: { type: t.type, templateId: t.id } });
+    }
+  };
+
+  return (
+    <Box>
+      <PageHeader code="TL-OPS-DRM-001" parts={['Meeting Management', 'Templates']} icon="📋" title="Agenda Templates Library"
+        sub="Pre-built agendas for recurring meeting types — load into any new meeting to save setup time and keep reviews consistent."
+        actions={<Btn variant="primary" size="lg" onClick={() => alert('Template creator opens')}>+ New Template</Btn>} />
+
+      {ORDER.filter(t => grouped[t]).map(type => (
+        <Box key={type} sx={{ mb: '28px' }}>
+          <Typography component="div" sx={{ fontFamily: fonts.mono, fontSize: 11, letterSpacing: '0.14em', color: tokens.slate, textTransform: 'uppercase', fontWeight: 700, mb: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {TYPES[type].icon} {TYPES[type].name}s
+          </Typography>
+          {/* .tpl-grid */}
+          <Grid container spacing="14px">
+            {grouped[type].map(t => (
+              <Grid key={t.id} size={{ xs: 12, sm: 6, lg: 4 }}>
+                <Box onClick={() => applyTemplate(t.id)}
+                  sx={{ height: '100%', bgcolor: tokens.card, border: `1px solid ${tokens.line}`, borderLeft: `3px solid ${LEFT[t.type] || tokens.teal}`, borderRadius: tokens.radius, p: '18px 20px', cursor: 'pointer', transition: 'all 0.15s', '&:hover': { borderColor: tokens.teal, borderLeftColor: LEFT[t.type] || tokens.teal, boxShadow: tokens.shadow, transform: 'translateY(-2px)' } }}>
+                  <Box sx={{ fontSize: 24, mb: '10px' }}>{t.ico}</Box>
+                  <Typography sx={{ fontSize: 14, fontWeight: 700, mb: '4px' }}>{t.name}</Typography>
+                  <Typography sx={{ fontSize: 12, color: tokens.slate, lineHeight: 1.4, mb: '10px', minHeight: 48 }}>{t.desc}</Typography>
+                  <Box sx={{ fontSize: 10, color: tokens.slate, fontFamily: fonts.mono, letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 700, display: 'flex', justifyContent: 'space-between' }}>
+                    <span>{t.agendaCount} agenda items</span><span>Used {t.usedCount}×</span>
+                  </Box>
+                </Box>
+              </Grid>
+            ))}
+          </Grid>
+        </Box>
+      ))}
+    </Box>
+  );
+}

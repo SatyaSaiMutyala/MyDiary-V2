@@ -1,0 +1,17 @@
+export const INTEGRATIONS = [
+  { name: 'Google Calendar', ico: '📅', desc: 'Two-way sync of meetings — invites, RSVPs, updates. Attendee calendar conflict detection.', status: 'connected', lastSync: 'Just now' },
+  { name: 'Microsoft Outlook', ico: '📧', desc: 'Calendar sync + .ics invite distribution for attendees on Outlook.', status: 'connected', lastSync: '5 min ago' },
+  { name: 'Zoom', ico: '💻', desc: 'Auto-create Zoom links for virtual meetings. Bot joins for recording + transcription.', status: 'connected', lastSync: '12 min ago' },
+  { name: 'Microsoft Teams', ico: '💻', desc: 'Auto-create Teams links. Bot joins for recording + transcription.', status: 'connected', lastSync: '1 hour ago' },
+  { name: 'Google Meet', ico: '💻', desc: 'Auto-create Meet links. Native Google Meet transcript ingestion.', status: 'pending', lastSync: 'Setup in progress' },
+  { name: 'WhatsApp Business', ico: '💬', desc: 'Push meeting reminders and action-item nudges to attendees via WhatsApp.', status: 'disconnected', lastSync: 'Not connected' },
+  { name: 'Slack / Teams Chat', ico: '💬', desc: 'Post meeting summary to channel; tag owners of new action items.', status: 'disconnected', lastSync: 'Not connected' },
+  { name: 'SalesPulse 365 (CRM)', ico: '📈', desc: 'Pull customer context into meeting prep. Push decisions to customer timeline.', status: 'connected', lastSync: '2 hours ago' },
+  { name: 'LedgerTrace (AP)', ico: '💰', desc: 'Pull AP context for vendor meetings. Push decisions to payment workflow.', status: 'connected', lastSync: '30 min ago' },
+  { name: 'TruFlow (AR)', ico: '💳', desc: 'Pull customer AR for customer meetings. Push credit-hold decisions to AR workflow.', status: 'connected', lastSync: '1 hour ago' },
+  { name: 'MyDiary My To-Do', ico: '✅', desc: 'Auto-push action items to owner\'s unified To-Do inbox in MyDiary.', status: 'connected', lastSync: 'Real-time' },
+  { name: 'CMD Approval Hub', ico: '🛡', desc: 'Route action items needing CMD approval through the approval mother app.', status: 'pending', lastSync: 'Setup in progress' },
+  { name: 'Deepgram (Transcription)', ico: '🎙', desc: 'Live transcription with speaker diarization. English + Hindi + Telugu support.', status: 'connected', lastSync: 'API healthy' },
+  { name: 'Claude AI (Summary)', ico: '✨', desc: 'Post-meeting AI summary, action extraction, decision detection.', status: 'connected', lastSync: 'API healthy' },
+  { name: 'Document Storage (SharePoint)', ico: '📁', desc: 'Minutes and attachments auto-filed to the right folder structure.', status: 'connected', lastSync: '15 min ago' },
+];

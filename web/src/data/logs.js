@@ -1,0 +1,66 @@
+export const CHANNELS = {
+  phone:     { label: 'Phone',     emoji: '📞', color: '#2563EB' },
+  whatsapp:  { label: 'WhatsApp',  emoji: '💬', color: '#25D366' },
+  'in-person': { label: 'In-person', emoji: '🤝', color: '#0A6B59' },
+  video:     { label: 'Video',     emoji: '📹', color: '#7C3AED' },
+  email:     { label: 'Email',     emoji: '📧', color: '#DD6B20' },
+  chat:      { label: 'Chat',      emoji: '💭', color: '#D53F8C' },
+  sms:       { label: 'SMS',       emoji: '📱', color: '#B7791F' },
+};
+
+// Sample discussion logs — realistic informal TrustLab chats
+export const DISCUSSION_LOGS = [
+  { id: 'log1', owner: 'Venkata Cherukuri', date: '2026-11-21', time: '10:30', duration: '5 min', channel: 'phone', with: [{name:'Arjun',type:'internal'}], topic: 'Fernandez contract follow-up', summary: 'Called Arjun to chase the Fernandez escalation. He has set up a meeting with their CFO for Thu 26 Nov — Dr. Reddy to join. They want a 30-day payment term extension, in exchange for 15% volume commit on histopath bundle. Arjun is sceptical of the volume numbers.', decisions: 'Arjun to send me the Fernandez proposal before the meeting; I will decide if we counter.', tags: ['sales', 'fernandez', 'ar'], followUps: [{id:'fu1',text:'Review Fernandez proposal when Arjun sends it',owner:'Venkata Cherukuri',deadline:'2026-11-25',done:false}], privacy: 'private' },
+  { id: 'log2', owner: 'Venkata Cherukuri', date: '2026-11-21', time: '09:15', duration: '2 min', channel: 'whatsapp', with: [{name:'Dr. Abishekh (MD, Care & Cure)',type:'external',email:'md@careandcure.in'}], topic: 'CME date confirmed', summary: 'Dr. Abishekh confirmed the CME date — second Sat of December (12 Dec). He is OK with 60-40 cost split as we agreed. Will share speaker brief by Wed. Mentioned he wants to explore a diagnostics kiosk at their new OPD block.', decisions: 'Discuss kiosk opportunity in next in-person meeting.', tags: ['care-and-cure', 'cme', 'opportunity'], followUps: [{id:'fu2',text:'Schedule in-person with Dr. Abishekh to discuss OPD kiosk',owner:'Venkata Cherukuri',deadline:'2026-12-05',done:false}], privacy: 'private' },
+  { id: 'log3', owner: 'Venkata Cherukuri', date: '2026-11-20', time: '16:45', duration: '8 min', channel: 'phone', with: [{name:'Mr. Ishaq Ahmed',type:'external',email:'ishaq.ahmed@andromeda-qms.ae'}], topic: 'QMS urgent — document gap flagged', summary: 'Ishaq rang me from Dubai. He has done a dry-run on our documents and found 3 gaps in the Molecular Biology SOP section — equipment validation records are missing for the 2024 additions. Needs to be fixed before next week\'s pre-assessment walkthrough. Fayaz needs to pull the records from BMO.', decisions: 'Fayaz + BMO to assemble the missing records by Fri 28 Nov. If not available, document the gap honestly in the response.', tags: ['qms', 'nabl', 'urgent'], followUps: [{id:'fu3',text:'Task Fayaz to pull Mol Bio equipment validation records',owner:'Mohammed Fayazuddin',deadline:'2026-11-28',done:false,ownerType:'internal'}], privacy: 'private' },
+  { id: 'log4', owner: 'Venkata Cherukuri', date: '2026-11-20', time: '14:00', duration: '15 min', channel: 'in-person', with: [{name:'Pavan',type:'internal'},{name:'Satya',type:'internal'}], topic: 'Gatebook demo review', summary: 'Pavan and Satya walked me through the Gatebook beta. Visitor check-in flow is clean, but the pre-expected-visitor registration from the host side needs work. Suggested they add a QR code per visit so security can scan on arrival. Also discussed patrol logging — they want to add geo-fence for guard patrols.', decisions: 'They will add QR code feature and demo again on Mon 24 Nov.', tags: ['gatebook', 'software', 'demo'], followUps: [], privacy: 'private' },
+  { id: 'log5', owner: 'Venkata Cherukuri', date: '2026-11-20', time: '11:00', duration: '3 min', channel: 'sms', with: [{name:'N. Sharma',type:'internal'}], topic: 'Cash position check', summary: 'Quick text exchange. Operating cash OK, but noted that collections have been slow this week (Fri closing was 18% below target). Will discuss in Monday Accounts review.', decisions: 'Deep-dive on collections in Monday review.', tags: ['accounts', 'cash'], followUps: [], privacy: 'private' },
+  { id: 'log6', owner: 'Venkata Cherukuri', date: '2026-11-19', time: '18:30', duration: '20 min', channel: 'video', with: [{name:'Deepti',type:'external',email:'deepti@deeptiadvisory.com'}], topic: 'Investor pipeline update', summary: 'Deepti walked me through the 4 active conversations: Everstone (most promising — term sheet expected 1st week Dec), Multiples (interested but slow), Blume (passed — too early stage for them), and a family office from Singapore (fresh — exploratory call next week). She asked if I would attend a Singapore trip in Jan. Said yes in principle, depends on board calendar.', decisions: 'Confirm Singapore Jan trip once board calendar firmed up. Expect Everstone term sheet by 5 Dec.', tags: ['investor', 'exit', 'strategic'], followUps: [{id:'fu6',text:'Confirm Singapore Jan trip availability to Deepti',owner:'Venkata Cherukuri',deadline:'2026-12-01',done:false}], privacy: 'private' },
+  { id: 'log7', owner: 'Venkata Cherukuri', date: '2026-11-19', time: '12:30', duration: '4 min', channel: 'in-person', with: [{name:'Mohammed Fayazuddin',type:'internal'}], topic: 'Corridor chat — NABL inspector observation', summary: 'Ran into Fayaz in the corridor. He mentioned the NABL surveillance team dropped a hint during last year\'s visit that our BMW segregation at Begumpet collection point needs tightening. Wants to pre-empt by getting an external audit. I agreed.', decisions: 'Fayaz to commission an external BMW audit at Begumpet before Jan.', tags: ['quality', 'nabl', 'bmw'], followUps: [{id:'fu7',text:'External BMW audit at Begumpet commissioned',owner:'Mohammed Fayazuddin',deadline:'2026-12-20',done:false,ownerType:'internal'}], privacy: 'private' },
+  { id: 'log8', owner: 'Venkata Cherukuri', date: '2026-11-18', time: '20:15', duration: '6 min', channel: 'phone', with: [{name:'Akhil Cherukuri',type:'internal'}], topic: 'Weekend plans · Akhil cricket match', summary: 'Akhil called about his cricket match on Sun 22 Nov. Asked if I could come watch. Told him yes, I will try to make the second innings (3 PM at DLF Academy). Also discussed his semester holidays — he wants to join me for the Jan Singapore trip if it happens.', decisions: 'Keep Sun 22 Nov 3-5 PM blocked.', tags: ['personal', 'family'], followUps: [], privacy: 'private' },
+  { id: 'log9', owner: 'Venkata Cherukuri', date: '2026-11-18', time: '15:00', duration: '7 min', channel: 'phone', with: [{name:'R. Krishnan',type:'internal'}], topic: 'Growth team quarterly review prep', summary: 'R. Krishnan called to align before our quarterly growth review. He wants to focus on three things: (1) the Adani AHC close plan, (2) a new Health-Check-on-Demand product he is scoping with marketing, and (3) his ask for 2 new sales hires in the home-collections vertical. He suggested bringing those as decisions needed, not discussion.', decisions: 'Review all three in the formal Growth review — he will prep one-pagers for each.', tags: ['growth', 'strategy'], followUps: [], privacy: 'private' },
+  { id: 'log10', owner: 'Venkata Cherukuri', date: '2026-11-17', time: '10:00', duration: '12 min', channel: 'whatsapp', with: [{name:'Priya Menon (Adani HR Lead)',type:'external',email:'priya.menon@adani.com'}], topic: 'Adani — pre-meeting prep', summary: 'Priya WhatsApped to confirm the Tue 25 Nov meeting. She wanted a heads-up on three sensitivities: (1) board wants clear per-head pricing with no hidden costs, (2) they would like a dedicated TrustLab coordinator on-site, and (3) turnaround time for reports is a big factor — needs to be < 48 hrs. I confirmed we would address all three.', decisions: 'Prep package line-up with these three sensitivities explicitly addressed.', tags: ['adani', 'customer', 'sales'], followUps: [{id:'fu10',text:'Ensure Adani prep deck addresses three sensitivities',owner:'Venkata Cherukuri',deadline:'2026-11-24',done:true}], privacy: 'private' },
+  { id: 'log11', owner: 'Venkata Cherukuri', date: '2026-11-17', time: '08:00', duration: '2 min', channel: 'sms', with: [{name:'Pallavi Elisetti',type:'internal'}], topic: 'Travel re-confirm', summary: 'Asked Pallavi to re-confirm Delhi trip. Hotel + cab + flights all reconfirmed.', decisions: '', tags: ['travel'], followUps: [], privacy: 'private' },
+];
+
+// Discussion log view state
+
+// ============ DISCUSSION LOG TEMPLATES ============
+export const LOG_TEMPLATES = [
+  { id: 'lt-phone', emoji: '☎', name: 'Phone Call Follow-up',
+    description: 'Quick capture of a phone conversation — call outcome, commitments made, next steps.',
+    preset: { channel: 'phone', topic: 'Phone call — ', summary: 'Called [Person] re: [Topic]. Key points discussed: ...\n\nTheir position: ...\n\nMy ask / commitment: ...', tags: ['phone', 'followup'] },
+  },
+  { id: 'lt-whatsapp', emoji: '💬', name: 'WhatsApp Exchange',
+    description: 'WhatsApp conversation log — threaded messaging summary, screenshots if any.',
+    preset: { channel: 'whatsapp', topic: 'WhatsApp — ', summary: 'WhatsApp exchange with [Person] about [Topic].\n\nSummary of what was agreed / discussed:\n\n...', tags: ['whatsapp', 'chat'] },
+  },
+  { id: 'lt-corridor', emoji: '🚶', name: 'Corridor Chat',
+    description: 'Casual in-person chat — hallway encounter, lift conversation, canteen exchange.',
+    preset: { channel: 'in-person', topic: 'Corridor chat — ', summary: 'Bumped into [Person]. They raised / mentioned:\n\n...\n\nMy response:', tags: ['corridor', 'casual'] },
+  },
+  { id: 'lt-vendor-call', emoji: '🏭', name: 'Vendor Call',
+    description: 'Supplier / vendor phone discussion — delivery, pricing, issue, follow-up.',
+    preset: { channel: 'phone', topic: 'Vendor call — ', summary: 'Spoke with [Vendor Contact] at [Vendor Co].\n\nTopic: delivery / pricing / quality issue / renewal\n\nTheir commitment:\n\nMy follow-up:', tags: ['vendor', 'procurement'] },
+  },
+  { id: 'lt-complaint', emoji: '⚠', name: 'Customer Complaint Call',
+    description: 'Call handling a customer complaint — their issue, immediate response, CAPA plan.',
+    preset: { channel: 'phone', topic: 'Customer complaint — ', summary: 'Call with [Customer] re: complaint about [issue].\n\nTheir grievance:\n\nImmediate response given:\n\nCAPA / follow-up planned:', tags: ['complaint', 'customer', 'csd'] },
+  },
+  { id: 'lt-doctor', emoji: '🩺', name: 'Doctor / Referrer Call',
+    description: 'Phone discussion with a referring doctor — referral updates, feedback, relationship.',
+    preset: { channel: 'phone', topic: 'Doctor call — ', summary: 'Spoke with Dr. [Name] at [Clinic/Hospital].\n\nReason for call:\n\nTheir feedback / asks:\n\nAction / follow-up:', tags: ['doctor', 'referrer', 'crm'] },
+  },
+  { id: 'lt-board', emoji: '💼', name: 'Board Member / Investor Chat',
+    description: 'Informal chat with a board member or investor — governance signals, strategy notes.',
+    preset: { channel: 'phone', topic: 'Board / investor chat — ', summary: 'Chat with [Name].\n\nContext:\n\nTheir signals / concerns:\n\nMy position:\n\nTo follow up:', tags: ['board', 'investor', 'governance'] },
+  },
+  { id: 'lt-customer-visit', emoji: '🤝', name: 'Customer Catch-up',
+    description: 'Informal catch-up call with a corporate customer — no fixed agenda.',
+    preset: { channel: 'phone', topic: 'Customer catch-up — ', summary: 'Catch-up call with [Customer Contact] at [Company].\n\nWhat they shared:\n\nWhat I shared:\n\nOpportunities surfaced:', tags: ['customer', 'relationship'] },
+  },
+  { id: 'lt-blank', emoji: '✎', name: 'Blank Log',
+    description: 'Start from scratch with no pre-filled fields.',
+    preset: {},
+  },
+];

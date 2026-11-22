@@ -1,0 +1,187 @@
+import { useState } from 'react';
+import { Box } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import { useAppStore } from '../../store/AppStore';
+import { useAuth } from '../../auth/AuthContext';
+import { tokens, fonts } from '../../theme/tokens';
+import { PageHeader, Btn, Avatar, EmptyState, MonoHeading, TabBar, FilterPill } from '../../components';
+import { isOverdue } from '../../utils/dates';
+import { errorMessage } from '../../store/api/baseApi';
+import { useListActionItemsQuery, useUpdateActionItemMutation } from '../../store/api/actionItemsApi';
+import { ApiError, Fetching } from '../settings/components/listUi';
+import { actionToTodo, collectTodoItems, samePerson } from './utils';
+import TodoCard from './components/TodoCard';
+import StandaloneTaskModal from './modals/StandaloneTaskModal';
+import CompleteDialog from './modals/CompleteDialog';
+
+function BannerStat({ val, lbl, valColor, sx }) {
+  return (
+    <Box sx={{ textAlign: 'center', ...sx }}>
+      <Box sx={{ fontFamily: fonts.serif, fontSize: 26, fontWeight: 700, lineHeight: 1, color: valColor }}>{val}</Box>
+      <Box sx={{ fontFamily: fonts.mono, fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', opacity: 0.8, mt: '4px' }}>{lbl}</Box>
+    </Box>
+  );
+}
+
+export default function MyTodoPage() {
+  const { state, mutate, notify } = useAppStore();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [roleFilter, setRoleFilter] = useState('owed');   // 'all' | 'owed' | 'delegated' | 'overdue' | 'done'
+  const [srcFilter, setSrcFilter] = useState('all');      // 'all' | 'meetings' | 'visits' | 'standalone'
+  const [standaloneOpen, setStandaloneOpen] = useState(false);
+  const [compCtx, setCompCtx] = useState(null);
+
+  const me = state.viewer.name;
+  const viewingSelf = !!user && samePerson(user.name, me);
+
+  // Meeting action items come from the server. `mine=true` is relative to the signed-in person, so a
+  // "View as" demo switch falls back to the owner filter.
+  const mineQ = useListActionItemsQuery(viewingSelf ? { mine: 'true', limit: 200, sort: 'deadline' } : { owner: me, limit: 200, sort: 'deadline' });
+  // Items I created and handed to someone else — /api/action-items has no creator filter, so the page
+  // takes one list and keeps the rows whose createdBy is me.
+  const allQ = useListActionItemsQuery({ limit: 200, sort: 'deadline' });
+  const [updateActionItem] = useUpdateActionItemMutation();
+
+  const mineFromApi = (mineQ.data?.items || []).map(actionToTodo).filter(x => x.ownerType !== 'external');
+  const delegatedFromApi = (allQ.data?.items || []).map(actionToTodo).filter(x => samePerson(x.creator, me) && !samePerson(x.owner, me));
+  const apiExtras = {};
+  [...(mineQ.data?.items || []), ...(allQ.data?.items || [])].forEach(a => { apiExtras[a.id] = { subtasks: a.subtasks || [], dependencies: a.dependencies || [], comments: a.comments || [], history: a.history || [] }; });
+
+  // Visits and standalone tasks are still the in-memory demo data.
+  const local = collectTodoItems(state);
+
+  const owedByMe = [...mineFromApi, ...local.filter(x => x.owner === me && x.ownerType !== 'external')];
+  const delegatedByMe = [...delegatedFromApi, ...local.filter(x => x.creator === me && x.owner !== me)];
+
+  let roleScope;
+  if (roleFilter === 'owed') roleScope = owedByMe;
+  else if (roleFilter === 'delegated') roleScope = delegatedByMe;
+  else if (roleFilter === 'overdue') roleScope = owedByMe.filter(x => x.status !== 'done' && isOverdue(x.deadline));
+  else if (roleFilter === 'done') roleScope = owedByMe.filter(x => x.status === 'done');
+  else roleScope = [...owedByMe, ...delegatedByMe.filter(x => !owedByMe.some(o => o.id === x.id))];
+
+  const scoped = (srcFilter === 'all' ? roleScope : roleScope.filter(x => x.source === srcFilter)).slice();
+  scoped.sort((a, b) => {
+    const ao = a.status === 'done' ? 2 : (isOverdue(a.deadline) ? 0 : 1);
+    const bo = b.status === 'done' ? 2 : (isOverdue(b.deadline) ? 0 : 1);
+    if (ao !== bo) return ao - bo;
+    return (a.deadline || '').localeCompare(b.deadline || '');
+  });
+
+  const open = owedByMe.filter(t => t.status !== 'done');
+  const overdueCt = owedByMe.filter(t => t.status !== 'done' && isOverdue(t.deadline)).length;
+  const doneCt = owedByMe.filter(t => t.status === 'done').length;
+  const srcCt = (src) => roleScope.filter(x => x.source === src).length;
+
+  // ---- mutations (setSimpleTodoStatus / nudgeOwner / reassignTodo / submitStandaloneTask) ----
+  const setSimpleTodoStatus = (src, srcId, tid, newStatus) => {
+    if (src === 'standalone') {
+      mutate('standaloneTasks', ts => { const t = ts.find(x => x.id === tid); if (t) t.status = newStatus; });
+    } else if (src === 'visits') {
+      mutate('visits', vs => {
+        const v = vs.find(x => x.id === srcId); if (!v) return;
+        const parts = tid.split('-'); const idx = parseInt(parts[parts.length - 1], 10);
+        const ai = v.actionItems && v.actionItems[idx]; if (ai) ai.status = newStatus;
+      });
+    }
+  };
+  const nudgeOwner = (owner) => {
+    notify({ type: 'action', icon: '🔔', text: `Nudge sent to <strong>${owner}</strong> re: a task you delegated.` });
+    alert('🔔 Nudge sent to ' + owner + ". They'll see it in their inbox and get a push notification.");
+  };
+  const reassignTodo = (src, srcId, tid) => {
+    const newOwner = prompt('Reassign to (type employee name):');
+    if (!newOwner || !newOwner.trim()) return;
+    const name = newOwner.trim();
+    if (src === 'meetings') updateActionItem({ id: tid, meetingId: srcId, owner: name }).unwrap().catch(err => alert(errorMessage(err)));
+    else if (src === 'standalone') mutate('standaloneTasks', ts => { const t = ts.find(x => x.id === tid); if (t) t.owner = name; });
+    else if (src === 'visits') mutate('visits', vs => { const v = vs.find(x => x.id === srcId); if (!v) return; const parts = tid.split('-'); const idx = parseInt(parts[parts.length - 1], 10); const ai = v.actionItems && v.actionItems[idx]; if (ai) ai.owner = name; });
+  };
+  const submitStandalone = ({ desc, owner, deadline, priority }) => {
+    mutate('standaloneTasks', ts => { ts.unshift({ id: 'sa' + Date.now(), desc, owner, ownerType: 'internal', creator: me, deadline, priority, status: 'open', createdAt: new Date().toISOString().slice(0, 10) }); });
+    notify({ type: 'action', icon: '⚡', text: `<strong>${owner}</strong>: new task allocated to you by ${me} — "${desc.slice(0, 60)}${desc.length > 60 ? '…' : ''}"` });
+    setStandaloneOpen(false);
+  };
+
+  const card = (t, od) => (
+    <TodoCard key={t.source + ':' + t.id} t={t} isOverdueFlag={od} me={me}
+      extras={t.source === 'meetings' ? (apiExtras[t.id] || {}) : {}}
+      onOpenSource={() => (t.source === 'meetings' ? navigate(`/meetings/${t.sourceId}`) : navigate('/visits'))}
+      onComplete={(mode) => setCompCtx({ action: t.raw, mode })}
+      onSimple={(status) => setSimpleTodoStatus(t.source, t.sourceId, t.id, status)}
+      onNudge={() => nudgeOwner(t.owner)}
+      onReassign={() => reassignTodo(t.source, t.sourceId, t.id)} />
+  );
+
+  let body;
+  if (scoped.length === 0) {
+    body = <EmptyState icon="✅" title="Clean inbox" desc="Nothing in this view." />;
+  } else if (roleFilter === 'owed' || roleFilter === 'all') {
+    const overdueGroup = scoped.filter(t => t.status !== 'done' && isOverdue(t.deadline));
+    const openGroup = scoped.filter(t => t.status !== 'done' && !isOverdue(t.deadline));
+    const doneGroup = scoped.filter(t => t.status === 'done');
+    body = <>
+      {overdueGroup.length > 0 && <><MonoHeading color={tokens.red} sx={{ m: '14px 0 10px' }}>⚠ Overdue · needs attention now</MonoHeading>{overdueGroup.map(t => card(t, true))}</>}
+      {openGroup.length > 0 && <><MonoHeading color={tokens.tealDark} sx={{ m: '20px 0 10px' }}>⌛ Open · by deadline</MonoHeading>{openGroup.map(t => card(t, false))}</>}
+      {doneGroup.length > 0 && <><MonoHeading color={tokens.slate} sx={{ m: '20px 0 10px' }}>✓ Recently completed</MonoHeading>{doneGroup.slice(0, 10).map(t => card(t, false))}</>}
+    </>;
+  } else {
+    body = scoped.map(t => card(t, t.status !== 'done' && isOverdue(t.deadline)));
+  }
+
+  return (
+    <Box>
+      <PageHeader code="TL-OPS-DRM-001" parts={['MyDiary · Unified Inbox', 'Personal Queue']} icon="✅" title="My To-Do"
+        sub="Every action owed by you or delegated by you — from meetings, visits, workflows or ad-hoc — in one deadline-sorted inbox. Complete here and the source updates automatically."
+        actions={<Btn variant="primary" size="lg" onClick={() => setStandaloneOpen(true)}>+ New Task</Btn>} />
+
+      {/* .mt-banner */}
+      <Box sx={{ background: `linear-gradient(135deg, ${tokens.greenDeep}, ${tokens.tealDark})`, color: '#fff', p: { xs: '16px 18px', md: '20px 24px' }, borderRadius: tokens.radius, mb: '20px', display: 'flex', alignItems: 'center', gap: '18px', flexWrap: 'wrap' }}>
+        <Avatar name={me} size={60} fontSize={20} sx={{ border: '3px solid rgba(255,255,255,0.3)' }} />
+        <Box>
+          <Box sx={{ fontFamily: fonts.serif, fontSize: 22, fontWeight: 700, letterSpacing: '-0.01em' }}>{me === 'Venkata Cherukuri' ? 'Your To-Do inbox' : `${me}'s To-Do inbox`}</Box>
+          <Box sx={{ fontFamily: fonts.mono, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', opacity: 0.85, mt: '3px' }}>{state.viewer.role}{me !== 'Venkata Cherukuri' ? ' · Demo view' : ''}</Box>
+        </Box>
+        <Box sx={{ display: 'flex', gap: '20px', ml: { xs: 0, md: 'auto' }, flexWrap: 'wrap', alignItems: 'center' }}>
+          <BannerStat val={open.length} lbl="Open" />
+          <BannerStat val={overdueCt} lbl="Overdue" valColor="#FBD5D5" />
+          <BannerStat val={doneCt} lbl="Done" valColor={tokens.yellow} />
+          <BannerStat val={delegatedByMe.length} lbl="I Delegated" sx={{ bgcolor: '#EEF2FF', color: '#3730A3', p: '6px 12px', borderRadius: '8px' }} />
+        </Box>
+      </Box>
+
+      {/* .my-actions-tabs → shared GateBook TabBar */}
+      <TabBar value={roleFilter} onChange={setRoleFilter} sx={{ mb: '16px' }} tabs={[
+        { key: 'owed', icon: '⚡', label: 'Owed by Me', count: owedByMe.length },
+        { key: 'delegated', icon: '🔁', label: 'Delegated by Me', count: delegatedByMe.length },
+        { key: 'overdue', icon: '⚠', label: 'Overdue', count: overdueCt },
+        { key: 'done', icon: '✓', label: 'Done', count: doneCt },
+        { key: 'all', icon: '📋', label: 'Everything', count: [...owedByMe, ...delegatedByMe.filter(x => !owedByMe.some(o => o.id === x.id))].length },
+      ]} />
+
+      <Box sx={{ display: 'flex', gap: 1, m: '12px 0 18px', p: '10px 14px', bgcolor: tokens.creamWarm, border: `1px solid ${tokens.line}`, borderRadius: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+        <Box component="span" sx={{ fontFamily: fonts.mono, fontSize: 10, letterSpacing: '0.1em', color: tokens.slate, fontWeight: 700, mr: '4px' }}>SOURCE:</Box>
+        <FilterPill active={srcFilter === 'all'} onClick={() => setSrcFilter('all')} count={roleScope.length}>All</FilterPill>
+        <FilterPill active={srcFilter === 'meetings'} onClick={() => setSrcFilter('meetings')} count={srcCt('meetings')}>📅 From Meetings</FilterPill>
+        <FilterPill active={srcFilter === 'visits'} onClick={() => setSrcFilter('visits')} count={srcCt('visits')}>📝 From Visits</FilterPill>
+        <FilterPill active={srcFilter === 'standalone'} onClick={() => setSrcFilter('standalone')} count={srcCt('standalone')}>⚡ Standalone</FilterPill>
+      </Box>
+
+      <ApiError error={mineQ.error || allQ.error} onRetry={() => { mineQ.refetch(); allQ.refetch(); }} sx={{ mb: 1.5 }} />
+      <Fetching on={mineQ.isFetching || allQ.isFetching} />
+
+      {body}
+
+      {scoped.length > 0 && (
+        <Box sx={{ mt: '20px', p: '14px 18px', bgcolor: tokens.creamWarm, border: `1px solid ${tokens.line}`, borderRadius: tokens.radius, fontSize: 12, color: tokens.slate, display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <Box component="span" sx={{ fontSize: 16 }}>🔁</Box>
+          <span><strong style={{ color: tokens.ink }}>Round-trip:</strong> When you complete, defer or block a task here, the source meeting / visit updates automatically with your comment, status change, and timestamp — logged in the action's history and visible to the originator.</span>
+        </Box>
+      )}
+
+      {standaloneOpen && <StandaloneTaskModal open onClose={() => setStandaloneOpen(false)} onSubmit={submitStandalone} />}
+      {compCtx && <CompleteDialog key={compCtx.action.id + compCtx.mode} ctx={compCtx} onClose={() => setCompCtx(null)} />}
+    </Box>
+  );
+}

@@ -1,0 +1,12 @@
+export const DECISIONS = [
+  { id: 'd1', meetingId: 'm7', agendaIdx: 0, text: 'Freeze services to any account crossing 120 DPD unless written CMD override. Weekly AR aging snapshot to CMD every Monday 8 AM.', decidedBy: 'Venkata Cherukuri', tags: ['financial', 'policy', 'approved'], department: 'Accounts' },
+  { id: 'd2', meetingId: 'm7', agendaIdx: 2, text: 'Configure daily automated cash sweep from Begumpet branch in LedgerTrace.', decidedBy: 'Venkata Cherukuri', tags: ['operational', 'approved'], department: 'Accounts' },
+  { id: 'd3', meetingId: 'm8', agendaIdx: 0, text: 'CME theme locked: "Metabolic Health in Young Adults." Dr. Abishekh keynote, TrustLab co-presentation.', decidedBy: 'Venkata Cherukuri + Dr. Abishekh', tags: ['approved', 'operational'], department: 'Marketing' },
+  { id: 'd4', meetingId: 'm8', agendaIdx: 2, text: 'CME cost split approved at 60-40 with TrustLab bearing 60%. Co-branding with equal logo prominence.', decidedBy: 'Venkata Cherukuri', tags: ['financial', 'approved'], department: 'Marketing' },
+  { id: 'd5', meetingId: 'm9', agendaIdx: 0, text: 'Roche contract: commit to 10% volume growth in exchange for 4.5% price reduction on top 20 reagents.', decidedBy: 'Venkata Cherukuri', tags: ['financial', 'approved'], department: 'Procurement' },
+  { id: 'd6', meetingId: 'm10', agendaIdx: 0, text: 'Advisory Board over Growth & Revenue approved in principle. 3 members, non-executive, quarterly cadence.', decidedBy: 'Venkata Cherukuri', tags: ['governance', 'approved'], department: 'Board' },
+  { id: 'd7', meetingId: 'm10', agendaIdx: 1, text: 'Advisory Board mandate scope: strategic advice on sales channels, pricing, geographic expansion.', decidedBy: 'Venkata Cherukuri', tags: ['governance', 'policy'], department: 'Board' },
+  { id: 'd8', meetingId: 'm10', agendaIdx: 3, text: 'Board resolution for Advisory Board approved with minor edits. CS to finalise for signature.', decidedBy: 'Full board', tags: ['governance', 'approved'], department: 'Board' },
+  { id: 'd9', meetingId: 'm11', agendaIdx: 0, text: 'Fernandez contract negotiation to be escalated to CMD level — Arjun to set up meeting with their CFO.', decidedBy: 'Venkata Cherukuri', tags: ['operational', 'approved'], department: 'Growth & Revenue' },
+  { id: 'd10', meetingId: 'm11', agendaIdx: 3, text: '8 confirmed November camps approved. Marketing to assign BDs.', decidedBy: 'Venkata Cherukuri', tags: ['operational', 'approved'], department: 'Growth & Revenue' },
+];
