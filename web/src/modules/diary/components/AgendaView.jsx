@@ -4,11 +4,13 @@ import { tokens, fonts } from '../../../theme/tokens';
 import { DIARY_CATS } from '../../../data/diary';
 import { DAYS, MONTHS } from '../../../utils/dates';
 import { toISO, TODAY_ISO, entryOnDate, AGENDA_BORDER } from '../utils';
+import { DiaryLoading } from './ViewState';
 
 const badgeSx = (bg, color) => ({ fontFamily: fonts.mono, fontSize: 9, bgcolor: bg, color, p: '2px 7px', borderRadius: '8px', fontWeight: 700, letterSpacing: '0.04em', display: 'inline-block' });
 
 /** renderAgendaView 10117–10169 — next 21 days grouped by date */
-export default function AgendaView({ date, entries, onOpenEntry }) {
+export default function AgendaView({ date, entries, onOpenEntry, loading }) {
+  if (loading) return <DiaryLoading />;
   const start = new Date(date);
   const end = new Date(start); end.setDate(end.getDate() + 21);
   const grouped = [];

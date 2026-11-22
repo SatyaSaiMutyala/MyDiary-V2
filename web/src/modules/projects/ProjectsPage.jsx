@@ -5,6 +5,9 @@ import { useNavigate } from 'react-router-dom';
 import { PageHeader, Btn, FilterPill, SearchBox, FilterSelect, EmptyState } from '../../components';
 import { tokens, fonts } from '../../theme/tokens';
 import { useAppStore } from '../../store/AppStore';
+import { useListProjectsQuery } from '../../store/api/projectsApi';
+import { ApiError, Fetching } from '../settings/components/listUi';
+import { useDebounced } from '../../utils/useDebounced';
 import { PROJ_CATEGORIES } from '../../data/projects';
 import ProjectCard from './components/ProjectCard';
 import ProjectTemplatesModal from './modals/ProjectTemplatesModal';
@@ -17,6 +20,18 @@ const STAT_ACCENT = {
   blue: { bar: tokens.blue, icoBg: tokens.blueSoft, icoColor: tokens.blue },
   red: { bar: tokens.red, icoBg: tokens.redSoft, icoColor: tokens.red },
   yellow: { bar: tokens.yellow, icoBg: tokens.yellowSoft, icoColor: tokens.amber },
+};
+
+/** The portfolio page asks the API for everything (max 200 projects) to count the summary row and the pills. */
+const PORTFOLIO_LIMIT = 200;
+
+/** The server-side params behind each filter pill (the pill labels and counts stay exactly as they were). */
+const FILTER_PARAMS = {
+  all: {},
+  mine: { mine: 'true' },
+  active: { status: 'active,at-risk' },
+  overdue: { overdue: 'true' },
+  completed: { status: 'completed' },
 };
 
 /** .proj-stat-card */
@@ -33,7 +48,7 @@ function StatCard({ accent = 'teal', icon, label, value, sub }) {
   );
 }
 
-/** Portfolio — renderProjects() */
+/** Portfolio — renderProjects(), every row and count from GET /api/projects. */
 export default function ProjectsPage() {
   const navigate = useNavigate();
   const { state } = useAppStore();
@@ -45,7 +60,16 @@ export default function ProjectsPage() {
   const [tplOpen, setTplOpen] = useState(false);
   const [wizDraft, setWizDraft] = useState(null);        // PROJ_DRAFT (null = closed)
 
-  const visible = state.projects;
+  // The whole portfolio: the summary cards, the pill counts and the category counts are read off it.
+  const portfolio = useListProjectsQuery({ limit: PORTFOLIO_LIMIT, sort: '-createdAt' });
+  const visible = portfolio.data?.items || [];
+
+  // The grid itself is filtered by the server (search, category and the pills are all query params).
+  const debounced = useDebounced(search.trim(), 300);
+  const listArgs = { limit: PORTFOLIO_LIMIT, sort: '-createdAt', search: debounced, category: catFilter, ...FILTER_PARAMS[filter] };
+  const { data, error, isLoading, isFetching, refetch } = useListProjectsQuery(listArgs);
+  const filtered = data?.items || [];
+
   const total = visible.length;
   const active = visible.filter(p => p.status === 'active' || p.status === 'at-risk').length;
   const allOverdueMilestones = visible.flatMap(p => overdueMilestones(p));
@@ -59,18 +83,9 @@ export default function ProjectsPage() {
   const overdueCount = visible.filter(p => overdueMilestones(p).length > 0).length;
   const completedCount = visible.filter(p => p.status === 'completed').length;
 
-  let filtered = visible.slice();
-  if (filter === 'mine') filtered = filtered.filter(p => isMine(p, me));
-  else if (filter === 'active') filtered = filtered.filter(p => p.status === 'active' || p.status === 'at-risk');
-  else if (filter === 'overdue') filtered = filtered.filter(p => overdueMilestones(p).length > 0);
-  else if (filter === 'completed') filtered = filtered.filter(p => p.status === 'completed');
-  if (catFilter) filtered = filtered.filter(p => p.category === catFilter);
-  const q = search.trim().toLowerCase();
-  if (q) filtered = filtered.filter(p => [p.name, p.code, p.owner, p.description, ...(p.team || []).map(t => t.name), ...(p.external || []).map(e => e.name)].some(s => (s || '').toLowerCase().includes(q)));
-
   const openProjectModal = (editId) => {
-    if (editId) { const ex = state.projects.find(p => p.id === editId); if (ex) setWizDraft(JSON.parse(JSON.stringify(ex))); }
-    else setWizDraft(blankDraft(me, state.projects.length));
+    if (editId) { const ex = visible.find(p => p.id === editId) || filtered.find(p => p.id === editId); if (ex) setWizDraft(JSON.parse(JSON.stringify(ex))); }
+    else setWizDraft(blankDraft(me, total));
   };
 
   return (
@@ -109,20 +124,25 @@ export default function ProjectsPage() {
         </FilterSelect>
       </Box>
 
-      {filtered.length === 0 ? (
+      <ApiError error={error || portfolio.error} onRetry={refetch} sx={{ mb: 1.5 }} />
+      <Fetching on={isFetching || portfolio.isFetching} />
+
+      {isLoading ? (
+        <Box sx={{ p: '60px 20px', textAlign: 'center', color: tokens.slate, fontFamily: fonts.mono, fontSize: 12, letterSpacing: '0.08em' }}>Loading projects…</Box>
+      ) : error ? null : filtered.length === 0 ? (
         <EmptyState icon="📁" title="No projects match" desc="Clear filters or create a new project." />
       ) : (
         <Grid container spacing="14px">
           {filtered.map(p => (
             <Grid key={p.id} size={{ xs: 12, sm: 6, lg: 4 }}>
-              <ProjectCard p={p} onOpen={() => navigate(`/projects/${p.id}`)} onEdit={() => openProjectModal(p.id)} onDuplicate={() => actions.duplicateProject(p.id)} onDelete={() => actions.deleteProject(p.id)} />
+              <ProjectCard p={p} onOpen={() => navigate(`/projects/${p.id}`)} onEdit={() => openProjectModal(p.id)} onDuplicate={() => actions.duplicateProject(p)} onDelete={() => actions.deleteProject(p)} />
             </Grid>
           ))}
         </Grid>
       )}
 
-      {tplOpen && <ProjectTemplatesModal open onClose={() => setTplOpen(false)} onUse={(draft) => setWizDraft(draft)} />}
-      {wizDraft && <ProjectWizardModal key={wizDraft.id} draft={wizDraft} onClose={() => setWizDraft(null)} />}
+      {tplOpen && <ProjectTemplatesModal open onClose={() => setTplOpen(false)} onUse={(draft) => setWizDraft(draft)} projectCount={total} />}
+      {wizDraft && <ProjectWizardModal key={wizDraft.id || wizDraft.draftId} draft={wizDraft} onClose={() => setWizDraft(null)} />}
     </>
   );
 }

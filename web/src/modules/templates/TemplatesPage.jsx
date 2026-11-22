@@ -1,24 +1,27 @@
 import { Box, Typography } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { useNavigate } from 'react-router-dom';
-import { useAppStore } from '../../store/AppStore';
-import { PageHeader, Btn } from '../../components';
+import { PageHeader, Btn, EmptyState } from '../../components';
+import { ApiError, Fetching } from '../settings/components/listUi';
+import { useListTemplatesQuery } from '../../store/api/templatesApi';
 import { TYPES } from '../../data/meetings';
 import { tokens, fonts } from '../../theme/tokens';
 
 const ORDER = ['internal', 'customer', 'supplier', 'consultants', 'board'];
 const LEFT = { customer: tokens.blue, supplier: tokens.orange, board: tokens.yellow, consultants: tokens.purple };
 
-/** 📋 Agenda Templates Library (prototype view-templates + renderTemplates / applyTemplate) */
+/** 📋 Agenda Templates Library (prototype view-templates + renderTemplates / applyTemplate), fed by GET /api/templates */
 export default function TemplatesPage() {
-  const { state } = useAppStore();
   const navigate = useNavigate();
+  // One page of the whole library (12 seeded templates): the cards are grouped by meeting type, not paged.
+  const { data, error, isLoading, isFetching, refetch } = useListTemplatesQuery({ limit: 200, sort: 'createdAt' });
+  const templates = data?.items || [];
 
   const grouped = {};
-  state.templates.forEach(t => { if (!grouped[t.type]) grouped[t.type] = []; grouped[t.type].push(t); });
+  templates.forEach(t => { if (!grouped[t.type]) grouped[t.type] = []; grouped[t.type].push(t); });
 
   const applyTemplate = (id) => {
-    const t = state.templates.find(x => x.id === id);
+    const t = templates.find(x => x.id === id);
     if (!t) return;
     if (confirm('Use template "' + t.name + '"? This will pre-fill a new ' + t.type + ' meeting with its ' + t.agendaCount + ' agenda items.')) {
       navigate('/meetings/new', { state: { type: t.type, templateId: t.id } });
@@ -30,6 +33,19 @@ export default function TemplatesPage() {
       <PageHeader code="TL-OPS-DRM-001" parts={['Meeting Management', 'Templates']} icon="📋" title="Agenda Templates Library"
         sub="Pre-built agendas for recurring meeting types — load into any new meeting to save setup time and keep reviews consistent."
         actions={<Btn variant="primary" size="lg" onClick={() => alert('Template creator opens')}>+ New Template</Btn>} />
+
+      {isFetching && <Fetching on />}
+      <ApiError error={error} onRetry={refetch} sx={{ mb: '20px' }} />
+
+      {isLoading && (
+        <Typography component="div" sx={{ fontFamily: fonts.mono, fontSize: 11, letterSpacing: '0.14em', color: tokens.slate, textTransform: 'uppercase', fontWeight: 700 }}>
+          Loading templates…
+        </Typography>
+      )}
+
+      {!isLoading && !error && templates.length === 0 && (
+        <EmptyState icon="📋" title="No templates yet" desc="Agenda templates let you load a ready-made agenda into any new meeting. Create one to get started." />
+      )}
 
       {ORDER.filter(t => grouped[t]).map(type => (
         <Box key={type} sx={{ mb: '28px' }}>

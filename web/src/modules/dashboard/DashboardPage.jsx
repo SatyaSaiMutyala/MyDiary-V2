@@ -2,12 +2,15 @@ import { Box } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../../store/AppStore';
+import { useViewerUser } from '../../auth/useViewerUser';
 import { tokens, fonts } from '../../theme/tokens';
 import { Avatar } from '../../components';
 import { todayFacts } from '../../utils/departments';
 import { daysUntil, isOverdue, formatDate, parseDate, MONTHS } from '../../utils/dates';
 import { DAYS_OF_WEEK_FULL } from '../../data/departments';
-import { getEmployeeAssignment, shiftStats } from '../myactivity/utils';
+import { useGetActivityQuery, useListAssignmentsQuery, useListDepartmentsQuery } from '../../store/api/departmentsApi';
+import { ApiError, Fetching } from '../settings/components/listUi';
+import { activityArgs, assignmentFor, shiftStats } from '../myactivity/utils';
 import { collectTodoItems } from '../todo/utils';
 import { OrgOversightBlock, DeptOversightBlock } from './components/OversightBlocks';
 
@@ -63,24 +66,37 @@ function ModuleCard({ c, onClick }) {
 
 export default function DashboardPage() {
   const { state } = useAppStore();
+  const { viewer, isSelf } = useViewerUser();
   const navigate = useNavigate();
   const go = (view) => view && navigate(VIEW_ROUTE[view] || '/');
 
-  const me = state.viewer.name;
-  const assignment = getEmployeeAssignment(me);
-  const dept = state.departments.find(d => d.id === assignment.departmentId);
+  const me = viewer.name;
+  const facts = todayFacts();
+  const { today, todayStr, dow } = facts;
+
+  // Department Master feeds the shift tiles, the module card and the oversight bands.
+  const { data: deptList, error: deptErr, isFetching: deptFetching, refetch: refetchDepts } = useListDepartmentsQuery({ limit: 200, sort: 'order' });
+  const { data: assignments, error: assignErr } = useListAssignmentsQuery();
+  const departments = deptList?.items || [];
+  const assignment = assignmentFor(assignments, me);
+  const dept = departments.find(d => d.id === assignment.departmentId);
   const position = dept ? (dept.positions || []).find(p => p.id === assignment.positionId) : null;
   const isCMD = assignment.role === 'cmd';
   const isCGO = assignment.role === 'cgo';
   const isHead = assignment.role === 'head' || isCMD || isCGO;
 
-  const facts = todayFacts();
-  const { today, todayStr, dow } = facts;
+  // One read of today's ticks, scoped to what this person is allowed to roll up.
+  const scope = isCMD || isCGO ? 'org' : (isHead && dept ? 'department' : 'me');
+  const { data: activityLog = {}, isFetching: activityFetching } = useGetActivityQuery(
+    activityArgs({ date: todayStr, person: me, isSelf, scope, departmentId: dept?.id }),
+    { skip: scope === 'department' && !dept },
+  );
+
   const hour = new Date().getHours(); // real clock for the greeting only (TODAY is the simulated date)
   const greeting = hour < 5 ? 'Still up?' : hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
   // ===== MY ACTIVITY STATS =====
-  const ma = dept ? shiftStats(state.activityLog, me, dept, assignment.positionId, assignment.role, facts) : { total: 0, done: 0, pct: 0 };
+  const ma = dept ? shiftStats(activityLog, me, dept, assignment.positionId, assignment.role, facts) : { total: 0, done: 0, pct: 0 };
   const maDone = ma.done, maTotal = ma.total, maPct = ma.pct;
   const maRingCirc = 2 * Math.PI * 18;
   const maRingOffset = maRingCirc - (maPct / 100) * maRingCirc;
@@ -115,7 +131,7 @@ export default function DashboardPage() {
   })();
 
   // ===== Module cards =====
-  const D = state.departments;
+  const D = departments;
   const moduleCards = [
     { icon: '✍', title: 'My Activity', view: 'myactivity',
       snippet: dept ? (dept.name + ' · ' + (position ? position.name : 'All positions') + '. Your daily shift checklist.') : 'Set your department to see your daily checklist.',
@@ -176,6 +192,9 @@ export default function DashboardPage() {
         </Box>
       </Box>
 
+      <ApiError error={deptErr || assignErr} onRetry={refetchDepts} sx={{ mb: '12px' }} />
+      <Fetching on={deptFetching || activityFetching} />
+
       <SectionLabel>⚡ Today's Priority</SectionLabel>
       <Grid container spacing={1.5} sx={{ mb: '20px' }}>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
@@ -201,8 +220,8 @@ export default function DashboardPage() {
         ))}
       </Grid>
 
-      {isHead && !isCMD && !isCGO && dept && <DeptOversightBlock dept={dept} state={state} facts={facts} />}
-      {(isCMD || isCGO) && <OrgOversightBlock state={state} facts={facts} />}
+      {isHead && !isCMD && !isCGO && dept && <DeptOversightBlock dept={dept} activityLog={activityLog} facts={facts} />}
+      {(isCMD || isCGO) && <OrgOversightBlock departments={departments} activityLog={activityLog} state={state} facts={facts} />}
     </Box>
   );
 }

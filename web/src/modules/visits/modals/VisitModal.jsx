@@ -4,6 +4,7 @@ import Grid from '@mui/material/Grid';
 import { tokens, fonts } from '../../../theme/tokens';
 import { VISIT_TYPES, RATING_AREAS, OBS_CATEGORIES, OVERALL_OPTIONS } from '../../../data/visits';
 import { ModalShell, FootNote, Btn, TextLink, AddBtn, Chip, FieldLabel, Field, TextInput, TextArea, SelectInput, VSection, DelBtn } from '../../../components';
+import { useListUsersQuery } from '../../../store/api/usersApi';
 import { EMPLOYEE_OPTIONS } from '../utils';
 
 const DATALIST_ID = 'visit-team-datalist';
@@ -47,6 +48,10 @@ const obsHeadCell = { fontFamily: fonts.mono, fontSize: 9, color: tokens.slate, 
  */
 export default function VisitModal({ open, draft, setDraft, onClose, onSave }) {
   const [teamAdd, setTeamAdd] = useState('');
+  // The team picker lists the real people (GET /api/users). That endpoint is admin-only, so when it refuses
+  // the picker falls back to the static roster rather than offering nothing.
+  const { data: users, error: usersError } = useListUsersQuery({ limit: 200, fields: 'name,title', sort: 'name' });
+  const people = users ? users.items.map(u => ({ name: u.name, role: u.title || '' })) : (usersError ? EMPLOYEE_OPTIONS : []);
   if (!draft) return null;
   const v = draft;
   const upd = fn => setDraft(prev => { const c = JSON.parse(JSON.stringify(prev)); fn(c); return c; });
@@ -115,7 +120,7 @@ export default function VisitModal({ open, draft, setDraft, onClose, onSave }) {
         </Box>
         <Box sx={{ display: 'flex', gap: '6px' }}>
           <TextInput value={teamAdd} onChange={e => setTeamAdd(e.target.value)} inputProps={{ list: DATALIST_ID }} placeholder="+ Add team member" onKeyDown={e => { if (e.key === 'Enter') { addVisitTeam(); e.preventDefault(); } }} sx={{ flex: 1 }} />
-          <datalist id={DATALIST_ID}>{EMPLOYEE_OPTIONS.map(p => <option key={p.name} value={p.name}>{p.role}</option>)}</datalist>
+          <datalist id={DATALIST_ID}>{people.map(p => <option key={p.name} value={p.name}>{p.role}</option>)}</datalist>
           <AddBtn onClick={addVisitTeam}>+ Add</AddBtn>
         </Box>
         <FieldLabel hint="if any" sx={{ mt: '14px' }}>External Participants</FieldLabel>

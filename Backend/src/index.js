@@ -2,11 +2,13 @@ import http from 'node:http';
 import { createApp } from './app.js';
 import { config } from './config.js';
 import { connectDb } from './db.js';
+import { ensureDefaultIntegrations } from './services/integrations.js';
 import { ensureDefaultAdmin } from './services/users.js';
 
 async function main() {
   const db = await connectDb();
   await ensureDefaultAdmin();
+  await ensureDefaultIntegrations();
 
   const server = http.createServer(createApp());
   await new Promise((resolve, reject) => {

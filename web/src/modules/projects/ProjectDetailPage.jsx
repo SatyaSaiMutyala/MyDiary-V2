@@ -4,12 +4,13 @@ import Grid from '@mui/material/Grid';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Eyebrow, Btn, EmptyState, TabBar } from '../../components';
 import { tokens, fonts } from '../../theme/tokens';
-import { useAppStore } from '../../store/AppStore';
+import { useGetProjectQuery } from '../../store/api/projectsApi';
+import { ApiError } from '../settings/components/listUi';
 import { useCrumbs } from '../../store/CrumbsContext';
 import { TODAY, parseDate } from '../../utils/dates';
 import { PROJ_STATUSES } from '../../data/projects';
 import useProjectActions from './useProjectActions';
-import { projectAvgProgress, fmtRange, catOf, STATUS_GRADIENT } from './utils';
+import { projectAvgProgress, fmtRange, catOf, dayOf, STATUS_GRADIENT } from './utils';
 import OverviewPane from './components/OverviewPane';
 import GanttPane from './components/GanttPane';
 import MilestonesPane from './components/MilestonesPane';
@@ -20,13 +21,12 @@ import RisksPane from './components/RisksPane';
 import ActivityPane from './components/ActivityPane';
 import ProjectWizardModal from './modals/ProjectWizardModal';
 
-/** renderProjectDetail() — hero with ring, 4 meta tiles, 8 tabs, panes, footer bar */
+/** renderProjectDetail() — hero with ring, 4 meta tiles, 8 tabs, panes, footer bar. One GET /api/projects/:id. */
 export default function ProjectDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { state } = useAppStore();
-  const actions = useProjectActions();
-  const p = state.projects.find(x => x.id === id);
+  const { data: p, error, isLoading } = useGetProjectQuery(id);
+  const actions = useProjectActions(p);
 
   const [tab, setTab] = useState('overview');          // CURRENT_PROJECT_TAB
   const [tasksGroupBy, setTasksGroupBy] = useState('status'); // TASKS_GROUP_BY
@@ -36,9 +36,14 @@ export default function ProjectDetailPage() {
 
   useCrumbs([{ label: 'Meetings', to: '/' }, { label: 'My Projects', to: '/projects' }, { label: p ? p.code : 'Project' }]);
 
+  if (isLoading) {
+    return <Box sx={{ p: '60px 20px', textAlign: 'center', color: tokens.slate, fontFamily: fonts.mono, fontSize: 12, letterSpacing: '0.08em' }}>Loading project…</Box>;
+  }
+
   if (!p) {
     return (
       <>
+        <ApiError error={error && error.status !== 404 ? error : null} sx={{ mb: 1.5 }} />
         <EmptyState icon="📁" title="Project not found" desc="It may have been deleted." />
         <Box sx={{ mt: 2 }}><Btn size="sm" onClick={() => navigate('/projects')}>← Back to Portfolio</Btn></Box>
       </>
@@ -108,14 +113,14 @@ export default function ProjectDetailPage() {
       {tab === 'gantt' && <GanttPane p={p} actions={actions} zoom={ganttZoom} setZoom={setGanttZoom} />}
       {tab === 'milestones' && <MilestonesPane p={p} actions={actions} />}
       {tab === 'tasks' && <TasksPane p={p} actions={actions} groupBy={tasksGroupBy} setGroupBy={setTasksGroupBy} />}
-      {tab === 'team' && <TeamPane p={p} />}
-      {tab === 'kpis' && <KpisPane p={p} />}
+      {tab === 'team' && <TeamPane p={p} actions={actions} />}
+      {tab === 'kpis' && <KpisPane p={p} actions={actions} />}
       {tab === 'risks' && <RisksPane p={p} actions={actions} scope={risksScope} setScope={setRisksScope} />}
       {tab === 'activity' && <ActivityPane p={p} actions={actions} />}
 
       {/* footer bar */}
       <Box sx={{ mt: '20px', p: '16px 20px', bgcolor: tokens.creamWarm, border: `1px solid ${tokens.line}`, borderRadius: tokens.radius, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-        <Box sx={{ fontSize: 11, color: tokens.slate, fontFamily: fonts.mono, letterSpacing: '0.04em' }}>Last updated {p.updatedAt} · Created {p.createdAt}</Box>
+        <Box sx={{ fontSize: 11, color: tokens.slate, fontFamily: fonts.mono, letterSpacing: '0.04em' }}>Last updated {dayOf(p.updatedAt)} · Created {dayOf(p.createdAt)}</Box>
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
           <Btn size="sm" onClick={() => navigate('/projects')}>← Back to Portfolio</Btn>
           <Btn size="sm" onClick={() => setWizDraft(JSON.parse(JSON.stringify(p)))}>✎ Edit Project</Btn>
@@ -123,7 +128,7 @@ export default function ProjectDetailPage() {
         </Box>
       </Box>
 
-      {wizDraft && <ProjectWizardModal key={wizDraft.id} draft={wizDraft} onClose={() => setWizDraft(null)} />}
+      {wizDraft && <ProjectWizardModal key={wizDraft.id || wizDraft.draftId} draft={wizDraft} onClose={() => setWizDraft(null)} />}
     </>
   );
 }

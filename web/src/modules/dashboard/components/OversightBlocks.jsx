@@ -34,10 +34,11 @@ function StatTile({ color, label, value, sub }) {
   );
 }
 
-/** renderOrgOversightBlock — full org oversight (CMD / CGO only) */
-export function OrgOversightBlock({ state, facts }) {
+/** renderOrgOversightBlock — full org oversight (CMD / CGO only). Departments and ticks come from the API;
+ *  the project / action / decision counters still read the store until those modules move over. */
+export function OrgOversightBlock({ departments, activityLog, state, facts }) {
   const navigate = useNavigate();
-  const rows = deptRollupRows(state.departments, state.activityLog, facts);
+  const rows = deptRollupRows(departments, activityLog, facts);
   const orgTotal = rows.reduce((s, r) => s + r.total, 0);
   const orgDone = rows.reduce((s, r) => s + r.done, 0);
   const orgPct = orgTotal ? Math.round((orgDone / orgTotal) * 100) : 0;
@@ -70,8 +71,8 @@ export function OrgOversightBlock({ state, facts }) {
 }
 
 /** renderDeptOversightBlock — dept head oversight, only their own department */
-export function DeptOversightBlock({ dept, state, facts }) {
-  const rows = deptPeopleRows(dept, state.activityLog, facts);
+export function DeptOversightBlock({ dept, activityLog, facts }) {
+  const rows = deptPeopleRows(dept, activityLog, facts);
   return (
     <Oversight icon={dept.icon} iconSize={22} title={`${dept.name} — Head View`} sub={`Your department · ${rows.length} ${rows.length === 1 ? 'person' : 'people'} · today's shift completion`}>
       <Grid container spacing={1.25}>

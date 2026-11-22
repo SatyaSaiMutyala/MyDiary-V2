@@ -1,12 +1,14 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Box, Modal, Typography } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { Btn, TextLink, VSection, Field, TextInput, TextArea, SelectInput, DelBtn } from '../../../components';
 import { tokens, fonts } from '../../../theme/tokens';
-import { useAppStore } from '../../../store/AppStore';
+import { errorMessage } from '../../../store/api/baseApi';
+import { useCreateProjectMutation, useUpdateProjectMutation } from '../../../store/api/projectsApi';
+import { useListUsersQuery } from '../../../store/api/usersApi';
 import { PROJ_CATEGORIES, PROJ_STATUSES } from '../../../data/projects';
 import { EMPLOYEES } from '../../../data/employees';
-import { WIZ_STEPS, newId } from '../utils';
+import { WIZ_STEPS, draftToBody, newId } from '../utils';
 
 const DATALIST_ID = 'proj-emp-datalist';
 const listProps = { inputProps: { list: DATALIST_ID } };
@@ -16,13 +18,21 @@ const PRI_OPTS = [['low', 'Low'], ['medium', 'Med'], ['high', 'High'], ['critica
 
 /**
  * New / Edit Project wizard (prototype 15911–16238). 780px, gradient head, 4-step stepper.
- * Mount with key={draft.id} so state resets per draft. onSaved() after a successful upsert.
+ * Mount with key={draft.id || draft.draftId} so state resets per draft. Saving is one POST (a draft with no
+ * id yet) or one PATCH; the API tells the team and writes the activity line. onSaved() after a save.
  */
 export default function ProjectWizardModal({ draft: initialDraft, onClose, onSaved }) {
-  const { state, mutate, notify } = useAppStore();
   const [d, setD] = useState(() => JSON.parse(JSON.stringify(initialDraft)));
   const [step, setStep] = useState(1);
-  const isEdit = state.projects.some(p => p.id === d.id);
+  const isEdit = !!d.id;
+  const [createProject, creating] = useCreateProjectMutation();
+  const [updateProject, updating] = useUpdateProjectMutation();
+  const saving = creating.isLoading || updating.isLoading;
+  // A second click before React has re-rendered the disabled button must not create a second project.
+  const inFlight = useRef(false);
+  // People picker: the real accounts (admins can read them), falling back to the roster for everyone else.
+  const { data: accounts } = useListUsersQuery({ limit: 200, fields: 'name', sort: 'name' });
+  const peopleNames = accounts?.items?.length ? accounts.items.map(u => u.name) : EMPLOYEES.flatMap(g => g.people).map(e => e.name);
 
   // imperative-style draft edit (PROJ_DRAFT.x = v; renderProjectModal())
   const ed = (fn) => setD(prev => { const next = JSON.parse(JSON.stringify(prev)); fn(next); return next; });
@@ -37,24 +47,25 @@ export default function ProjectWizardModal({ draft: initialDraft, onClose, onSav
   const wizPrev = () => { if (step > 1) setStep(step - 1); };
   const wizGoTo = (s) => { if (isEdit || s <= step + 1) setStep(s); };
 
-  const saveProject = () => {
+  const saveProject = async () => {
+    if (inFlight.current) return;
     if (!d.name.trim()) { window.alert('Project name required.'); return; }
     if (!d.description.trim()) { window.alert('Project description required.'); return; }
-    const existing = state.projects.findIndex(p => p.id === d.id);
-    const me = state.viewer.name;
-    const final = JSON.parse(JSON.stringify(d));
-    final.updatedAt = new Date().toISOString().slice(0, 10);
-    if (existing >= 0) {
-      final.activity.unshift({ user: me, action: 'updated the project', at: 'Just now' });
-      mutate('projects', ps => { ps[existing] = final; });
-    } else {
-      final.activity = [{ user: me, action: 'created the project', at: 'Just now' }];
-      mutate('projects', ps => { ps.unshift(final); });
+    const body = draftToBody(d);
+    inFlight.current = true;
+    try {
+      const saved = isEdit
+        ? await updateProject({ id: d.id, ...body }).unwrap()
+        : await createProject({ ...body, ...(d.templateId ? { templateId: d.templateId } : {}) }).unwrap();
+      onClose();
+      if (onSaved) onSaved(saved, isEdit);
+      setTimeout(() => window.alert('✓ Project saved.'), 100);
+    } catch (err) {
+      // The server's own wording, shown as-is.
+      window.alert(errorMessage(err));
+    } finally {
+      inFlight.current = false;
     }
-    notify({ type: 'meeting', icon: '📁', text: '<strong>Project ' + (existing >= 0 ? 'updated' : 'created') + ':</strong> "' + final.name + '" — ' + (final.team.length + final.external.length) + ' people notified.' });
-    onClose();
-    if (onSaved) onSaved(final, existing >= 0);
-    setTimeout(() => window.alert('✓ Project saved.'), 100);
   };
 
   const msOpts = [<option key="" value="">— None (project-wide) —</option>, ...(d.milestones || []).map(m => <option key={m.id} value={m.id}>🏁 {m.name || '(unnamed)'}</option>)];
@@ -67,7 +78,7 @@ export default function ProjectWizardModal({ draft: initialDraft, onClose, onSav
   return (
     <Modal open onClose={onClose} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: { xs: 1.5, md: 2.5 } }} slotProps={{ backdrop: { sx: { bgcolor: 'rgba(26,58,47,0.6)', backdropFilter: 'blur(4px)' } } }}>
       <Box sx={{ bgcolor: tokens.card, borderRadius: '14px', boxShadow: tokens.shadowLg, width: 780, maxWidth: '100%', maxHeight: '92vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', outline: 'none' }}>
-        <datalist id={DATALIST_ID}>{EMPLOYEES.flatMap(g => g.people).map(e => <option key={e.name} value={e.name} />)}</datalist>
+        <datalist id={DATALIST_ID}>{peopleNames.map(name => <option key={name} value={name} />)}</datalist>
 
         {/* .visit-modal-head */}
         <Box sx={{ p: { xs: '16px 18px', md: '20px 28px' }, background: `linear-gradient(135deg, ${tokens.greenDeep}, ${tokens.tealDark})`, color: '#fff', display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -231,7 +242,7 @@ export default function ProjectWizardModal({ draft: initialDraft, onClose, onSav
             <Btn onClick={onClose}>Cancel</Btn>
             {step > 1 && <Btn onClick={wizPrev}>← Back</Btn>}
             {step < 4 && <Btn variant="primary" onClick={wizNext}>Next →</Btn>}
-            {(step === 4 || isEdit) && <Btn variant="primary" onClick={saveProject}>💾 Save Project</Btn>}
+            {(step === 4 || isEdit) && <Btn variant="primary" onClick={saveProject} disabled={saving}>{saving ? 'Saving…' : '💾 Save Project'}</Btn>}
           </Box>
         </Box>
       </Box>

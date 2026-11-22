@@ -1,38 +1,40 @@
 import { Box, Typography } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { useNavigate } from 'react-router-dom';
-import { useAppStore } from '../../store/AppStore';
-import { PageHeader, Btn, SummaryCard } from '../../components';
+import { PageHeader, Btn, SummaryCard, EmptyState } from '../../components';
 import { tokens, fonts } from '../../theme/tokens';
 import { DEPT_TEMPLATES } from '../../data/departments';
+import { useCreateDepartmentMutation, useListDepartmentsQuery } from '../../store/api/departmentsApi';
+import { ApiError, Fetching, useToast } from '../settings/components/listUi';
 import { buildDepartmentFromTemplate, buildBlankDepartment } from './utils';
 
 const statL = { fontFamily: fonts.mono, fontSize: 9, color: tokens.slate, letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700, mt: '3px' };
 const statV = (color = tokens.ink) => ({ fontFamily: fonts.serif, fontSize: 18, fontWeight: 700, color, lineHeight: 1 });
 
-/** VIEW: DEPARTMENT MASTER — renderDepartments (prototype 12246–12289) */
+/** VIEW: DEPARTMENT MASTER — renderDepartments (prototype 12246–12289), every row from GET /api/departments. */
 export default function DepartmentsPage() {
-  const { state, mutate } = useAppStore();
   const navigate = useNavigate();
-  const DEPARTMENTS = state.departments;
+  const { data, error, isLoading, isFetching, refetch } = useListDepartmentsQuery({ limit: 200, sort: 'order' });
+  const [createDepartment] = useCreateDepartmentMutation();
+  const { toast, show } = useToast();
 
+  const DEPARTMENTS = data?.items || [];
   const totalPositions = DEPARTMENTS.reduce((s, d) => s + d.positions.length, 0);
   const totalDaily = DEPARTMENTS.reduce((s, d) => s + d.openingTasks.length + d.closingTasks.length, 0);
   const totalWeekly = DEPARTMENTS.reduce((s, d) => s + (d.weeklyTasks || []).length, 0);
   const totalMonthly = DEPARTMENTS.reduce((s, d) => s + (d.monthlyTasks || []).length, 0);
 
-  const pickDepartmentTemplate = () => {
-    const dept = buildDepartmentFromTemplate(DEPT_TEMPLATES, DEPARTMENTS.length);
-    if (!dept) return;
-    mutate('departments', ds => { ds.push(dept); });
-    navigate('/departments/' + dept.id);
+  const createAndOpen = async (body) => {
+    if (!body) return;
+    try {
+      const created = await createDepartment(body).unwrap();
+      navigate('/departments/' + created.id);
+    } catch (err) {
+      show(err);
+    }
   };
-  const openDepartmentEditor = () => {
-    const dept = buildBlankDepartment(DEPARTMENTS.length);
-    if (!dept) return;
-    mutate('departments', ds => { ds.push(dept); });
-    navigate('/departments/' + dept.id);
-  };
+  const pickDepartmentTemplate = () => createAndOpen(buildDepartmentFromTemplate(DEPT_TEMPLATES));
+  const openDepartmentEditor = () => createAndOpen(buildBlankDepartment());
 
   return (
     <Box>
@@ -48,6 +50,9 @@ export default function DepartmentsPage() {
         </>}
       />
 
+      <ApiError error={error} onRetry={refetch} sx={{ mb: '12px' }} />
+      <Fetching on={isFetching} />
+
       <Grid container spacing="12px" sx={{ mb: '18px' }}>
         <Grid size={{ xs: 12, sm: 6, lg: 2.4 }}><SummaryCard label="Departments" value={DEPARTMENTS.length} sub="Configured" /></Grid>
         <Grid size={{ xs: 12, sm: 6, lg: 2.4 }}><SummaryCard label="Positions" value={totalPositions} sub="Across all" accent="amber" /></Grid>
@@ -55,6 +60,12 @@ export default function DepartmentsPage() {
         <Grid size={{ xs: 12, sm: 6, lg: 2.4 }}><SummaryCard label="Weekly Tasks" value={totalWeekly} sub="For managers" accent="purple" sx={{ bgcolor: '#F3EDFD' }} /></Grid>
         <Grid size={{ xs: 12, sm: 6, lg: 2.4 }}><SummaryCard label="Monthly Tasks" value={totalMonthly} sub="For heads" accent="blue" sx={{ bgcolor: '#EEF2FF' }} /></Grid>
       </Grid>
+
+      {isLoading && <Box sx={{ p: '30px', textAlign: 'center', fontFamily: fonts.mono, fontSize: 11, letterSpacing: '0.08em', color: tokens.slate, textTransform: 'uppercase' }}>Loading departments…</Box>}
+
+      {!isLoading && !error && DEPARTMENTS.length === 0 && (
+        <EmptyState icon="🏢" title="No departments yet" desc={<>Start with <strong>📋 Use Template</strong> for a ready-made department, or <strong>+ New Department</strong> to build one from scratch.</>} />
+      )}
 
       {/* .dept-grid */}
       <Grid container spacing="14px" sx={{ mt: '16px' }}>
@@ -85,6 +96,7 @@ export default function DepartmentsPage() {
           );
         })}
       </Grid>
+      {toast}
     </Box>
   );
 }

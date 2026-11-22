@@ -1,24 +1,23 @@
-// Department Master helpers — 1:1 ports of the prototype's deptTaskList / template builders.
-
-export function deptTaskList(d, kind) {
-  if (kind === 'opening') return d.openingTasks;
-  if (kind === 'closing') return d.closingTasks;
-  if (kind === 'weekly') { if (!d.weeklyTasks) d.weeklyTasks = []; return d.weeklyTasks; }
-  if (kind === 'monthly') { if (!d.monthlyTasks) d.monthlyTasks = []; return d.monthlyTasks; }
-  return [];
-}
+// Department Master helpers — the prototype's template builders, re-aimed at POST /api/departments.
 
 export const rid = () => Date.now() + Math.random().toString(36).slice(2, 5);
 
-export const emptyReviewCadence = () => ({
-  weekly: { daysOfWeek: [], time: '', duration: 45 },
-  monthly: { dayOfMonth: '', time: '', duration: 60 },
-  owner: '', primarySystems: [],
-  weeklyAgenda: [], monthlyAgenda: [],
-});
+/**
+ * Debounces by key, so typing in an inline row input sends one PATCH when the person stops typing
+ * instead of one per keystroke. Toggles and chips stay immediate.
+ */
+export function makeDebouncer(delay = 450) {
+  const timers = new Map();
+  return (key, fn) => {
+    clearTimeout(timers.get(key));
+    timers.set(key, setTimeout(() => { timers.delete(key); fn(); }, delay));
+  };
+}
 
-// pickDepartmentTemplate (prototype 12824–12874) — returns the new department or null if cancelled
-export function buildDepartmentFromTemplate(DEPT_TEMPLATES, departmentsCount) {
+// pickDepartmentTemplate (prototype 12824–12874) — the create body for the API, or null if cancelled.
+// Tasks point at their position by index (`positions: [0]`), which is how the templates describe them;
+// the API resolves those to the real position ids once it has created them.
+export function buildDepartmentFromTemplate(DEPT_TEMPLATES) {
   const menu = DEPT_TEMPLATES.map((t, i) => (i + 1) + '. ' + t.emoji + ' ' + t.name).join('\n');
   const pick = window.prompt('Which department template?\n\n' + menu + '\n\nEnter a number, or blank to cancel.');
   if (!pick) return null;
@@ -29,46 +28,29 @@ export function buildDepartmentFromTemplate(DEPT_TEMPLATES, departmentsCount) {
   if (!name || !name.trim()) return null;
   const icon = window.prompt('Icon (one emoji):', tpl.emoji) || tpl.emoji;
   const description = window.prompt('Short description:', tpl.description.split('.')[0]) || '';
-  const id = 'd' + Date.now();
-  const code = 'TDPL-NEW-' + String(departmentsCount + 1).padStart(3, '0');
 
-  // Build positions with real ids
-  const positions = (tpl.preset.positions || []).map((p, i) => ({
-    id: 'p' + Date.now() + '-' + i,
-    name: p.name,
-    description: p.description || '',
-  }));
-  const resolvePos = (pi) => (pi != null && positions[pi]) ? [positions[pi].id] : [];
-
-  const openingTasks = (tpl.preset.openingTasks || []).map((t, i) => ({
-    id: 't' + Date.now() + '-o-' + i,
+  const lane = (list) => (list || []).map((t, i) => ({
     order: i + 1,
     text: t.text,
     defaultTime: t.defaultTime || '',
-    positionIds: resolvePos(t.position),
-  }));
-  const closingTasks = (tpl.preset.closingTasks || []).map((t, i) => ({
-    id: 't' + Date.now() + '-c-' + i,
-    order: i + 1,
-    text: t.text,
-    defaultTime: t.defaultTime || '',
-    positionIds: resolvePos(t.position),
+    ...(t.position != null ? { positions: [t.position] } : {}),
   }));
 
   return {
-    id, code, name: name.trim(), icon, description,
-    positions, openingTasks, closingTasks, weeklyTasks: [], monthlyTasks: [],
-    reviewCadence: emptyReviewCadence(),
+    name: name.trim(),
+    icon,
+    description,
+    positions: (tpl.preset.positions || []).map(p => ({ name: p.name, description: p.description || '' })),
+    openingTasks: lane(tpl.preset.openingTasks),
+    closingTasks: lane(tpl.preset.closingTasks),
   };
 }
 
 // openDepartmentEditor (prototype 12876–12885)
-export function buildBlankDepartment(departmentsCount) {
+export function buildBlankDepartment() {
   const name = window.prompt('Department name (e.g. "Clinical Laboratory"):');
   if (!name || !name.trim()) return null;
   const icon = window.prompt('Icon (one emoji):', '🏢') || '🏢';
   const description = window.prompt('Short description:', '') || '';
-  const id = 'd' + Date.now();
-  const code = 'TDPL-NEW-' + String(departmentsCount + 1).padStart(3, '0');
-  return { id, code, name: name.trim(), icon, description, positions: [], openingTasks: [], closingTasks: [], weeklyTasks: [], monthlyTasks: [] };
+  return { name: name.trim(), icon, description };
 }

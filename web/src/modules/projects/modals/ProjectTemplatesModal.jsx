@@ -4,6 +4,8 @@ import Grid from '@mui/material/Grid';
 import { ModalShell, Btn } from '../../../components';
 import { tokens, fonts } from '../../../theme/tokens';
 import { useAppStore } from '../../../store/AppStore';
+import { useListProjectTemplatesQuery } from '../../../store/api/projectsApi';
+import { ApiError } from '../../settings/components/listUi';
 import { PROJ_CATEGORIES } from '../../../data/projects';
 import { TplCatPill } from '../components/Pills';
 import { draftFromTemplate } from '../utils';
@@ -13,20 +15,21 @@ const itemSx = { p: '8px 12px', bgcolor: tokens.cream, borderLeft: `3px solid ${
 const dayOffSx = { fontFamily: fonts.mono, fontSize: 10, color: tokens.slate, letterSpacing: '0.04em', fontWeight: 700, whiteSpace: 'nowrap' };
 
 /**
- * Project Templates Library (prototype 15667–15910). Library view → preview view → "Use" builds a draft
- * (dates from TODAY offsets, milestone ids resolved, usedCount++) and hands it to onUse(draft) → wizard.
+ * Project Templates Library (prototype 15667–15910), read from GET /api/projects/templates. Library view →
+ * preview view → "Use" builds a draft (dates from TODAY offsets, milestone ids resolved) and hands it to
+ * onUse(draft) → wizard. The kit's used count goes up on the server when that project is saved.
  */
-export default function ProjectTemplatesModal({ open, onClose, onUse }) {
-  const { state, mutate } = useAppStore();
-  const templates = state.projTemplates;
+export default function ProjectTemplatesModal({ open, onClose, onUse, projectCount = 0 }) {
+  const { state } = useAppStore();
+  const { data, error, isLoading } = useListProjectTemplatesQuery({ limit: 50, sort: 'order' });
+  const templates = data?.items || [];
   const [catFilter, setCatFilter] = useState('all');
   const [previewId, setPreviewId] = useState(null);
 
   const applyTemplate = (tplId) => {
     const t = templates.find(x => x.id === tplId);
     if (!t) return;
-    const draft = draftFromTemplate(t, state.viewer.name, state.projects.length);
-    mutate('projTemplates', ts => { const tt = ts.find(x => x.id === tplId); if (tt) tt.usedCount++; });
+    const draft = draftFromTemplate(t, state.viewer.name, projectCount);
     onClose();
     onUse(draft);
   };
@@ -115,7 +118,14 @@ export default function ProjectTemplatesModal({ open, onClose, onUse }) {
         })}
       </Box>
 
-      {filtered.length === 0 ? (
+      <ApiError error={error} sx={{ mb: '14px' }} />
+
+      {isLoading ? (
+        <Box sx={{ p: '60px 20px', textAlign: 'center', color: tokens.slate, bgcolor: tokens.card, border: `1px dashed ${tokens.line}`, borderRadius: '10px' }}>
+          <Box sx={{ fontSize: 40, mb: '10px' }}>📋</Box>
+          <Box sx={{ fontSize: 14, fontWeight: 700, mb: '6px' }}>Loading templates…</Box>
+        </Box>
+      ) : filtered.length === 0 ? (
         <Box sx={{ p: '60px 20px', textAlign: 'center', color: tokens.slate, bgcolor: tokens.card, border: `1px dashed ${tokens.line}`, borderRadius: '10px' }}>
           <Box sx={{ fontSize: 40, mb: '10px' }}>📋</Box>
           <Box sx={{ fontSize: 14, fontWeight: 700, mb: '6px' }}>No templates in this category</Box>

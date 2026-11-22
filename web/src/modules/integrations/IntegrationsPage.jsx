@@ -1,7 +1,9 @@
 import { Box, Typography } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { useAppStore } from '../../store/AppStore';
-import { PageHeader, DmsCard, Btn, Pill } from '../../components';
+import { PageHeader, DmsCard, Btn, Pill, EmptyState } from '../../components';
+import { ApiError, Fetching, useToast } from '../settings/components/listUi';
+import { useConnectIntegrationMutation, useListIntegrationsQuery } from '../../store/api/integrationsApi';
+import { errorMessage } from '../../store/api/baseApi';
 import { tokens, fonts } from '../../theme/tokens';
 
 const STATUS = {
@@ -10,22 +12,36 @@ const STATUS = {
   disconnected: { bg: tokens.creamWarm, color: tokens.slate, label: '○ Disconnected', btn: 'Connect' },
 };
 
-/** 🔗 Integrations (prototype view-integrations + renderIntegrations / toggleIntegration) */
+/**
+ * 🔗 Integrations (prototype view-integrations + renderIntegrations / toggleIntegration).
+ *
+ * The register of which third-party tools are switched on, served by GET /api/integrations. "Connect" saves
+ * that state (status + who + when) through POST /api/integrations/:id/connect — it does not authenticate with
+ * Google, Zoom, Slack or anything else, so the row survives a refresh without any live connection existing.
+ */
 export default function IntegrationsPage() {
-  const { state, mutate } = useAppStore();
-  const list = state.integrations;
-  const connected = list.filter(i => i.status === 'connected').length;
+  const { data, error, isLoading, isFetching, refetch } = useListIntegrationsQuery({ limit: 200, sort: 'order' });
+  const [connect, { isLoading: connecting }] = useConnectIntegrationMutation();
+  const { toast, show } = useToast();
 
-  const toggleIntegration = (idx) => {
-    const i = list[idx];
+  const list = data?.items || [];
+  const total = data?.total ?? list.length;
+  const count = (status) => list.filter(i => i.status === status).length;
+  const num = (v) => (isLoading ? '—' : v);
+
+  const toggleIntegration = async (i) => {
     if (i.status === 'connected') {
       if (confirm('Manage ' + i.name + '? (would open the settings panel for this integration)')) {
         alert(i.name + ' settings panel — scope, re-auth, sync frequency, disconnect.');
       }
-    } else {
-      if (confirm('Connect to ' + i.name + '? You will be redirected to authenticate.')) {
-        mutate('integrations', arr => { arr[idx].status = 'connected'; arr[idx].lastSync = 'Just now'; });
-      }
+      return;
+    }
+    if (!confirm('Connect to ' + i.name + '? You will be redirected to authenticate.')) return;
+    try {
+      await connect({ id: i.id }).unwrap();
+      show(i.name + ' is switched on.');
+    } catch (err) {
+      show(errorMessage(err), 'error');
     }
   };
 
@@ -36,31 +52,39 @@ export default function IntegrationsPage() {
 
       {/* .dash-meta-strip (3 cols) */}
       <Grid container spacing="10px" sx={{ mb: '20px' }}>
-        <Grid size={{ xs: 12, sm: 4 }}><DmsCard label="Connected" value={connected} sub={`of ${list.length}`} /></Grid>
-        <Grid size={{ xs: 12, sm: 4 }}><DmsCard accent="yellow" label="Pending Setup" value={list.filter(i => i.status === 'pending').length} sub="Mid-configuration" /></Grid>
-        <Grid size={{ xs: 12, sm: 4 }}><DmsCard accent="slate" label="Available" value={list.filter(i => i.status === 'disconnected').length} sub="Ready to connect" /></Grid>
+        <Grid size={{ xs: 12, sm: 4 }}><DmsCard label="Connected" value={num(count('connected'))} sub={`of ${total}`} /></Grid>
+        <Grid size={{ xs: 12, sm: 4 }}><DmsCard accent="yellow" label="Pending Setup" value={num(count('pending'))} sub="Mid-configuration" /></Grid>
+        <Grid size={{ xs: 12, sm: 4 }}><DmsCard accent="slate" label="Available" value={num(count('disconnected'))} sub="Ready to connect" /></Grid>
       </Grid>
 
-      {/* .integ-list */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        {list.map((i, idx) => {
-          const s = STATUS[i.status] || STATUS.disconnected;
-          return (
-            <Box key={i.name} sx={{ bgcolor: tokens.card, border: `1px solid ${tokens.line}`, borderRadius: tokens.radius, p: '14px 18px', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: { xs: 'wrap', lg: 'nowrap' } }}>
-              <Box sx={{ width: 44, height: 44, borderRadius: '10px', bgcolor: tokens.creamWarm, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>{i.ico}</Box>
-              <Box sx={{ flex: 1, minWidth: { xs: 'calc(100% - 60px)', sm: 220 } }}>
-                <Typography sx={{ fontSize: 14, fontWeight: 700 }}>{i.name}</Typography>
-                <Typography sx={{ fontSize: 12, color: tokens.slate, mt: '2px' }}>{i.desc}</Typography>
+      <ApiError error={error} onRetry={refetch} sx={{ mb: '10px' }} />
+      {(isFetching || connecting) && <Fetching on />}
+
+      {!error && list.length === 0 ? (
+        isLoading ? null : <EmptyState icon="🔗" title="No integrations yet" desc="The register is empty — nothing is switched on." />
+      ) : (
+        /* .integ-list */
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {list.map((i) => {
+            const s = STATUS[i.status] || STATUS.disconnected;
+            return (
+              <Box key={i.id} sx={{ bgcolor: tokens.card, border: `1px solid ${tokens.line}`, borderRadius: tokens.radius, p: '14px 18px', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: { xs: 'wrap', lg: 'nowrap' } }}>
+                <Box sx={{ width: 44, height: 44, borderRadius: '10px', bgcolor: tokens.creamWarm, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>{i.ico}</Box>
+                <Box sx={{ flex: 1, minWidth: { xs: 'calc(100% - 60px)', sm: 220 } }}>
+                  <Typography sx={{ fontSize: 14, fontWeight: 700 }}>{i.name}</Typography>
+                  <Typography sx={{ fontSize: 12, color: tokens.slate, mt: '2px' }}>{i.desc}</Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px', ml: { xs: 'auto', lg: 0 }, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                  <Box sx={{ fontSize: 11, color: tokens.slate, fontFamily: fonts.mono, letterSpacing: '0.05em', mr: { xs: 0, lg: '12px' } }}>{i.lastSync}</Box>
+                  <Pill bg={s.bg} color={s.color} size={11} sx={{ p: '5px 12px', borderRadius: '12px', letterSpacing: '0.06em' }}>{s.label}</Pill>
+                  <Btn size="sm" disabled={connecting} onClick={() => toggleIntegration(i)}>{s.btn}</Btn>
+                </Box>
               </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px', ml: { xs: 'auto', lg: 0 }, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                <Box sx={{ fontSize: 11, color: tokens.slate, fontFamily: fonts.mono, letterSpacing: '0.05em', mr: { xs: 0, lg: '12px' } }}>{i.lastSync}</Box>
-                <Pill bg={s.bg} color={s.color} size={11} sx={{ p: '5px 12px', borderRadius: '12px', letterSpacing: '0.06em' }}>{s.label}</Pill>
-                <Btn size="sm" onClick={() => toggleIntegration(idx)}>{s.btn}</Btn>
-              </Box>
-            </Box>
-          );
-        })}
-      </Box>
+            );
+          })}
+        </Box>
+      )}
+      {toast}
     </Box>
   );
 }

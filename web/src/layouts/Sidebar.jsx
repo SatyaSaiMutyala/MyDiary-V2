@@ -123,7 +123,7 @@ export default function DesktopRail() {
       <Box component="nav" aria-label="Main menu" onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
         sx={{ position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 1200, width: open ? RAIL_WIDTH : RAIL_COLLAPSED, transition: 'width .16s ease', overflow: 'hidden', background: RAIL_BG, color: tokens.railInk, display: 'flex', flexDirection: 'column',
           boxShadow: hover && !pinned ? '6px 0 24px rgba(16,21,28,.22)' : '2px 0 16px -8px rgba(0,0,0,.45), inset -1px 0 0 rgba(255,255,255,.055)' }}>
-        <Stack direction="row" sx={{ height: TOPBAR_HEIGHT + 6, px: open ? 1.75 : 1.5, alignItems: 'center', justifyContent: 'space-between', gap: 1, flexShrink: 0, background: 'linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.018))', borderBottom: '1px solid rgba(255,255,255,.09)' }}>
+        <Stack direction="row" sx={{ height: TOPBAR_HEIGHT, px: open ? 1.75 : 1.5, alignItems: 'center', justifyContent: 'space-between', gap: 1, flexShrink: 0, background: 'linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.018))', borderBottom: '1px solid rgba(255,255,255,.09)' }}>
           {open ? <Brand /> : <LogoTile size={40} />}
           {open ? (
             <IconButton size="small" onClick={togglePin} aria-pressed={pinned} aria-label={pinned ? 'Unpin menu (collapse to icons)' : 'Pin menu open'} title={pinned ? 'Collapse menu' : 'Keep menu open'}

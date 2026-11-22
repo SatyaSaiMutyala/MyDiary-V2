@@ -85,7 +85,7 @@ export default function Topbar() {
   const navigate = useNavigate();
   const today = TODAY.toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
   return (
-    <Box component="header" sx={{ position: 'sticky', top: 0, zIndex: 1100, height: TOPBAR_HEIGHT, px: 2.5, display: 'flex', alignItems: 'center', gap: 1.5, bgcolor: tokens.card, borderBottom: `1px solid ${tokens.line}`, boxShadow: '0 4px 12px -8px rgba(16,21,28,.22)' }}>
+    <Box component="header" sx={{ position: 'sticky', top: 0, zIndex: 1100, height: TOPBAR_HEIGHT, minHeight: TOPBAR_HEIGHT, flexShrink: 0, px: 2.5, display: 'flex', alignItems: 'center', gap: 1.5, bgcolor: tokens.card, borderBottom: `1px solid ${tokens.line}`, boxShadow: '0 4px 12px -8px rgba(16,21,28,.22)' }}>
       <Stack direction="row" spacing={0.75} sx={{ alignItems: 'baseline', minWidth: 0 }}>
         {items.map((c, i) => {
           const last = i === items.length - 1;

@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { Box, ButtonBase, Typography } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { tokens, fonts, TYPE_COLORS } from '../../theme/tokens';
 import { PageHeader, Btn, TextLink, AddBtn, Card, Field, FieldLabel, TextInput, TextArea, SelectInput, Segmented, ToggleRow, Chip, DelBtn } from '../../components';
 import { useCrumbs } from '../../store/CrumbsContext';
 import { errorMessage } from '../../store/api/baseApi';
 import { useCreateMeetingMutation, useGetMeetingQuery, useUpdateMeetingMutation } from '../../store/api/meetingsApi';
+import { useGetTemplateQuery } from '../../store/api/templatesApi';
 import { TYPES } from '../../data/meetings';
 import { parseDate, formatDate, formatTime } from '../../utils/dates';
 import ScheduleStepper from './components/scheduleStepper';
@@ -40,6 +41,9 @@ function AgendaItem({ idx, item, onChange, onDelete, autoFocus }) {
 /** #view-schedule — Schedule a Meeting (selectType / changeType / addAgenda / addChip / saveNewMeeting …) */
 export default function ScheduleMeetingPage() {
   const navigate = useNavigate();
+  // "📋 Load from template…" sends the person to /templates; picking a card comes back here with
+  // { type, templateId } so the chosen agenda can pre-fill this form.
+  const { state: navState } = useLocation();
   // One page, two jobs: /meetings/new schedules a meeting, /meetings/:id/edit changes an existing one.
   const { id: editId } = useParams();
   const isEdit = Boolean(editId);
@@ -148,6 +152,23 @@ export default function ScheduleMeetingPage() {
       ...(CLIENT_NAME[existing.type] && existing.clientName ? { [CLIENT_NAME[existing.type]]: existing.clientName } : {}),
     });
   }, [isEdit, existing]);
+
+  // Came from the Templates library: skip the type picker and drop the template's agenda items in
+  // (GET /api/templates/:id — the library is the only source of templates).
+  const templateId = isEdit ? undefined : navState?.templateId;
+  const { data: template } = useGetTemplateQuery(templateId, { skip: !templateId });
+  useEffect(() => {
+    const t = !isEdit && navState?.type;
+    if (t && TYPES[t]) { setSelected(t); setType(t); }
+  }, [isEdit, navState?.type]);
+  const templateFilled = useRef('');
+  useEffect(() => {
+    if (!template || templateFilled.current === template.id) return;
+    templateFilled.current = template.id;
+    setSelected(template.type);
+    setType(template.type);
+    if (template.agenda?.length) setAgenda(template.agenda.map(a => ({ text: a.text, time: a.time || '10m' })));
+  }, [template]);
 
   const attendeeTotal = internals.length + externals.length;
   const tc = TYPE_COLORS[type] || TYPE_COLORS.internal;

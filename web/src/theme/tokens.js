@@ -51,7 +51,7 @@ export const RAIL_BG =
   'linear-gradient(172deg, #0A2620 0%, #0E3529 28%, #134A38 66%, #1A6249 100%)';
 export const RAIL_WIDTH = 258;
 export const RAIL_COLLAPSED = 66;
-export const TOPBAR_HEIGHT = 60;
+export const TOPBAR_HEIGHT = 72;
 export const DESKTOP_MIN = 861;
 export const MENU_SHADOW = '0 10px 28px rgba(16,21,28,.16)';
 

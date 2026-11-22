@@ -3,17 +3,21 @@ import { tokens } from '../../../theme/tokens';
 import { DAYS, startOfWeek } from '../../../utils/dates';
 import { toISO, TODAY_ISO, entryOnDate } from '../utils';
 import { TimeColumn, HourLines, EventBlock, eventGeometry, evtTimeSx, evtLocSx, NowLine, AllDayEvent, AllDayLabel, allDayCellSx, allDayRowSx, HeadDay, headRowSx } from './calendarParts';
+import { DiaryEmptyNote, DiaryLoading } from './ViewState';
 
 const COLS = '60px repeat(7, 1fr)';
 
 /** renderWeekView 9933–10016 */
-export default function WeekView({ date, entries, onOpenEntry, onNewEntry }) {
+export default function WeekView({ date, entries, onOpenEntry, onNewEntry, loading }) {
   const start = startOfWeek(date);
   const days = Array.from({ length: 7 }, (_, i) => { const d = new Date(start); d.setDate(d.getDate() + i); return d; });
+  if (loading) return <DiaryLoading />;
+  const anyEvents = days.some(d => entries.some(e => entryOnDate(e, toISO(d))));
 
   return (
     <Box sx={{ overflowX: 'auto' }}>
       <Box sx={{ minWidth: 700 }}>
+        {!anyEvents && <DiaryEmptyNote period="this week" />}
         {/* .week-head */}
         <Box sx={{ ...headRowSx, gridTemplateColumns: COLS }}>
           <div />

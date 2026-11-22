@@ -5,12 +5,12 @@ import { tokens, fonts } from '../../../theme/tokens';
 import { KpiBar, MonoNote } from './Pills';
 
 /** renderKPIsPane() — .kpi-grid of .kpi-card */
-export default function KpisPane({ p }) {
+export default function KpisPane({ p, actions }) {
   return (
     <>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: '12px', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
         <MonoNote>KPIs tracked for this project</MonoNote>
-        <Btn variant="primary" size="sm" onClick={() => window.alert('Add KPI — name, current value, target value, unit.')}>+ Add KPI</Btn>
+        <Btn variant="primary" size="sm" onClick={() => actions.addKpi(p.id)}>+ Add KPI</Btn>
       </Box>
       {(p.kpis || []).length ? (
         <Grid container spacing="12px">

@@ -1,12 +1,19 @@
-import { useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Box, Typography } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useAppStore } from '../../store/AppStore';
 import { useCrumbs } from '../../store/CrumbsContext';
 import { Eyebrow, Btn } from '../../components';
 import { tokens, fonts } from '../../theme/tokens';
 import { DAYS_OF_WEEK_FULL } from '../../data/departments';
-import { deptTaskList, rid } from './utils';
+import {
+  useAddAgendaPointMutation, useAddAgendaSectionMutation, useAddPositionMutation, useAddTaskMutation,
+  useGetDepartmentQuery, usePutCadenceMutation, useRemoveAgendaPointMutation, useRemoveAgendaSectionMutation,
+  useRemoveDepartmentMutation, useRemovePositionMutation, useRemoveTaskMutation, useUpdateAgendaPointMutation,
+  useUpdateAgendaSectionMutation, useUpdateDepartmentMutation, useUpdatePositionMutation, useUpdateTaskMutation,
+} from '../../store/api/departmentsApi';
+import { errorCode } from '../../store/api/baseApi';
+import { ApiError, Fetching, useToast } from '../settings/components/listUi';
+import { makeDebouncer } from './utils';
 import DeptSection, { SectionNote, ColHeader, EmptyLine } from './components/DeptSection';
 import { TaskRow, WeeklyRow, MonthlyRow, PositionRow, DAILY_HEADER_COLS, WM_COLS } from './components/TaskRows';
 import ReviewCadenceSection from './components/ReviewCadenceSection';
@@ -21,218 +28,208 @@ const MONTHLY_HEADER = [
   { label: '#', sx: { textAlign: 'center' } }, { label: 'TASK' }, { label: 'DATE OF MONTH' }, { label: 'TIME' }, { label: 'ASSIGNED TO', sx: { textAlign: 'left', pl: '8px' } }, { label: '' },
 ];
 
+const TASK_LIST_KEY = { opening: 'openingTasks', closing: 'closingTasks', weekly: 'weeklyTasks', monthly: 'monthlyTasks' };
+
 /** horizontal scroll wrapper for the table-like rows on narrow screens */
 const Scroller = ({ minWidth, children }) => (
   <Box sx={{ overflowX: 'auto' }}><Box sx={{ minWidth }}>{children}</Box></Box>
 );
 
-/** VIEW: DEPARTMENT DETAIL — renderDepartmentDetail (prototype 12295–12497) + CRUD (12611–12692, 12887–13034) */
+/**
+ * VIEW: DEPARTMENT DETAIL — renderDepartmentDetail (prototype 12295–12497) + CRUD (12611–12692, 12887–13034).
+ * Reads GET /api/departments/:id; every edit below is one call to that department's sub-resources.
+ */
 export default function DepartmentDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { state, mutate } = useAppStore();
   const [RC_AGENDA_TAB, setRCAgendaTab] = useState('weekly');
-  const d = state.departments.find(x => x.id === id);
+  const { data: d, error, isLoading, isFetching, refetch } = useGetDepartmentQuery(id);
+  const { toast, show } = useToast();
+  const debounce = useRef(makeDebouncer()).current;
+
+  const [updateDepartment] = useUpdateDepartmentMutation();
+  const [removeDepartment] = useRemoveDepartmentMutation();
+  const [addPositionCall] = useAddPositionMutation();
+  const [updatePositionCall] = useUpdatePositionMutation();
+  const [removePositionCall] = useRemovePositionMutation();
+  const [addTaskCall] = useAddTaskMutation();
+  const [updateTaskCall] = useUpdateTaskMutation();
+  const [removeTaskCall] = useRemoveTaskMutation();
+  const [putCadenceCall] = usePutCadenceMutation();
+  const [addSectionCall] = useAddAgendaSectionMutation();
+  const [updateSectionCall] = useUpdateAgendaSectionMutation();
+  const [removeSectionCall] = useRemoveAgendaSectionMutation();
+  const [addPointCall] = useAddAgendaPointMutation();
+  const [updatePointCall] = useUpdateAgendaPointMutation();
+  const [removePointCall] = useRemoveAgendaPointMutation();
 
   useCrumbs([{ label: 'Admin', to: '/' }, { label: 'Department Master', to: '/departments' }, { label: d ? d.code : '' }]);
+
+  // The server's message is shown exactly as it comes back; nothing is swallowed.
+  const api = useMemo(() => {
+    const run = async (promise) => { try { return await promise.unwrap(); } catch (err) { show(err); return null; } };
+    const later = (key, promise) => debounce(key, () => { void run(promise()); });
+    const taskOf = (kind, tid) => ((d && d[TASK_LIST_KEY[kind]]) || []).find(x => x.id === tid);
+
+    return {
+      // ===== REVIEW CADENCE CRUD =====
+      updateRC(path, value) {
+        const [group, field] = path.split('.');
+        const body = field ? { [group]: { [field]: value } } : { [group]: value };
+        later('rc:' + path, () => putCadenceCall({ id, ...body }));
+      },
+      toggleRCWeeklyDow(dow) {
+        const days = [...(d?.reviewCadence.weekly.daysOfWeek || [])];
+        const i = days.indexOf(dow);
+        if (i >= 0) days.splice(i, 1); else days.push(dow);
+        void run(putCadenceCall({ id, weekly: { daysOfWeek: days } }));
+      },
+      toggleRCMonthlyLast() {
+        const cur = d?.reviewCadence.monthly.dayOfMonth;
+        void run(putCadenceCall({ id, monthly: { dayOfMonth: cur === 'last' ? 1 : 'last' } }));
+      },
+      addRCSection(tab) {
+        const heading = window.prompt('Section heading (e.g. "Stockouts & Near-Stockouts"):');
+        if (!heading || !heading.trim()) return;
+        void run(addSectionCall({ id, tab, heading: heading.trim() }));
+      },
+      updateRCSection(tab, sid, field, value) {
+        later(`sec:${sid}:${field}`, () => updateSectionCall({ id, tab, sectionId: sid, [field]: value }));
+      },
+      removeRCSection(tab, sid) {
+        if (!window.confirm('Remove this agenda section and all its points?')) return;
+        void run(removeSectionCall({ id, tab, sectionId: sid }));
+      },
+      addRCPoint(tab, sid) {
+        const text = window.prompt('Agenda point text:');
+        if (!text || !text.trim()) return;
+        void run(addPointCall({ id, tab, sectionId: sid, text: text.trim() }));
+      },
+      updateRCPoint(tab, sid, pid, field, value) {
+        const body = { id, tab, sectionId: sid, pointId: pid, [field]: value };
+        if (field === 'indicator') void run(updatePointCall(body));
+        else later(`pt:${pid}:${field}`, () => updatePointCall(body));
+      },
+      removeRCPoint(tab, sid, pid) {
+        void run(removePointCall({ id, tab, sectionId: sid, pointId: pid }));
+      },
+
+      // ===== DEPARTMENT CRUD =====
+      editDepartmentMeta() {
+        if (!d) return;
+        const name = window.prompt('Department name:', d.name); if (name === null) return;
+        const icon = window.prompt('Icon (one emoji):', d.icon) || d.icon;
+        const description = window.prompt('Short description:', d.description || '');
+        void run(updateDepartment({ id, name: name.trim() || d.name, icon, ...(description !== null ? { description } : {}) }));
+      },
+      async deleteDepartment() {
+        if (!d) return;
+        if (!window.confirm('Delete department "' + d.name + '"? This removes all its positions and tasks. Cannot be undone.')) return;
+        const ok = await run(removeDepartment(id));
+        if (ok) navigate('/departments');
+      },
+      addPosition() {
+        const name = window.prompt('Position name (e.g. "Lab Technician"):');
+        if (!name || !name.trim()) return;
+        const description = window.prompt('What does this position do?', '') || '';
+        void run(addPositionCall({ id, name: name.trim(), description }));
+      },
+      updatePosition(pid, field, value) {
+        later(`pos:${pid}:${field}`, () => updatePositionCall({ id, positionId: pid, [field]: value }));
+      },
+      togglePositionTag(kind, tid, pid) {
+        const t = taskOf(kind, tid); if (!t) return;
+        const ids = [...(t.positionIds || [])];
+        const i = ids.indexOf(pid);
+        if (i >= 0) ids.splice(i, 1); else ids.push(pid);
+        void run(updateTaskCall({ id, kind, taskId: tid, positionIds: ids }));
+      },
+      clearPositionTags(kind, tid) {
+        void run(updateTaskCall({ id, kind, taskId: tid, positionIds: [] }));
+      },
+      toggleWeeklyDow(tid, dow) {
+        const t = taskOf('weekly', tid); if (!t) return;
+        const days = [...(t.daysOfWeek || [])];
+        const i = days.indexOf(dow);
+        if (i >= 0) days.splice(i, 1); else days.push(dow);
+        // Keep at least one day — if the last chip is cleared the API falls back to Monday.
+        void run(updateTaskCall({ id, kind: 'weekly', taskId: tid, daysOfWeek: days }));
+      },
+      toggleMonthlyLast(tid) {
+        const t = taskOf('monthly', tid); if (!t) return;
+        void run(updateTaskCall({ id, kind: 'monthly', taskId: tid, dayOfMonth: t.dayOfMonth === 'last' ? 1 : 'last' }));
+      },
+      removePosition(pid) {
+        if (!window.confirm('Remove this position? Tasks assigned to it will revert to "All in department".')) return;
+        void run(removePositionCall({ id, positionId: pid }));
+      },
+      addDeptTask(kind) {
+        if (!d) return;
+        const labels = { opening: 'Opening shift task', closing: 'Closing shift task', weekly: 'Weekly task (for managers)', monthly: 'Monthly task (for heads)' };
+        const text = window.prompt(labels[kind] + ' description:');
+        if (!text || !text.trim()) return;
+        const defaultTime = window.prompt('Default time (HH:MM):', kind === 'opening' ? '09:00' : kind === 'closing' ? '18:00' : '10:00') || '';
+
+        const extra = {};
+        if (kind === 'weekly') {
+          const dowMenu = DAYS_OF_WEEK_FULL.map((dn, i) => i + '=' + dn).join(' · ');
+          const dowRaw = window.prompt('Which day(s) of the week? Enter comma-separated numbers (' + dowMenu + ')\n\nExamples:\n  1          → every Monday\n  1,5       → Mondays and Fridays\n  1,2,3,4,5 → Mon–Fri', '1');
+          if (dowRaw === null) return;
+          const picked = dowRaw.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n) && n >= 0 && n <= 6);
+          extra.daysOfWeek = picked.length ? Array.from(new Set(picked)) : [1];
+        }
+        if (kind === 'monthly') {
+          const dom = window.prompt('Which date of the month? Enter 1-31, or type "last" for the last day of every month:', '1');
+          if (dom === null) return;
+          const trimmed = (dom || '').trim().toLowerCase();
+          if (trimmed === 'last' || trimmed === 'l') extra.dayOfMonth = 'last';
+          else extra.dayOfMonth = Math.max(1, Math.min(31, parseInt(trimmed, 10) || 1));
+        }
+
+        let positionIds = [];
+        if (d.positions.length > 0) {
+          const menu = d.positions.map((p, i) => (i + 1) + '. ' + p.name).join('\n');
+          const pick = window.prompt('Tag to which position(s)? Enter comma-separated numbers, or blank for "All in department".\n\n' + menu + '\n\nExamples:\n  1          → only position 1\n  1,3       → positions 1 AND 3\n  (blank)  → everyone in the department');
+          if (pick && pick.trim() !== '') {
+            const nums = pick.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n) && n >= 1 && n <= d.positions.length);
+            positionIds = Array.from(new Set(nums.map(n => d.positions[n - 1].id)));
+          }
+        }
+        void run(addTaskCall({ id, kind, text: text.trim(), defaultTime, positionIds, ...extra }));
+      },
+      updateDeptTask(kind, tid, field, value) {
+        const immediate = field === 'positionIds' || field === 'daysOfWeek';
+        const body = { id, kind, taskId: tid, [field]: value };
+        if (immediate) void run(updateTaskCall(body));
+        else later(`task:${tid}:${field}`, () => updateTaskCall(body));
+      },
+      removeDeptTask(kind, tid) {
+        if (!window.confirm('Remove this task?')) return;
+        void run(removeTaskCall({ id, kind, taskId: tid }));
+      },
+    };
+  }, [d, id, debounce, show, navigate, updateDepartment, removeDepartment, addPositionCall, updatePositionCall, removePositionCall,
+    addTaskCall, updateTaskCall, removeTaskCall, putCadenceCall, addSectionCall, updateSectionCall, removeSectionCall,
+    addPointCall, updatePointCall, removePointCall]);
+
+  if (isLoading) {
+    return <Box sx={{ p: 4, color: tokens.slate, fontFamily: fonts.mono, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Loading department…</Box>;
+  }
 
   if (!d) {
     return (
       <Box sx={{ p: 4, color: tokens.slate, fontSize: 13 }}>
-        Department not found. <Btn size="sm" sx={{ ml: 1 }} onClick={() => navigate('/departments')}>← Back to Department Master</Btn>
+        {errorCode(error) === 'not_found' || !error ? (
+          <>Department not found. <Btn size="sm" sx={{ ml: 1 }} onClick={() => navigate('/departments')}>← Back to Department Master</Btn></>
+        ) : (
+          <>
+            <ApiError error={error} onRetry={refetch} sx={{ mb: 2 }} />
+            <Btn size="sm" onClick={() => navigate('/departments')}>← Back to Department Master</Btn>
+          </>
+        )}
       </Box>
     );
   }
-
-  // Every mutation below edits a deep clone of the departments collection (prototype mutated DEPARTMENTS in place)
-  const edit = (fn) => mutate('departments', ds => { const dd = ds.find(x => x.id === id); if (!dd) return; fn(dd); });
-
-  const api = {
-    // ===== REVIEW CADENCE CRUD =====
-    updateRC(path, value) {
-      edit(dd => {
-        const parts = path.split('.');
-        let target = dd.reviewCadence;
-        for (let i = 0; i < parts.length - 1; i++) {
-          if (!target[parts[i]]) target[parts[i]] = {};
-          target = target[parts[i]];
-        }
-        target[parts[parts.length - 1]] = value;
-      });
-    },
-    toggleRCWeeklyDow(dow) {
-      edit(dd => {
-        if (!dd.reviewCadence.weekly.daysOfWeek) dd.reviewCadence.weekly.daysOfWeek = [];
-        const arr = dd.reviewCadence.weekly.daysOfWeek;
-        const idx = arr.indexOf(dow);
-        if (idx >= 0) arr.splice(idx, 1); else arr.push(dow);
-      });
-    },
-    toggleRCMonthlyLast() {
-      edit(dd => { const m = dd.reviewCadence.monthly; m.dayOfMonth = (m.dayOfMonth === 'last') ? 1 : 'last'; });
-    },
-    addRCSection(tab) {
-      const heading = window.prompt('Section heading (e.g. "Stockouts & Near-Stockouts"):');
-      if (!heading || !heading.trim()) return;
-      edit(dd => {
-        const list = tab === 'weekly' ? dd.reviewCadence.weeklyAgenda : dd.reviewCadence.monthlyAgenda;
-        const nextOrder = (list.reduce((m, s) => Math.max(m, s.order || 0), 0)) + 1;
-        list.push({ id: 'a' + rid(), order: nextOrder, heading: heading.trim(), points: [] });
-      });
-    },
-    updateRCSection(tab, sid, field, value) {
-      edit(dd => {
-        const list = tab === 'weekly' ? dd.reviewCadence.weeklyAgenda : dd.reviewCadence.monthlyAgenda;
-        const s = list.find(x => x.id === sid); if (!s) return;
-        s[field] = value;
-      });
-    },
-    removeRCSection(tab, sid) {
-      if (!window.confirm('Remove this agenda section and all its points?')) return;
-      edit(dd => {
-        if (tab === 'weekly') dd.reviewCadence.weeklyAgenda = dd.reviewCadence.weeklyAgenda.filter(x => x.id !== sid);
-        else dd.reviewCadence.monthlyAgenda = dd.reviewCadence.monthlyAgenda.filter(x => x.id !== sid);
-      });
-    },
-    addRCPoint(tab, sid) {
-      const text = window.prompt('Agenda point text:');
-      if (!text || !text.trim()) return;
-      edit(dd => {
-        const list = tab === 'weekly' ? dd.reviewCadence.weeklyAgenda : dd.reviewCadence.monthlyAgenda;
-        const s = list.find(x => x.id === sid); if (!s) return;
-        if (!s.points) s.points = [];
-        s.points.push({ id: 'p' + rid(), text: text.trim(), indicator: null });
-      });
-    },
-    updateRCPoint(tab, sid, pid, field, value) {
-      edit(dd => {
-        const list = tab === 'weekly' ? dd.reviewCadence.weeklyAgenda : dd.reviewCadence.monthlyAgenda;
-        const s = list.find(x => x.id === sid); if (!s) return;
-        const p = s.points.find(x => x.id === pid); if (!p) return;
-        p[field] = value;
-      });
-    },
-    removeRCPoint(tab, sid, pid) {
-      edit(dd => {
-        const list = tab === 'weekly' ? dd.reviewCadence.weeklyAgenda : dd.reviewCadence.monthlyAgenda;
-        const s = list.find(x => x.id === sid); if (!s) return;
-        s.points = s.points.filter(x => x.id !== pid);
-      });
-    },
-
-    // ===== DEPARTMENT CRUD =====
-    editDepartmentMeta() {
-      const name = window.prompt('Department name:', d.name); if (name === null) return;
-      const icon = window.prompt('Icon (one emoji):', d.icon) || d.icon;
-      const description = window.prompt('Short description:', d.description || '');
-      edit(dd => {
-        dd.name = name.trim() || dd.name;
-        dd.icon = icon;
-        if (description !== null) dd.description = description;
-      });
-    },
-    deleteDepartment() {
-      if (!window.confirm('Delete department "' + d.name + '"? This removes all its positions and tasks. Cannot be undone.')) return;
-      mutate('departments', ds => ds.filter(x => x.id !== id));
-      navigate('/departments');
-    },
-    addPosition() {
-      const name = window.prompt('Position name (e.g. "Lab Technician"):');
-      if (!name || !name.trim()) return;
-      const description = window.prompt('What does this position do?', '') || '';
-      edit(dd => { dd.positions.push({ id: 'p' + rid(), name: name.trim(), description }); });
-    },
-    updatePosition(pid, field, value) {
-      edit(dd => { const p = dd.positions.find(x => x.id === pid); if (!p) return; p[field] = value; });
-    },
-    togglePositionTag(kind, tid, pid) {
-      edit(dd => {
-        const t = deptTaskList(dd, kind).find(x => x.id === tid); if (!t) return;
-        if (!Array.isArray(t.positionIds)) t.positionIds = [];
-        const idx = t.positionIds.indexOf(pid);
-        if (idx >= 0) t.positionIds.splice(idx, 1);
-        else t.positionIds.push(pid);
-      });
-    },
-    clearPositionTags(kind, tid) {
-      edit(dd => { const t = deptTaskList(dd, kind).find(x => x.id === tid); if (!t) return; t.positionIds = []; });
-    },
-    toggleWeeklyDow(tid, dow) {
-      edit(dd => {
-        const t = (dd.weeklyTasks || []).find(x => x.id === tid); if (!t) return;
-        if (!Array.isArray(t.daysOfWeek)) t.daysOfWeek = [];
-        const idx = t.daysOfWeek.indexOf(dow);
-        if (idx >= 0) t.daysOfWeek.splice(idx, 1);
-        else t.daysOfWeek.push(dow);
-        // Keep at least one day — if user cleared all, re-add Mon
-        if (t.daysOfWeek.length === 0) t.daysOfWeek = [1];
-      });
-    },
-    toggleMonthlyLast(tid) {
-      edit(dd => { const t = (dd.monthlyTasks || []).find(x => x.id === tid); if (!t) return; t.dayOfMonth = (t.dayOfMonth === 'last') ? 1 : 'last'; });
-    },
-    removePosition(pid) {
-      if (!window.confirm('Remove this position? Tasks assigned to it will revert to "All in department".')) return;
-      edit(dd => {
-        dd.positions = dd.positions.filter(x => x.id !== pid);
-        // Remove the position id from every tagged task's positionIds across all cadences
-        ['opening', 'closing', 'weekly', 'monthly'].forEach(k => deptTaskList(dd, k).forEach(t => {
-          if (Array.isArray(t.positionIds)) t.positionIds = t.positionIds.filter(x => x !== pid);
-          if (t.positionId === pid) t.positionId = null;
-        }));
-      });
-    },
-    addDeptTask(kind) {
-      const labels = { opening: 'Opening shift task', closing: 'Closing shift task', weekly: 'Weekly task (for managers)', monthly: 'Monthly task (for heads)' };
-      const text = window.prompt(labels[kind] + ' description:');
-      if (!text || !text.trim()) return;
-      const defaultTime = window.prompt('Default time (HH:MM):', kind === 'opening' ? '09:00' : kind === 'closing' ? '18:00' : '10:00') || '';
-
-      const extra = {};
-      if (kind === 'weekly') {
-        const dowMenu = DAYS_OF_WEEK_FULL.map((dn, i) => i + '=' + dn).join(' · ');
-        const dowRaw = window.prompt('Which day(s) of the week? Enter comma-separated numbers (' + dowMenu + ')\n\nExamples:\n  1          → every Monday\n  1,5       → Mondays and Fridays\n  1,2,3,4,5 → Mon–Fri', '1');
-        if (dowRaw === null) return;
-        const picked = dowRaw.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n) && n >= 0 && n <= 6);
-        extra.daysOfWeek = picked.length ? Array.from(new Set(picked)) : [1];
-      }
-      if (kind === 'monthly') {
-        const dom = window.prompt('Which date of the month? Enter 1-31, or type "last" for the last day of every month:', '1');
-        if (dom === null) return;
-        const trimmed = (dom || '').trim().toLowerCase();
-        if (trimmed === 'last' || trimmed === 'l') extra.dayOfMonth = 'last';
-        else extra.dayOfMonth = Math.max(1, Math.min(31, parseInt(trimmed, 10) || 1));
-      }
-
-      let positionIds = [];
-      if (d.positions.length > 0) {
-        const menu = d.positions.map((p, i) => (i + 1) + '. ' + p.name).join('\n');
-        const pick = window.prompt('Tag to which position(s)? Enter comma-separated numbers, or blank for "All in department".\n\n' + menu + '\n\nExamples:\n  1          → only position 1\n  1,3       → positions 1 AND 3\n  (blank)  → everyone in the department');
-        if (pick && pick.trim() !== '') {
-          const nums = pick.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n) && n >= 1 && n <= d.positions.length);
-          positionIds = Array.from(new Set(nums.map(n => d.positions[n - 1].id)));
-        }
-      }
-      edit(dd => {
-        const list = deptTaskList(dd, kind);
-        const nextOrder = (list.reduce((m, t) => Math.max(m, t.order || 0), 0)) + 1;
-        list.push({ id: kind.charAt(0) + rid(), order: nextOrder, text: text.trim(), defaultTime, positionIds, ...extra });
-      });
-    },
-    updateDeptTask(kind, tid, field, value) {
-      edit(dd => { const t = deptTaskList(dd, kind).find(x => x.id === tid); if (!t) return; t[field] = value; });
-    },
-    removeDeptTask(kind, tid) {
-      if (!window.confirm('Remove this task?')) return;
-      edit(dd => {
-        const list = deptTaskList(dd, kind);
-        if (kind === 'opening') dd.openingTasks = list.filter(x => x.id !== tid);
-        else if (kind === 'closing') dd.closingTasks = list.filter(x => x.id !== tid);
-        else if (kind === 'weekly') dd.weeklyTasks = list.filter(x => x.id !== tid);
-        else if (kind === 'monthly') dd.monthlyTasks = list.filter(x => x.id !== tid);
-      });
-    },
-  };
 
   const weeklySorted = (d.weeklyTasks || []).slice().sort((a, b) => {
     const aFirst = (a.daysOfWeek || [7])[0] ?? 7;
@@ -255,6 +252,9 @@ export default function DepartmentDetailPage() {
   return (
     <Box>
       <Eyebrow code="TL-OPS-ORG-001" parts={['Administration', d.code]} />
+
+      <ApiError error={error} onRetry={refetch} sx={{ mb: '12px' }} />
+      <Fetching on={isFetching} />
 
       {/* .dept-detail-head */}
       <Box sx={{ p: { xs: '20px', md: '24px 28px' }, background: `linear-gradient(135deg, ${tokens.greenDeep}, ${tokens.tealDark})`, color: '#fff', borderRadius: '12px', mb: '20px', display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
@@ -333,6 +333,7 @@ export default function DepartmentDetailPage() {
           <Btn variant="danger" onClick={api.deleteDepartment}>🗑 Delete Department</Btn>
         </Box>
       </Box>
+      {toast}
     </Box>
   );
 }

@@ -100,10 +100,11 @@ export const WIZ_STEPS = [
 const rid = () => Date.now() + Math.random().toString(36).slice(2, 6);
 export const newId = (prefix) => prefix + rid();
 
-/** openProjectModal() blank draft (prototype 15921–15935) */
+/** openProjectModal() blank draft (prototype 15921–15935). `id: null` = not saved to the API yet. */
 export function blankDraft(viewerName, projectCount) {
   return {
-    id: 'proj' + Date.now(),
+    id: null,
+    draftId: 'draft' + rid(),
     code: 'TL-' + new Date().getFullYear() + '-' + String(projectCount + 1).padStart(2, '0'),
     name: '', description: '',
     category: 'operations', priority: 'medium', status: 'planning',
@@ -114,11 +115,13 @@ export function blankDraft(viewerName, projectCount) {
     team: [{ name: viewerName, role: 'Project Lead' }],
     external: [],
     milestones: [], tasks: [], kpis: [], risks: [],
-    activity: [], createdAt: new Date().toISOString().slice(0, 10),
   };
 }
 
-/** useProjectTemplate() draft builder (prototype 15842–15902) — dates from TODAY offsets, milestone idx → id */
+/**
+ * useProjectTemplate() draft builder (prototype 15842–15902) — dates from TODAY offsets, milestone index → a
+ * draft id the API resolves to the real milestone when the wizard saves.
+ */
 export function draftFromTemplate(t, viewerName, projectCount) {
   const today = new Date(TODAY);
   const startDate = today.toISOString().slice(0, 10);
@@ -138,10 +141,12 @@ export function draftFromTemplate(t, viewerName, projectCount) {
   const resolveMilestone = (idx) => (idx != null && milestones[idx]) ? milestones[idx].id : null;
 
   return {
-    id: 'proj' + stamp,
+    id: null,
+    draftId: 'draft' + stamp,
+    templateId: t.id,
     code: 'TL-' + new Date().getFullYear() + '-' + String(projectCount + 1).padStart(2, '0'),
-    name: t.id === 'tpl-blank' ? '' : t.name,
-    description: t.id === 'tpl-blank' ? '' : t.description,
+    name: t.key === 'tpl-blank' ? '' : t.name,
+    description: t.key === 'tpl-blank' ? '' : t.description,
     category: t.category,
     priority: 'medium',
     status: 'planning',
@@ -171,10 +176,55 @@ export function draftFromTemplate(t, viewerName, projectCount) {
       title: r.name, severity: r.impact, mitigation: r.mitigation, owner: viewerName, status: 'open',
       milestoneId: resolveMilestone(r.milestoneIdx),
     })),
-    activity: [{ user: viewerName, action: `created the project from template "${t.name}"`, at: 'Just now' }],
-    createdAt: new Date().toISOString().slice(0, 10),
-    templateId: t.id,
   };
 }
 
 export { addDaysISO };
+
+/** '2026-11-20T00:00:00.000Z' → '2026-11-20' (the API sends ISO stamps, the footer prints the day). */
+export const dayOf = (iso) => (iso || '').slice(0, 10);
+
+/**
+ * The POST / PATCH body for a wizard draft. Blank rows are dropped, existing records keep their `id` so a
+ * task's or risk's milestone link survives an edit, and a link to a milestone the edit removed is cleared.
+ */
+export function draftToBody(d) {
+  const txt = (s) => (s || '').trim();
+  const kept = (list, field) => (list || []).filter(x => txt(x[field]));
+  const withId = (x) => (x.id ? { id: x.id } : {});
+  const milestones = kept(d.milestones, 'name').map(m => ({
+    ...withId(m),
+    name: txt(m.name),
+    dueDate: m.dueDate || '',
+    status: m.status || 'todo',
+    owner: txt(m.owner),
+    description: txt(m.description),
+    acceptanceCriteria: (m.acceptanceCriteria || []).map(c => ({ text: c.text, done: !!c.done })),
+  }));
+  const live = new Set(milestones.map(m => m.id).filter(Boolean));
+  const link = (id) => (id && live.has(id) ? id : null);
+  return {
+    code: txt(d.code),
+    name: txt(d.name),
+    description: txt(d.description),
+    category: d.category,
+    priority: d.priority,
+    status: d.status,
+    owner: txt(d.owner),
+    startDate: d.startDate || '',
+    endDate: d.endDate || '',
+    progress: Math.max(0, Math.min(100, Math.round(Number(d.progress) || 0))),
+    team: kept(d.team, 'name').map(t => ({ ...withId(t), name: txt(t.name), role: txt(t.role) })),
+    external: kept(d.external, 'name').map(e => ({ ...withId(e), name: txt(e.name), email: txt(e.email), role: txt(e.role) })),
+    milestones,
+    tasks: kept(d.tasks, 'title').map(t => ({
+      ...withId(t), title: txt(t.title), assignee: txt(t.assignee), status: t.status || 'todo',
+      dueDate: t.dueDate || '', priority: t.priority || 'medium', milestoneId: link(t.milestoneId),
+    })),
+    kpis: kept(d.kpis, 'name').map(k => ({ ...withId(k), name: txt(k.name), current: Number(k.current) || 0, target: Number(k.target) || 0, unit: k.unit || '' })),
+    risks: kept(d.risks, 'title').map(r => ({
+      ...withId(r), title: txt(r.title), severity: r.severity || 'medium', mitigation: txt(r.mitigation),
+      owner: txt(r.owner), status: r.status || 'open', milestoneId: link(r.milestoneId),
+    })),
+  };
+}

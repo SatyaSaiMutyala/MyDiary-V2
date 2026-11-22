@@ -217,6 +217,8 @@ them. Registered now: `meetings`, `actions`, `requests`, `decisions` (anyone wit
 | `GET /api/meeting-requests` | topic, notes, from, to | `status`, `routedTo`, `box=inbox\|sent` | proposedDate, createdAt (proposedDate) | proposedDate, createdAt, status (`-createdAt`) |
 | `GET /api/decisions` | text, decidedBy, department, meetingTitle | `meetingId`, `department`, `tag`, `decidedBy` | createdAt (createdAt) | createdAt, department, decidedBy (`-createdAt`) |
 | `GET /api/notifications` | text, entity | `unread=true`, `type` | createdAt (createdAt) | createdAt (`-createdAt`) |
+| `GET /api/diary` | title, notes, loc, attendees, external.name, owner | `cat`, `addedBy`, `reminder`, `allDay`, `owner`, `attendee`, `mine=false` | days, date, createdAt (days) | date, startTime, title, cat, owner, createdAt, updatedAt (`date,startTime`) |
+| `GET /api/visits` | title, org.name, org.branch, org.city, host.name, team, purpose, scope, references, tags, executiveSummary, observations, actionItems, owner | `status`, `type`, `owner`, `site`, `city`, `overallAssessment`, `severity`, `followUpRequired`, `tag`, `category`, `mine=true` | date, nextVisitDate, submittedAt, createdAt, updatedAt (date) | date, title, type, status, owner, overallAssessment, org.name, submittedAt, createdAt (`-date`) |
 
 ### Meetings (module `meetings`)
 
@@ -259,6 +261,103 @@ their own collection so My To-Do can query them across meetings.
 
 Notifications are written automatically when an action item is assigned or reassigned, a request is created,
 accepted, declined or countered, minutes are circulated, and an external invitee answers an RSVP.
+
+### Visit Observations (module `visits`)
+
+A visit report: where the team went, when, who went, what they observed, how they rated the site, the overall
+assessment, the follow-up actions it produced. Responses wrap it as `{ visit }`; the list follows the contract
+above. `draft` is editable, `submitted` is signed off (stamped `submittedAt`, follow-up owners notified).
+
+| Method | Path | What it does |
+| --- | --- | --- |
+| GET | `/api/visits` | List. `mine=true` limits it to my own reports. |
+| POST | `/api/visits` | Create. Only `title` and `date` are required, so a half-filled draft saves; `status: 'submitted'` must pass the submit checks. |
+| GET/PATCH/DELETE | `/api/visits/:id` | Read, partial edit (`org`, `host` and `ratings` merge field by field), delete. |
+| POST | `/api/visits/:id/status` | `{ status }` — draft ⇄ submitted. Submitting needs an organisation name, a purpose and an overall assessment, and tells every follow-up owner. |
+| POST/PATCH/DELETE | `/api/visits/:id/observations` · `/observations/:index` | The detailed observations. |
+| POST/PATCH/DELETE | `/api/visits/:id/action-items` · `/action-items/:index` | The follow-up actions (embedded in the visit; they are not meeting action items). |
+
+List fields: `search` matches title, organisation, branch, city, host, team, purpose, scope, references, tags,
+executive summary, observations and follow-up actions. Filters: `status`, `type`, `owner`, `site` (contains match
+on the organisation or branch), `city`, `overallAssessment`, `severity` (an alias for `overallAssessment` —
+excellent … unsatisfactory), `followUpRequired`, `tag`, `category` (an observation's category) and `mine=true`.
+Date fields: date, nextVisitDate, submittedAt, createdAt, updatedAt (default `date`); numeric: `photos`;
+sort: date, title, type, status, owner, overallAssessment, org.name, nextVisitDate, submittedAt, createdAt,
+updatedAt (default `-date`).
+
+### Department Master (module `departments`)
+
+The organisational backbone: departments, their positions, the four task lanes (opening / closing / weekly /
+monthly), the review cadence with its agenda templates, and the people assigned to each department. Every write
+answers `{ department }` with the whole record, so the screen never has to merge anything by hand. Positions,
+tasks, agenda sections and agenda points are sub-documents: their `id` is what `positionIds` and the task rows
+refer to.
+
+| Method | Path | What it does |
+| --- | --- | --- |
+| GET | `/api/departments` | List (the shared contract). |
+| POST | `/api/departments` | Create. `name` is required; `code` is generated (`TDPL-NEW-001`) when it is left out. Tasks name their positions by index into the new `positions` list (`positions: [0]`), which is how the web's department templates describe them. |
+| GET/PATCH/DELETE | `/api/departments/:id` | Read · edit `name`, `icon`, `description`, `code`, `order` · delete (with its tasks and activity ticks). |
+| POST | `/api/departments/:id/positions` · PATCH/DELETE `/positions/:positionId` | Sub-roles. Removing one reverts its tasks to "All in department". |
+| POST | `/api/departments/:id/tasks/:kind` · PATCH/DELETE `/tasks/:kind/:taskId` | `kind` = `opening\|closing\|weekly\|monthly`. Weekly tasks carry `daysOfWeek` (0 = Sun; clearing it falls back to Monday), monthly tasks `dayOfMonth` (1–31 or `'last'`). |
+| PUT | `/api/departments/:id/cadence` | When the weekly / monthly review happens, its owner and primary systems. |
+| POST | `/api/departments/:id/cadence/:tab/sections` · PATCH/DELETE `/sections/:sectionId` | `tab` = `weekly\|monthly`. The standing agenda. |
+| POST | `…/sections/:sectionId/points` · PATCH/DELETE `…/points/:pointId` | Agenda points, each with a RAG `indicator` (`red\|amber\|green\|null`). |
+| PUT | `/api/departments/:id/assignments` | Replaces the department's people (`{ name, positionId?, role? }`, role = `member\|head\|cmd\|cgo`). |
+| GET | `/api/departments/assignments` | The org-wide map `{ 'Dr. Anusha Singh': { departmentId, positionId, role } }` that My Activity and the Dashboard look people up in. |
+| GET | `/api/departments/activity` | `?date=&scope=me\|person\|department\|org[&person=&departmentId=]` → the shift log in the web's own shape: `{ [person]: { [date]: { opening: { [taskId]: 'done' }, closing, weekly, monthly, review } } }`. |
+| PUT | `/api/departments/activity` | `{ departmentId, kind, taskId, done, date?, person? }` — tick / un-tick one task. |
+
+Reads (`GET /`, `/:id`, `/assignments`, `/activity`) are open to `departments`, `activity` or `dashboard`;
+every write needs `departments`. `GET /activity` only shows somebody else's ticks to a person who has
+`dashboard` or `departments`, and `PUT /activity` only accepts a `person` other than yourself with
+`departments`.
+
+`GET /api/departments` — search: name, code, description, positions.name/description, every lane's task text,
+reviewCadence.owner, reviewCadence.primarySystems, assignments.name. Filters: `code`, `name`, `icon`,
+`position` (a position's exact name), `person` (somebody assigned), `owner` (cadence owner, contains),
+`system` (a primary system), `reviewDay` (0–6, the weekly review's day). Date fields: createdAt, updatedAt
+(default `createdAt`); numeric: `order`; sort: order, name, code, createdAt, updatedAt (default `order`).
+
+`node scripts/seed-departments.js` fills the 18 TDPL departments from `src/data/departments.js` (a copy of the
+web app's seed) with their positions, tasks, review cadences and the roster's assignments. It is idempotent and
+never overwrites a department that is already there.
+
+### My Diary (module `diary`)
+
+The calendar screen shows two kinds of thing side by side, and each has exactly one home: **diary entries** live
+here, **meetings** stay in `/api/meetings`. Nothing is copied between them — the web app asks both for the same
+window and merges them in the browser, and the "tentative" blocks come from pending `/api/meeting-requests` the
+same way. Every write answers `{ entry }`.
+
+| Method | Path | What it does |
+| --- | --- | --- |
+| GET | `/api/diary` | List (the shared contract). My own diary unless `owner=` or `mine=false` says otherwise. |
+| POST | `/api/diary` | Create. `title`, `cat` and `date` are required; a timed entry also needs `startTime` (or `allDay: true`). `owner` defaults to me. |
+| GET/PATCH/DELETE | `/api/diary/:id` | Read · partial edit · delete. |
+
+An entry is `{ id, owner, ownerId, title, cat, date, endDate, startTime, endTime, allDay, loc, notes, reminder,
+attendees, external, addedBy, createdBy, createdAt, updatedAt }`. `cat` is
+`meeting | focus | personal | travel | ooo | reminder`; dates are `YYYY-MM-DD` and times `HH:MM`, exactly as
+meetings store them. `addedBy` is `self` or `ea` — set by the server from who wrote the entry, and what the
+calendar paints the yellow **EA** badge from.
+
+**The date window.** `from` / `to` default to `days`, the list of every calendar day an entry occupies
+(`date` … `endDate`, multikey-indexed). That is what makes a month / week / day request both cheap and correct:
+a week out of office is returned by every window it overlaps, not only by the one containing its first day. Both
+ends are inclusive (`from=2026-11-23&to=2026-11-23` returns that day's entries). `date_from` / `date_to` still
+range on the start day alone.
+
+**Whose diary.** A list is the signed-in person's own entries by default. `owner=<name>` reads a diary shared
+with them, `mine=false` widens it to every diary they may read, and a diary nobody shared answers 403 with a
+sentence naming the owner. Sharing is `DELEGATIONS` in `services/diary.js` — the EA's edit access to the CMD's
+diary, mirroring `web/src/data/diary.js` — plus admins, who reach every diary like everywhere else in this API.
+Edit access is required to create, change or delete an entry, and an entry someone else fills in for you is the
+one stamped `addedBy: 'ea'`.
+
+Notifications (composed with the `html` tagged template, like every other module): the internal invitees are told about the
+invitation, the owner is told when somebody else put something on their diary, the person who added it gets the
+"Invites sent" line, and a changed external RSVP is reported to the owner.
 
 ## Seed
 

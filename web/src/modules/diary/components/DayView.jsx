@@ -3,11 +3,13 @@ import { tokens } from '../../../theme/tokens';
 import { DAYS_LONG } from '../../../utils/dates';
 import { toISO, TODAY_ISO, entryOnDate } from '../utils';
 import { TimeColumn, HourLines, EventBlock, eventGeometry, evtTimeSx, NowLine, AllDayEvent, AllDayLabel, allDayCellSx, allDayRowSx, HeadDay, headRowSx } from './calendarParts';
+import { DiaryEmptyNote, DiaryLoading } from './ViewState';
 
 const COLS = '80px 1fr';
 
 /** renderDayView 10018–10073 */
-export default function DayView({ date, entries, onOpenEntry, onNewEntry }) {
+export default function DayView({ date, entries, onOpenEntry, onNewEntry, loading }) {
+  if (loading) return <DiaryLoading />;
   const dtS = toISO(date);
   const isToday = dtS === TODAY_ISO;
   const dayEvents = entries.filter(e => !e.allDay && entryOnDate(e, dtS));
@@ -15,6 +17,7 @@ export default function DayView({ date, entries, onOpenEntry, onNewEntry }) {
 
   return (
     <Box>
+      {dayEvents.length + allDay.length === 0 && <DiaryEmptyNote period="on this day" />}
       <Box sx={{ ...headRowSx, gridTemplateColumns: COLS }}>
         <div />
         <HeadDay dow={DAYS_LONG[date.getDay()]} num={date.getDate()} isToday={isToday} />

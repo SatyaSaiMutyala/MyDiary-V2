@@ -5,7 +5,7 @@ import { Btn, TextLink, TabBar } from '../../../components';
 import { describeWeekly, describeMonthly } from '../../../utils/departments';
 import { EMPLOYEES } from '../../../data/employees';
 import DeptSection, { SectionNote } from './DeptSection';
-import LiveInput from './LiveInput';
+import LiveInput, { TimeInput } from './LiveInput';
 import { DowChips, DomGroup, RagGroup, RowDel } from './Chips';
 
 const heroInputSx = {
@@ -57,7 +57,7 @@ export default function ReviewCadenceSection({ dept: d, tab, onTab, api }) {
           <HeroTile label="Weekly Cadence">
             <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px', mt: '4px', flexWrap: 'wrap' }}>
               <DowChips daysOfWeek={rc.weekly.daysOfWeek || []} title={weeklyDaysLabel} onToggle={(dow) => api.toggleRCWeeklyDow(dow)} />
-              <Box component="input" type="time" value={rc.weekly.time || ''} onChange={(e) => api.updateRC('weekly.time', e.target.value)} sx={heroTimeSx} />
+              <TimeInput value={rc.weekly.time} onCommit={(v) => api.updateRC('weekly.time', v)} sx={heroTimeSx} />
             </Box>
             <Box sx={heroSubSx}>{weeklyDaysLabel} · {rc.weekly.time || '—'} · {rc.weekly.duration || 45}min</Box>
           </HeroTile>
@@ -66,7 +66,7 @@ export default function ReviewCadenceSection({ dept: d, tab, onTab, api }) {
           <HeroTile label="Monthly Cadence" topColor="#2563EB">
             <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px', mt: '4px', flexWrap: 'wrap' }}>
               <DomGroup dayOfMonth={rc.monthly.dayOfMonth} onChangeDay={(n) => api.updateRC('monthly.dayOfMonth', n)} onToggleLast={() => api.toggleRCMonthlyLast()} />
-              <Box component="input" type="time" value={rc.monthly.time || ''} onChange={(e) => api.updateRC('monthly.time', e.target.value)} sx={heroTimeSx} />
+              <TimeInput value={rc.monthly.time} onCommit={(v) => api.updateRC('monthly.time', v)} sx={heroTimeSx} />
             </Box>
             <Box sx={heroSubSx}>{monthlyDayLabel} · {rc.monthly.time || '—'} · {rc.monthly.duration || 60}min</Box>
           </HeroTile>

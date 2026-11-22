@@ -2,13 +2,15 @@ import { useState } from 'react';
 import { Box, ButtonBase } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { useNavigate } from 'react-router-dom';
-import { useAppStore } from '../../store/AppStore';
+import { useViewerUser } from '../../auth/useViewerUser';
 import { tokens, fonts } from '../../theme/tokens';
 import { PageHeader, EmptyState, Avatar, Btn } from '../../components';
 import { todayFacts, getTaskStatus } from '../../utils/departments';
 import { DAYS_OF_WEEK_FULL } from '../../data/departments';
 import { MONTHS } from '../../utils/dates';
-import { getEmployeeAssignment, shiftStats, PHASE_KEYS } from './utils';
+import { useGetActivityQuery, useGetDepartmentQuery, useListAssignmentsQuery, useSetActivityTickMutation } from '../../store/api/departmentsApi';
+import { ApiError, Fetching, useToast } from '../settings/components/listUi';
+import { activityArgs, assignmentFor, shiftStats, PHASE_KEYS } from './utils';
 // Kept available for parity with the prototype's renderCMDOversightBlock / renderMyActivityOversight —
 // the prototype's renderMyActivity does NOT render them, so neither do we.
 // eslint-disable-next-line no-unused-vars
@@ -82,20 +84,44 @@ function TaskRow({ task, dept, isDone, onToggle }) {
 }
 
 export default function MyActivityPage() {
-  const { state, mutate } = useAppStore();
   const navigate = useNavigate();
+  const { viewer, isSelf } = useViewerUser();
   const [show, setShow] = useState({ opening: true, closing: true, weekly: true, monthly: true, review: true });
+  const { toast, show: toastShow } = useToast();
 
-  const me = state.viewer.name;
-  const assignment = getEmployeeAssignment(me);
+  const me = viewer.name;
   const facts = todayFacts();
   const { today, todayStr, dow: dowToday } = facts;
-  const dept = state.departments.find(d => d.id === assignment.departmentId);
+
+  // Who I am in the organisation → my department → today's ticks.
+  const { data: assignments, error: assignErr, isLoading: assignLoading, refetch: refetchAssignments } = useListAssignmentsQuery();
+  const assignment = assignmentFor(assignments, me);
+  const { data: dept, error: deptErr, isLoading: deptLoading, isFetching: deptFetching, refetch: refetchDept } = useGetDepartmentQuery(assignment.departmentId, { skip: !assignment.departmentId });
+  const { data: log = {}, error: logErr, isFetching: logFetching } = useGetActivityQuery(activityArgs({ date: todayStr, person: me, isSelf }));
+  const [setTick] = useSetActivityTickMutation();
 
   const header = (
     <PageHeader code="TL-OPS-ACT-001" parts={['MyDiary · Personal', 'Daily Shift Checklist']} icon="✍" title="My Activity"
       sub="Your department's opening & closing shift checklist for the day, plus any weekly or monthly items due today. Tick off as you go — completion rolls up to Department Master for governance." />
   );
+
+  if (assignLoading || deptLoading) {
+    return (
+      <Box>
+        {header}
+        <Box sx={{ p: '30px', textAlign: 'center', fontFamily: fonts.mono, fontSize: 11, letterSpacing: '0.08em', color: tokens.slate, textTransform: 'uppercase' }}>Loading your checklist…</Box>
+      </Box>
+    );
+  }
+
+  if (assignErr || deptErr) {
+    return (
+      <Box>
+        {header}
+        <ApiError error={assignErr || deptErr} onRetry={() => { refetchAssignments(); if (assignment.departmentId) refetchDept(); }} />
+      </Box>
+    );
+  }
 
   if (!dept) {
     return (
@@ -110,39 +136,37 @@ export default function MyActivityPage() {
   const position = (dept.positions || []).find(p => p.id === assignment.positionId);
   const posLabel = position ? position.name : (assignment.role === 'head' ? 'Department Head' : 'All positions');
 
-  const stats = shiftStats(state.activityLog, me, dept, assignment.positionId, assignment.role, facts);
+  const stats = shiftStats(log, me, dept, assignment.positionId, assignment.role, facts);
   const { lists, total: totalT, done: doneT, pct } = stats;
   const circ = 2 * Math.PI * 38;
   const offset = circ - (pct / 100) * circ;
 
-  const phaseCount = (kind) => ({ total: lists[kind].length, done: lists[kind].filter(t => getTaskStatus(state.activityLog, me, todayStr, kind, t.id) === 'done').length });
+  const phaseCount = (kind) => ({ total: lists[kind].length, done: lists[kind].filter(t => getTaskStatus(log, me, todayStr, kind, t.id) === 'done').length });
   const op = phaseCount('opening'), cl = phaseCount('closing'), wk = phaseCount('weekly'), mo = phaseCount('monthly');
 
   const allOn = PHASE_KEYS.every(k => show[k]);
   const togglePhase = (k) => setShow(s => ({ ...s, [k]: !s[k] }));
   const toggleAll = () => { const anyOff = PHASE_KEYS.some(k => !show[k]); setShow(Object.fromEntries(PHASE_KEYS.map(k => [k, anyOff]))); };
 
-  // toggleMATask → setTaskStatus(me, todayStr, kind, taskId, current === 'done' ? null : 'done')
-  const toggleTask = (kind, taskId) => {
-    const current = getTaskStatus(state.activityLog, me, todayStr, kind, taskId);
-    mutate('activityLog', log => {
-      if (!log[me]) log[me] = {};
-      if (!log[me][todayStr]) log[me][todayStr] = { opening: {}, closing: {}, weekly: {}, monthly: {}, review: {} };
-      const bucket = log[me][todayStr];
-      if (!bucket[kind]) bucket[kind] = {};
-      if (current === 'done') delete bucket[kind][taskId]; else bucket[kind][taskId] = 'done';
-    });
+  // toggleMATask → PUT /api/departments/activity { kind, taskId, done }
+  const toggleTask = async (kind, taskId) => {
+    const current = getTaskStatus(log, me, todayStr, kind, taskId);
+    try {
+      await setTick({ departmentId: dept.id, kind, taskId, done: current !== 'done', date: todayStr, ...(isSelf ? {} : { person: me }) }).unwrap();
+    } catch (err) {
+      toastShow(err);
+    }
   };
 
   const lane = (kind, label, icon) => {
     const list = lists[kind];
     if (!show[kind] || list.length === 0) return null;
-    const doneCt = list.filter(t => getTaskStatus(state.activityLog, me, todayStr, kind, t.id) === 'done').length;
+    const doneCt = list.filter(t => getTaskStatus(log, me, todayStr, kind, t.id) === 'done').length;
     const pctL = list.length ? Math.round((doneCt / list.length) * 100) : 0;
     return (
       <Lane key={kind} kind={kind} title={`${icon} ${label}`} count={`· ${list.length} task${list.length > 1 ? 's' : ''}`} pill={`${doneCt}/${list.length} · ${pctL}%`} pillDone={pctL === 100}>
         {list.slice().sort((a, b) => (a.order || 0) - (b.order || 0)).map(t => (
-          <TaskRow key={t.id} task={t} dept={dept} isDone={getTaskStatus(state.activityLog, me, todayStr, kind, t.id) === 'done'} onToggle={() => toggleTask(kind, t.id)} />
+          <TaskRow key={t.id} task={t} dept={dept} isDone={getTaskStatus(log, me, todayStr, kind, t.id) === 'done'} onToggle={() => toggleTask(kind, t.id)} />
         ))}
       </Lane>
     );
@@ -175,6 +199,9 @@ export default function MyActivityPage() {
   return (
     <Box>
       {header}
+
+      <ApiError error={logErr} sx={{ mb: '12px' }} />
+      <Fetching on={deptFetching || logFetching} />
 
       {/* .ma-hero */}
       <Box sx={{ background: `linear-gradient(135deg, ${tokens.greenDeep}, ${tokens.tealDark})`, color: '#fff', borderRadius: '14px', p: { xs: '18px', md: '22px 26px' }, mb: '18px' }}>
@@ -226,6 +253,7 @@ export default function MyActivityPage() {
         <Box component="span" sx={{ fontSize: 16 }}>💡</Box>
         <span>Your ticks persist to today's activity log. Yesterday's activity is sealed. Your HOD and department governance can see your completion rate in the Department Master detail view.</span>
       </Box>
+      {toast}
     </Box>
   );
 }

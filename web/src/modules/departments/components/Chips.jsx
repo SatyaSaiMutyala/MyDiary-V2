@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { Box } from '@mui/material';
 import { tokens, fonts } from '../../../theme/tokens';
 import { posPill } from '../../../utils/people';
@@ -52,11 +53,15 @@ export function DowChips({ daysOfWeek = [], onToggle, title }) {
 /** .dom-group — number input (1-31) + "Last" toggle */
 export function DomGroup({ dayOfMonth, onChangeDay, onToggleLast, title }) {
   const isLast = dayOfMonth === 'last';
-  const num = isLast ? '' : (dayOfMonth ?? '');
+  const serverNum = isLast ? '' : (dayOfMonth ?? '');
+  // Keeps the typed number while focused, so the debounced save behind onChangeDay never fights the caret.
+  const ref = useRef(null);
+  const [num, setNum] = useState(serverNum);
+  useEffect(() => { if (document.activeElement !== ref.current) setNum(serverNum); }, [serverNum]);
   return (
     <Box title={title} sx={{ display: 'inline-flex', alignItems: 'center', gap: '4px', p: '2px 4px 2px 2px', bgcolor: tokens.card, border: `1px solid ${tokens.line}`, borderRadius: '6px' }}>
-      <Box component="input" type="number" min={1} max={31} value={num} disabled={isLast} title="Day of month (1-31)"
-        onChange={(e) => onChangeDay(Math.max(1, Math.min(31, +e.target.value || 1)))}
+      <Box component="input" type="number" min={1} max={31} value={num} disabled={isLast} title="Day of month (1-31)" ref={ref}
+        onChange={(e) => { const n = Math.max(1, Math.min(31, +e.target.value || 1)); setNum(e.target.value === '' ? '' : n); onChangeDay(n); }}
         sx={{ width: 44, height: 24, textAlign: 'center', fontFamily: fonts.mono, fontSize: 11, fontWeight: 700, border: 'none', bgcolor: 'transparent', color: isLast ? tokens.slateSoft : tokens.ink, borderRadius: '4px', boxSizing: 'border-box', '&:focus': { outline: '1px solid #2563EB' } }} />
       <Box onClick={onToggleLast} title="Fire on the last day of every month (handles 28/29/30/31 automatically)" sx={{ p: '2px 8px', fontFamily: fonts.mono, fontSize: 10, fontWeight: 700, letterSpacing: '0.04em', cursor: 'pointer', borderRadius: '4px', bgcolor: isLast ? '#2563EB' : tokens.cream, color: isLast ? '#fff' : tokens.slate, transition: 'all 0.12s', userSelect: 'none', '&:hover': isLast ? {} : { bgcolor: tokens.creamWarm, color: tokens.ink } }}>Last</Box>
     </Box>

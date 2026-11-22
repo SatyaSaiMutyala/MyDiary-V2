@@ -1,11 +1,18 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Box } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { PageHeader } from '../../components';
 import { tokens } from '../../theme/tokens';
 import { useAppStore } from '../../store/AppStore';
+import { useAuth } from '../../auth/AuthContext';
+import { hasModule } from '../../data/users';
 import { TODAY } from '../../utils/dates';
-import { canEditDiary, getDiaryEntries, filterVisible } from './utils';
+import { errorMessage } from '../../store/api/baseApi';
+import { useCreateDiaryEntryMutation, useListDiaryQuery, useRemoveDiaryEntryMutation } from '../../store/api/diaryApi';
+import { useListMeetingsQuery } from '../../store/api/meetingsApi';
+import { useListRequestsQuery } from '../../store/api/meetingRequestsApi';
+import { ApiError, Fetching } from '../settings/components/listUi';
+import { apiToEntry, calendarWindow, canEditDiary, entryToApiBody, filterVisible, getDiaryEntries } from './utils';
 import EaBanner from './components/EaBanner';
 import DiaryToolbar from './components/DiaryToolbar';
 import SidePanel from './components/SidePanel';
@@ -16,24 +23,66 @@ import AgendaView from './components/AgendaView';
 import EntryModal from './modals/EntryModal';
 import EntryDetailModal from './modals/EntryDetailModal';
 
-/** MY DIARY module — renderDiary() 9732–9806 */
+/** One window's worth of calendar rows (the list contract's ceiling). */
+const WINDOW_LIMIT = 200;
+const EMPTY = [];
+
+/**
+ * MY DIARY module — renderDiary() 9732–9806.
+ *
+ * The screen shows two kinds of thing side by side and each has exactly one home: diary entries come
+ * from GET /api/diary (this module owns them) and meetings from GET /api/meetings, merged in the
+ * browser by getDiaryEntries(). Pending meeting requests become the tentative blocks the same way.
+ * All three are asked for one window at a time (calendarWindow), so paging the calendar is one
+ * request per month and moving inside a month is answered from the RTK Query cache.
+ */
 export default function DiaryPage() {
-  const { state, mutate, notify } = useAppStore();
-  const viewer = state.viewer;
+  const { state } = useAppStore();
+  const { user } = useAuth();
+  const me = user?.name || state.viewer.name;
+  const viewer = useMemo(() => ({ name: me, role: user?.title || user?.role || state.viewer.role }), [me, user?.title, user?.role, state.viewer.role]);
 
   // CURRENT_DIARY_DATE / VIEW / OWNER / VISIBLE_CALS
   const [date, setDate] = useState(() => new Date(TODAY));
   const [view, setView] = useState('week');
-  const [owner, setOwner] = useState('Venkata Cherukuri');
+  const [owner, setOwner] = useState(me);
   const [visibleCals, setVisibleCals] = useState({ own: true, meetings: true, delegated: true });
   const [entryModal, setEntryModal] = useState(null);   // { preset, key } | null
   const [detailId, setDetailId] = useState(null);
 
   const canEdit = canEditDiary(viewer.name, owner);
-  const allEntries = useMemo(() => getDiaryEntries(owner, state), [owner, state.diaryEntries, state.meetings, state.meetingRequests]);
+  const seesMeetings = hasModule(user, 'meetings');
+  const win = useMemo(() => calendarWindow(date), [date]);
+  // Someone else's diary is read through `owner=` (the server checks the delegation).
+  const ownerArgs = useMemo(() => (owner === me ? {} : { mine: 'false', owner }), [owner, me]);
+
+  const entriesQ = useListDiaryQuery({ ...win, ...ownerArgs, limit: WINDOW_LIMIT });
+  const meetingsQ = useListMeetingsQuery({ ...win, status: 'upcoming,completed', limit: WINDOW_LIMIT }, { skip: !seesMeetings });
+  const requestsQ = useListRequestsQuery({ status: 'pending', from: win.from, to: win.to, limit: WINDOW_LIMIT }, { skip: !seesMeetings });
+  // Side-panel totals: one limit=1 call each, so only the counts travel.
+  const ownCountQ = useListDiaryQuery({ ...ownerArgs, limit: 1, fields: 'title' });
+  const upcomingQ = useListMeetingsQuery({ status: 'upcoming', limit: 1, fields: 'title' }, { skip: !seesMeetings });
+
+  const [createEntry] = useCreateDiaryEntryMutation();
+  const [removeEntry] = useRemoveDiaryEntryMutation();
+
+  const diaryEntries = useMemo(() => (entriesQ.data?.items ?? EMPTY).map(apiToEntry), [entriesQ.data]);
+  const meetings = useMemo(() => meetingsQ.data?.items ?? EMPTY, [meetingsQ.data]);
+  const meetingRequests = useMemo(() => requestsQ.data?.items ?? EMPTY, [requestsQ.data]);
+  const allEntries = useMemo(() => getDiaryEntries(owner, { diaryEntries, meetings, meetingRequests }), [owner, diaryEntries, meetings, meetingRequests]);
   const visible = useMemo(() => filterVisible(allEntries, visibleCals), [allEntries, visibleCals]);
-  const ownCount = state.diaryEntries.filter(e => e.owner === owner).length;
-  const upcomingMtgs = state.meetings.filter(m => m.status === 'upcoming').length;
+  const ownCount = ownCountQ.data?.total ?? 0;
+  const upcomingMtgs = upcomingQ.data?.total ?? 0;
+
+  const loading = entriesQ.isLoading || (seesMeetings && meetingsQ.isLoading);
+  const fetching = entriesQ.isFetching || meetingsQ.isFetching || requestsQ.isFetching;
+  // The diary itself first: a missing Meetings module must not hide the person's own entries.
+  const error = entriesQ.error || meetingsQ.error || requestsQ.error;
+  const retry = useCallback(() => {
+    if (entriesQ.error) entriesQ.refetch();
+    if (meetingsQ.error) meetingsQ.refetch();
+    if (requestsQ.error) requestsQ.refetch();
+  }, [entriesQ, meetingsQ, requestsQ]);
 
   const navigateBy = (dir) => setDate(prev => {
     const d = new Date(prev);
@@ -54,29 +103,38 @@ export default function DiaryPage() {
     setEntryModal({ preset: preset || null, key: Date.now() });
   };
 
-  const saveEntry = (newEntry) => {
-    mutate('diaryEntries', list => { list.push(newEntry); });
-    const extCount = newEntry.external.filter(e => e.email).length;
-    const intCount = newEntry.attendees.length;
+  const saveEntry = async (newEntry) => {
+    let saved;
+    try {
+      saved = await createEntry(entryToApiBody(newEntry, { owner, me })).unwrap();
+    } catch (err) {
+      window.alert(errorMessage(err));   // the server's words, so the person can fix the entry
+      return;
+    }
+    const extCount = saved.external.filter(e => e.email).length;
+    const intCount = saved.attendees.length;
     setEntryModal(null);
     if (extCount || intCount) {
-      notify({ type: 'meeting', icon: '📧', text: '<strong>Invites sent:</strong> "' + newEntry.title + '" on ' + newEntry.date + ' — ' + intCount + ' internal + ' + extCount + ' external.' });
-      setTimeout(() => window.alert("✓ Entry added to " + newEntry.owner + "'s diary. Calendar invites dispatched to " + (intCount + extCount) + ' people.'), 100);
+      setTimeout(() => window.alert("✓ Entry added to " + saved.owner + "'s diary. Calendar invites dispatched to " + (intCount + extCount) + ' people.'), 100);
     } else {
       setTimeout(() => window.alert('✓ Entry added.'), 100);
     }
   };
 
-  const deleteEntry = (id) => {
+  const deleteEntry = async (id) => {
     if (!window.confirm('Delete this diary entry? This cannot be undone.')) return;
-    mutate('diaryEntries', list => list.filter(e => e.id !== id));
-    setDetailId(null);
+    try {
+      await removeEntry(id).unwrap();
+      setDetailId(null);
+    } catch (err) {
+      window.alert(errorMessage(err));
+    }
   };
 
   // Entry for the detail popover: own entries, meeting-derived and request-derived entries all live in allEntries
-  const detailEntry = detailId ? (allEntries.find(e => e.id === detailId) || state.diaryEntries.find(e => e.id === detailId) || null) : null;
+  const detailEntry = detailId ? (allEntries.find(e => e.id === detailId) || null) : null;
 
-  const viewProps = { date, entries: visible, onOpenEntry: setDetailId, onNewEntry: openEntryModal };
+  const viewProps = { date, entries: visible, onOpenEntry: setDetailId, onNewEntry: openEntryModal, loading };
 
   return (
     <Box>
@@ -86,10 +144,13 @@ export default function DiaryPage() {
       <EaBanner viewer={viewer} owner={owner} canEdit={canEdit} onSwitchOwner={setOwner} />
       <DiaryToolbar view={view} date={date} canEdit={canEdit} onView={setView} onNavigate={navigateBy} onToday={() => setDate(new Date(TODAY))} onNewEntry={openEntryModal} />
 
+      <ApiError error={error} onRetry={retry} sx={{ mb: '14px' }} />
+
       {/* .diary-grid — main 1fr + 260px side; stacks below lg */}
       <Grid container spacing="14px" alignItems="flex-start">
         <Grid size={{ xs: 12, lg: 'grow' }} sx={{ minWidth: 0 }}>
           <Box sx={{ bgcolor: tokens.card, border: `1px solid ${tokens.line}`, borderRadius: tokens.radius, overflow: 'hidden', boxShadow: tokens.shadowSm }}>
+            <Fetching on={fetching && !loading} />
             {view === 'week' && <WeekView {...viewProps} />}
             {view === 'day' && <DayView {...viewProps} />}
             {view === 'month' && <MonthView {...viewProps} onJump={jumpToDate} />}

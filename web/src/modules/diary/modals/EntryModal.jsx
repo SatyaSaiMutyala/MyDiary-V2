@@ -20,11 +20,12 @@ export default function EntryModal({ open, onClose, owner, viewer, date, preset,
     startTime: preset?.startTime || '09:00',
     endTime: preset?.endTime || '10:00',
     allDay: false,
-    title: '', loc: '', notes: '',
+    title: '', loc: '', notes: '', reminder: '15 min before',
     attendees: [], external: [],
   }));
   const [intAdd, setIntAdd] = useState('');
   const [extAdd, setExtAdd] = useState('');
+  const [saving, setSaving] = useState(false);   // one click, one entry: onSave is a POST
   const patch = (p) => setD(prev => ({ ...prev, ...p }));
 
   const addAttendee = (kind) => {
@@ -52,23 +53,28 @@ export default function EntryModal({ open, onClose, owner, viewer, date, preset,
     else patch({ external: d.external.filter((_, i) => i !== keyOrIdx) });
   };
 
-  const save = () => {
+  const save = async () => {
+    if (saving) return;
     if (!d.title.trim()) { window.alert('Please enter a title.'); return; }
-    onSave({
-      id: 'e' + Date.now(),
-      owner,
-      title: d.title.trim(),
-      cat: d.cat,
-      date: d.date,
-      startTime: d.allDay ? undefined : d.startTime,
-      endTime: d.allDay ? undefined : d.endTime,
-      allDay: d.allDay,
-      loc: d.loc.trim(),
-      notes: d.notes.trim(),
-      attendees: [...d.attendees],
-      external: [...d.external],
-      createdBy: isDelegated ? 'ea' : 'self',
-    });
+    setSaving(true);
+    try {
+      await onSave({
+        owner,
+        title: d.title.trim(),
+        cat: d.cat,
+        date: d.date,
+        startTime: d.allDay ? undefined : d.startTime,
+        endTime: d.allDay ? undefined : d.endTime,
+        allDay: d.allDay,
+        loc: d.loc.trim(),
+        notes: d.notes.trim(),
+        reminder: d.reminder,
+        attendees: [...d.attendees],
+        external: [...d.external],
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -78,7 +84,7 @@ export default function EntryModal({ open, onClose, owner, viewer, date, preset,
         <FootNote>🔒 Default: visible to Pallavi (EA) · {d.cat === 'personal' ? 'PERSONAL — hidden from EA by default' : 'can be made private'}</FootNote>
         <Box sx={{ display: 'flex', gap: 1, ml: 'auto' }}>
           <Btn onClick={onClose}>Cancel</Btn>
-          <Btn variant="primary" onClick={save}>+ Add to Diary</Btn>
+          <Btn variant="primary" onClick={save} disabled={saving}>{saving ? 'Adding…' : '+ Add to Diary'}</Btn>
         </Box>
       </>}>
 
@@ -123,7 +129,7 @@ export default function EntryModal({ open, onClose, owner, viewer, date, preset,
         <Grid size={{ xs: 12, sm: 6 }}><Field label="Location / Venue"><TextInput value={d.loc} onChange={e => patch({ loc: e.target.value })} placeholder="e.g. CMD cabin · Taj Deccan · Virtual (Zoom)" /></Field></Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
           <Field label="Reminder">
-            <SelectInput defaultValue="15 min before">
+            <SelectInput value={d.reminder} onChange={e => patch({ reminder: e.target.value })}>
               <option>None</option><option>15 min before</option><option>30 min before</option><option>1 hour before</option><option>1 day before</option>
             </SelectInput>
           </Field>

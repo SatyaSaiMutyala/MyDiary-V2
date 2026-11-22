@@ -6,7 +6,9 @@ import { DIARY_CATS } from '../../../data/diary';
 import { TDPL_LOGO_FULL } from '../../../data/logos';
 import { parseDate, formatDateLong } from '../../../utils/dates';
 import { normExt, rsvpSummary, initials, tdplEmail } from '../../../utils/people';
-import { useAppStore } from '../../../store/AppStore';
+import { errorMessage } from '../../../store/api/baseApi';
+import { useUpdateDiaryEntryMutation } from '../../../store/api/diaryApi';
+import { usePatchExternalMutation } from '../../../store/api/meetingsApi';
 import { openRsvpPreview } from '../../meetings/rsvpPreview';
 import { DETAIL_HEAD } from '../utils';
 
@@ -21,7 +23,8 @@ const sumSx = { display: 'inline-flex', gap: '8px', ml: '8px', fontFamily: fonts
 /** Entry detail popover (openEntryDetail 10362–10457) */
 export default function EntryDetailModal({ entry, canEdit, onClose, onDelete }) {
   const navigate = useNavigate();
-  const { mutate, notify } = useAppStore();
+  const [updateEntry] = useUpdateDiaryEntryMutation();
+  const [patchMeetingExternal] = usePatchExternalMutation();
   if (!entry) return null;
   const cat = DIARY_CATS[entry.cat] || DIARY_CATS.meeting;
   const head = DETAIL_HEAD[entry.cat] || DETAIL_HEAD.meeting;
@@ -45,22 +48,21 @@ export default function EntryDetailModal({ entry, canEdit, onClose, onDelete }) 
       agenda: [],
       notes: entry.notes || '',
       logoDataUrl: TDPL_LOGO_FULL,
-      onRespond: (resp, note) => {
-        const apply = (ext) => {
-          const cur = normExt(ext[idx]);
-          ext[idx] = { name: cur.name, email: cur.email, rsvp: resp, respondedAt: new Date().toISOString().slice(0, 16), respondedNote: note || '' };
-        };
-        if (entry.sourceMeetingId) {
-          mutate('meetings', ms => { const m = ms.find(x => x.id === entry.sourceMeetingId); if (m && m.external) apply(m.external); });
-        } else {
-          mutate('diaryEntries', list => { const e = list.find(x => x.id === entry.id); if (e) apply(e.external); });
+      // The reply is written where the invitee lives: on the meeting (Meetings module) or on this
+      // diary entry. Either way the API raises the notification, so the panel says it once.
+      onRespond: async (resp, note) => {
+        try {
+          if (entry.sourceMeetingId) {
+            await patchMeetingExternal({ id: entry.sourceMeetingId, index: idx, rsvp: resp, respondedNote: note || '' }).unwrap();
+          } else {
+            const external = (entry.external || []).map(normExt).map((x, i) => (i === idx
+              ? { name: x.name, email: x.email, rsvp: resp, respondedAt: new Date().toISOString().slice(0, 16), respondedNote: note || '' }
+              : { name: x.name, email: x.email, rsvp: x.rsvp, respondedAt: x.respondedAt, respondedNote: x.respondedNote }));
+            await updateEntry({ id: entry.id, external }).unwrap();
+          }
+        } catch (err) {
+          window.alert(errorMessage(err));
         }
-        const respLabel = resp === 'accepted' ? 'accepted' : resp === 'declined' ? 'declined' : 'tentatively accepted';
-        const icon = resp === 'accepted' ? '✓' : resp === 'declined' ? '✗' : '?';
-        notify({
-          type: 'meeting', icon,
-          text: '<strong>' + invitee.name + '</strong> has <strong>' + respLabel + '</strong> your invitation to <em>' + subject + '</em>' + (note ? ' — "' + note.slice(0, 80) + (note.length > 80 ? '…' : '') + '"' : '.'),
-        });
       },
     });
   };

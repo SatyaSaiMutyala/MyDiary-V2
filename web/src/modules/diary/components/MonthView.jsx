@@ -2,11 +2,13 @@ import { Box } from '@mui/material';
 import { tokens, fonts } from '../../../theme/tokens';
 import { DIARY_CATS } from '../../../data/diary';
 import { toISO, TODAY_ISO, entryOnDate } from '../utils';
+import { DiaryEmptyNote, DiaryLoading } from './ViewState';
 
 const DOW = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
 /** renderMonthView 10075–10115 */
-export default function MonthView({ date, entries, onOpenEntry, onJump }) {
+export default function MonthView({ date, entries, onOpenEntry, onJump, loading }) {
+  if (loading) return <DiaryLoading />;
   const first = new Date(date.getFullYear(), date.getMonth(), 1);
   const startDow = first.getDay();
   const daysInMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
@@ -24,9 +26,12 @@ export default function MonthView({ date, entries, onOpenEntry, onJump }) {
   const trailing = (7 - (startDow + daysInMonth) % 7) % 7;
   for (let i = 1; i <= trailing; i++) cells.push({ key: 'n' + i, num: i, other: true });
 
+  const anyEvents = cells.some(c => (c.events || []).length > 0);
+
   return (
     <Box sx={{ overflowX: 'auto' }}>
       <Box sx={{ minWidth: 560 }}>
+        {!anyEvents && <DiaryEmptyNote period="this month" />}
         {/* .month-head */}
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', bgcolor: tokens.creamWarm, borderBottom: `2px solid ${tokens.line}` }}>
           {DOW.map((d, i) => <Box key={d} sx={{ p: '8px 0', textAlign: 'center', fontFamily: fonts.mono, fontSize: 10, letterSpacing: '0.12em', color: tokens.slate, textTransform: 'uppercase', fontWeight: 700, borderLeft: i === 0 ? 'none' : `1px solid ${tokens.lineSoft}` }}>{d}</Box>)}

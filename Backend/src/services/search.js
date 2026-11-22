@@ -8,9 +8,16 @@
 import { ActionItem } from '../models/ActionItem.js';
 import { AuditLog } from '../models/AuditLog.js';
 import { Decision } from '../models/Decision.js';
+import { Department } from '../models/Department.js';
+import { DiaryEntry } from '../models/DiaryEntry.js';
+import { DiscussionLog } from '../models/DiscussionLog.js';
+import { Integration } from '../models/Integration.js';
 import { Meeting } from '../models/Meeting.js';
 import { MeetingRequest } from '../models/MeetingRequest.js';
+import { Project } from '../models/Project.js';
+import { Template } from '../models/Template.js';
 import { User } from '../models/User.js';
+import { Visit } from '../models/Visit.js';
 import { searchFilter } from '../utils/listQuery.js';
 import { hasModule } from './modules.js';
 
@@ -106,6 +113,129 @@ registerSearch({
       title: d.text.length > 90 ? d.text.slice(0, 87) + '…' : d.text,
       subtitle: [d.department, d.decidedBy, d.meetingTitle].filter(Boolean).join(' · '),
       route: `/decisions?decision=${d._id.toString()}`,
+    }));
+  },
+});
+
+registerSearch({
+  key: 'diary',
+  label: 'My Diary',
+  canUse: (u) => hasModule(u, 'diary'),
+  async search(q, limit, user) {
+    const docs = await DiaryEntry.find({ $and: [{ owner: user.name }, searchFilter(q, ['title', 'notes', 'loc', 'attendees', 'external.name'])] })
+      .sort({ date: -1, _id: -1 })
+      .limit(limit);
+    return docs.map((e) => ({
+      id: e._id.toString(),
+      title: e.title,
+      subtitle: [e.date, e.allDay ? 'All day' : e.time, e.cat, e.loc].filter(Boolean).join(' \u00b7 '),
+      route: `/diary?date=${e.date}&entry=${e._id.toString()}`,
+    }));
+  },
+});
+
+registerSearch({
+  key: 'visits',
+  label: 'Visit Observations',
+  canUse: (u) => hasModule(u, 'visits'),
+  async search(q, limit) {
+    const docs = await Visit.find(
+      searchFilter(q, ['title', 'org.name', 'org.branch', 'org.city', 'host.name', 'team', 'purpose', 'tags', 'executiveSummary', 'observations.observation']),
+    )
+      .sort({ date: -1, _id: -1 })
+      .limit(limit);
+    return docs.map((v) => ({
+      id: v._id.toString(),
+      title: v.title,
+      subtitle: [v.org?.name, v.org?.branch, v.date, v.status].filter(Boolean).join(' \u00b7 '),
+      route: `/visits?visit=${v._id.toString()}`,
+    }));
+  },
+});
+
+registerSearch({
+  key: 'departments',
+  label: 'Department Master',
+  canUse: (u) => hasModule(u, 'departments'),
+  async search(q, limit) {
+    const docs = await Department.find(
+      searchFilter(q, ['name', 'code', 'description', 'positions.name', 'openingTasks.text', 'closingTasks.text', 'weeklyTasks.text', 'monthlyTasks.text']),
+    )
+      .sort({ order: 1, _id: 1 })
+      .limit(limit);
+    return docs.map((d) => ({
+      id: d._id.toString(),
+      title: d.name,
+      subtitle: [d.code, d.description, `${d.positions?.length ?? 0} positions`].filter(Boolean).join(' \u00b7 '),
+      route: `/departments/${d._id.toString()}`,
+    }));
+  },
+});
+
+registerSearch({
+  key: 'templates',
+  label: 'Templates',
+  canUse: (u) => hasModule(u, 'templates'),
+  async search(q, limit) {
+    const docs = await Template.find(searchFilter(q, ['name', 'desc', 'agenda.text'])).sort({ createdAt: 1, _id: 1 }).limit(limit);
+    return docs.map((t) => ({
+      id: t._id.toString(),
+      title: t.name,
+      subtitle: [TYPE_LABEL[t.type] ?? t.type, `${t.agendaCount} agenda items`, t.desc].filter(Boolean).join(' \u00b7 '),
+      route: `/templates?template=${t._id.toString()}`,
+    }));
+  },
+});
+
+registerSearch({
+  key: 'integrations',
+  label: 'Integrations',
+  canUse: (u) => hasModule(u, 'integrations'),
+  async search(q, limit) {
+    const docs = await Integration.find(searchFilter(q, ['name', 'desc', 'category'])).sort({ order: 1, _id: 1 }).limit(limit);
+    return docs.map((i) => ({
+      id: i._id.toString(),
+      title: i.name,
+      subtitle: [i.category, i.status, i.desc].filter(Boolean).join(' \u00b7 '),
+      route: `/integrations?integration=${i._id.toString()}`,
+    }));
+  },
+});
+
+registerSearch({
+  key: 'projects',
+  label: 'Projects',
+  canUse: (u) => hasModule(u, 'projects'),
+  async search(q, limit) {
+    const docs = await Project.find(
+      searchFilter(q, ['name', 'code', 'description', 'owner', 'team.name', 'external.name', 'milestones.name', 'tasks.title', 'risks.title']),
+    )
+      .sort({ updatedAt: -1, _id: -1 })
+      .limit(limit);
+    return docs.map((p) => ({
+      id: p._id.toString(),
+      title: p.name,
+      subtitle: [p.code, p.status, p.owner, `${p.progress ?? 0}%`].filter(Boolean).join(' \u00b7 '),
+      route: `/projects/${p._id.toString()}`,
+    }));
+  },
+});
+
+registerSearch({
+  key: 'logs',
+  label: 'Discussion Logs',
+  canUse: (u) => hasModule(u, 'logs'),
+  async search(q, limit, user) {
+    // A log is private unless shared, so never surface someone else's private conversation.
+    const visible = { $or: [{ owner: user.name }, { privacy: 'shared' }] };
+    const docs = await DiscussionLog.find({ $and: [visible, searchFilter(q, ['topic', 'summary', 'decisions', 'tags', 'with.name', 'followUps.text'])] })
+      .sort({ date: -1, time: -1, _id: -1 })
+      .limit(limit);
+    return docs.map((l) => ({
+      id: l._id.toString(),
+      title: l.topic,
+      subtitle: [(l.with ?? []).map((w) => w.name).join(', '), l.channel, l.date].filter(Boolean).join(' \u00b7 '),
+      route: `/logs?log=${l._id.toString()}`,
     }));
   },
 });

@@ -1,12 +1,11 @@
 // MY DIARY helpers — ported 1:1 from the prototype (JS 9565–9730 + computeDateLabel)
 import { DELEGATIONS } from '../../data/diary';
 import { TYPES } from '../../data/meetings';
-import { TODAY, parseDuration, addMinutes, startOfWeek, MONTHS, MONTHS_FULL, DAYS_LONG } from '../../utils/dates';
+import { TODAY, toISO, parseDuration, addMinutes, startOfWeek, MONTHS, MONTHS_FULL, DAYS_LONG } from '../../utils/dates';
 import { tokens, fonts } from '../../theme/tokens';
 
-const pad = (n) => String(n).padStart(2, '0');
-/** Local-date → 'YYYY-MM-DD' (timezone-safe equivalent of the prototype's toISOString().slice(0,10)) */
-export const toISO = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+/** Local-date → 'YYYY-MM-DD' (toISOString() would shift the day in IST). */
+export { toISO };
 export const TODAY_ISO = toISO(TODAY);
 
 export const START_HOUR = 7, END_HOUR = 22;       // 7am – 10pm
@@ -16,6 +15,67 @@ export const NOW_MINS = 11 * 60 + 30;             // demo "now" = 11:30 AM
 export function canEditDiary(viewer, owner) {
   if (viewer === owner) return true;
   return DELEGATIONS.some(d => d.owner === owner && d.delegate === viewer && d.permission === 'edit');
+}
+
+// ---- GET /api/diary ⇄ the shape the calendar views render ----
+
+/**
+ * One entry from GET /api/diary as the views expect it. The API's `addedBy` ('self' | 'ea') is the
+ * prototype's `createdBy`, which is what paints the yellow EA badge.
+ */
+export function apiToEntry(e) {
+  return {
+    id: e.id,
+    owner: e.owner,
+    title: e.title,
+    cat: e.cat,
+    date: e.date,
+    endDate: e.endDate || undefined,
+    startTime: e.startTime || undefined,
+    endTime: e.endTime || undefined,
+    allDay: !!e.allDay,
+    loc: e.loc || '',
+    notes: e.notes || '',
+    reminder: e.reminder,
+    attendees: e.attendees || [],
+    external: e.external || [],
+    createdBy: e.addedBy === 'ea' ? 'ea' : 'self',
+  };
+}
+
+/** A saved entry from EntryModal as the POST /api/diary body (the API is strict: no unknown keys). */
+export function entryToApiBody(entry, { owner, me }) {
+  const body = {
+    title: entry.title,
+    cat: entry.cat,
+    date: entry.date,
+    allDay: !!entry.allDay,
+    loc: entry.loc || '',
+    notes: entry.notes || '',
+    reminder: entry.reminder,
+    attendees: entry.attendees || [],
+    external: (entry.external || []).map(x => ({ name: x.name, email: x.email || '' })),
+  };
+  if (!entry.allDay) {
+    body.startTime = entry.startTime;
+    if (entry.endTime) body.endTime = entry.endTime;
+  }
+  if (owner && me && owner !== me) body.owner = owner;   // the EA filling in someone else's diary
+  return body;
+}
+
+/**
+ * The window of days one GET /api/diary (and GET /api/meetings) call must cover for the whole
+ * screen: the displayed month, the mini-calendar's month, the month grid's leading / trailing days,
+ * the week the cursor sits in, and the agenda's next 21 days. One query per month, so moving inside
+ * a month is answered from the cache.
+ */
+export function calendarWindow(date) {
+  const from = new Date(date.getFullYear(), date.getMonth(), 1);
+  from.setDate(from.getDate() - 7);
+  const to = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+  to.setDate(to.getDate() + 28);
+  return { from: toISO(from), to: toISO(to) };
 }
 
 // Derive meeting-based entries from MEETINGS

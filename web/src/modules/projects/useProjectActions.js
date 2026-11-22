@@ -1,164 +1,189 @@
-// All project mutations — a 1:1 port of the prototype's action functions (15306–15413, 15636–15666).
-// Prompts/confirms/alerts keep the exact texts. Each mutation runs on a deep clone via mutate('projects').
+// All project mutations — the prototype's action functions (15306–15413, 15636–15666) against the API.
+// Every prompt/confirm/alert text is kept; each edit is one request to the matching sub-resource endpoint,
+// and a refused request shows the server's own message word for word.
 import { useAppStore } from '../../store/AppStore';
+import { errorMessage } from '../../store/api/baseApi';
+import {
+  useAddCriterionMutation, useAddExternalMutation, useAddKpiMutation, useAddMemberMutation, useAddMilestoneMutation,
+  useAddProjectCommentMutation, useAddProjectRiskMutation, useAddProjectTaskMutation, useDuplicateProjectMutation,
+  useRemoveProjectMutation, useUpdateCriterionMutation, useUpdateMilestoneMutation, useUpdateProjectRiskMutation,
+  useUpdateProjectTaskMutation,
+} from '../../store/api/projectsApi';
 import { TODAY } from '../../utils/dates';
-import { milestoneAcceptanceProgress, sortedMilestones } from './utils';
+import { sortedMilestones } from './utils';
 
-export default function useProjectActions() {
-  const { state, mutate } = useAppStore();
+/**
+ * @param {object} [project] the project the panes are showing — the prompts read their menus off it.
+ * Portfolio actions (`duplicateProject`, `deleteProject`) take the project object instead.
+ */
+export default function useProjectActions(project) {
+  const { state } = useAppStore();
   const me = state.viewer.name;
-  const find = (pid) => state.projects.find(x => x.id === pid);
 
-  // Runs fn(p) on the cloned project inside the store
-  const edit = (pid, fn) => mutate('projects', ps => { const p = ps.find(x => x.id === pid); if (p) fn(p); });
+  const [addMilestone] = useAddMilestoneMutation();
+  const [updateMilestone] = useUpdateMilestoneMutation();
+  const [addCriterion] = useAddCriterionMutation();
+  const [updateCriterion] = useUpdateCriterionMutation();
+  const [addTask] = useAddProjectTaskMutation();
+  const [updateTask] = useUpdateProjectTaskMutation();
+  const [addRisk] = useAddProjectRiskMutation();
+  const [updateRisk] = useUpdateProjectRiskMutation();
+  const [addKpi] = useAddKpiMutation();
+  const [addMember] = useAddMemberMutation();
+  const [addExternal] = useAddExternalMutation();
+  const [addComment] = useAddProjectCommentMutation();
+  const [duplicate] = useDuplicateProjectMutation();
+  const [remove] = useRemoveProjectMutation();
+
+  /** Runs a mutation and shows the server's message as-is if it refuses. */
+  const run = async (mutation, arg) => {
+    try {
+      await mutation(arg).unwrap();
+      return true;
+    } catch (err) {
+      window.alert(errorMessage(err));
+      return false;
+    }
+  };
+
+  const milestoneOf = (mid) => (project?.milestones || []).find((m) => m.id === mid);
+  const riskOf = (rid) => (project?.risks || []).find((r) => r.id === rid);
+
+  /** The prototype's "pick a milestone by number" prompt. Returns undefined when cancelled. */
+  const pickMilestone = (promptText, preset) => {
+    const sorted = sortedMilestones(project || {});
+    if (!sorted.length) return null;
+    const menu = sorted.map((m, i) => `${i + 1}. ${m.name}`).join('\n');
+    const ans = window.prompt(`${promptText}\n\n${menu}\n0. None (project-wide)`, preset ?? '');
+    if (ans === null) return undefined;
+    if (ans.trim() === '' || ans.trim() === '0') return null;
+    const idx = Number.parseInt(ans.trim(), 10) - 1;
+    return idx >= 0 && idx < sorted.length ? sorted[idx].id : null;
+  };
 
   return {
     toggleMilestone(pid, mid) {
-      edit(pid, p => {
-        const m = p.milestones.find(x => x.id === mid); if (!m) return;
-        m.status = m.status === 'done' ? 'todo' : 'done';
-        p.activity.unshift({ user: me, action: (m.status === 'done' ? 'completed' : 'reopened') + ' milestone "' + m.name + '"', at: 'Just now' });
-      });
+      const m = milestoneOf(mid);
+      if (!m) return;
+      return run(updateMilestone, { id: pid, milestoneId: mid, status: m.status === 'done' ? 'todo' : 'done' });
     },
     updateMilestoneStatus(pid, mid, s) {
-      edit(pid, p => {
-        const m = p.milestones.find(x => x.id === mid); if (!m) return;
-        m.status = s;
-        p.activity.unshift({ user: me, action: 'set milestone "' + m.name + '" → ' + s, at: 'Just now' });
-      });
+      return run(updateMilestone, { id: pid, milestoneId: mid, status: s });
     },
     addMilestone(pid) {
-      const p = find(pid); if (!p) return;
-      const name = window.prompt('Milestone name:'); if (!name) return;
+      const name = window.prompt('Milestone name:');
+      if (!name) return;
       const due = window.prompt('Due date (YYYY-MM-DD):', new Date(TODAY.getTime() + 30 * 86400000).toISOString().slice(0, 10));
       if (!due) return;
       const owner = window.prompt('Owner:', me) || me;
-      edit(pid, q => {
-        q.milestones.push({ id: 'm' + Date.now(), name, dueDate: due, status: 'todo', owner, description: '', acceptanceCriteria: [] });
-        q.activity.unshift({ user: me, action: 'added milestone "' + name + '"', at: 'Just now' });
-      });
+      return run(addMilestone, { id: pid, name, dueDate: due, owner });
     },
     updateTaskStatus(pid, tid, s) {
-      edit(pid, p => {
-        const t = p.tasks.find(x => x.id === tid); if (!t) return;
-        t.status = s;
-        p.activity.unshift({ user: me, action: 'moved task "' + t.title + '" → ' + s, at: 'Just now' });
-      });
+      return run(updateTask, { id: pid, taskId: tid, status: s });
     },
     addProjectTask(pid, presetMilestoneId) {
-      const p = find(pid); if (!p) return;
-      const title = window.prompt('Task title:'); if (!title) return;
+      const title = window.prompt('Task title:');
+      if (!title) return;
       const assignee = window.prompt('Assignee:', me) || me;
       const due = window.prompt('Due date (YYYY-MM-DD):', new Date(TODAY.getTime() + 14 * 86400000).toISOString().slice(0, 10));
       const priority = (window.prompt('Priority (low / medium / high / critical):', 'medium') || 'medium').toLowerCase();
 
       let milestoneId = presetMilestoneId !== undefined ? presetMilestoneId : null;
-      if (presetMilestoneId === undefined && (p.milestones || []).length > 0) {
-        const sorted = sortedMilestones(p);
-        const menu = sorted.map((m, i) => (i + 1) + '. ' + m.name).join('\n');
-        const pick = window.prompt('Link to milestone? (enter number, or blank for none)\n\n' + menu + '\n0. None (project-level task)');
-        if (pick && pick.trim() !== '' && pick.trim() !== '0') {
-          const idx = parseInt(pick.trim(), 10) - 1;
-          if (idx >= 0 && idx < sorted.length) milestoneId = sorted[idx].id;
-        }
+      if (presetMilestoneId === undefined && (project?.milestones || []).length > 0) {
+        const picked = pickMilestone('Link to milestone? (enter number, or blank for none)');
+        if (picked === undefined) return;
+        milestoneId = picked;
       }
-      edit(pid, q => {
-        if (!q.tasks) q.tasks = [];
-        q.tasks.push({ id: 't' + Date.now(), title, assignee, status: 'todo', dueDate: due, priority, milestoneId });
-        q.activity.unshift({ user: me, action: 'added task "' + title + '"' + (milestoneId ? ' → milestone' : ''), at: 'Just now' });
-      });
+      return run(addTask, { id: pid, title, assignee, dueDate: due || '', priority, milestoneId });
     },
     toggleRisk(pid, rid) {
-      edit(pid, p => {
-        const r = p.risks.find(x => x.id === rid); if (!r) return;
-        r.status = r.status === 'mitigated' ? 'open' : 'mitigated';
-        p.activity.unshift({ user: me, action: (r.status === 'mitigated' ? 'mitigated' : 're-opened') + ' risk "' + r.title + '"', at: 'Just now' });
-      });
+      const r = riskOf(rid);
+      if (!r) return;
+      return run(updateRisk, { id: pid, riskId: rid, status: r.status === 'mitigated' ? 'open' : 'mitigated' });
     },
     addProjectRisk(pid) {
-      const p = find(pid); if (!p) return;
-      const title = window.prompt('Risk title (what could go wrong?):'); if (!title) return;
+      const title = window.prompt('Risk title (what could go wrong?):');
+      if (!title) return;
       const severity = (window.prompt('Severity (low / medium / high / critical):', 'medium') || 'medium').toLowerCase();
       const mitigation = window.prompt('Mitigation plan:', '') || '';
       const owner = window.prompt('Risk owner:', me) || me;
 
       let milestoneId = null;
-      if ((p.milestones || []).length > 0) {
-        const sorted = sortedMilestones(p);
-        const menu = sorted.map((m, i) => (i + 1) + '. ' + m.name).join('\n');
-        const pick = window.prompt('Link this risk to a milestone? (enter number, or blank for none)\n\n' + menu + '\n0. None (project-wide risk)');
-        if (pick && pick.trim() !== '' && pick.trim() !== '0') {
-          const idx = parseInt(pick.trim(), 10) - 1;
-          if (idx >= 0 && idx < sorted.length) milestoneId = sorted[idx].id;
-        }
+      if ((project?.milestones || []).length > 0) {
+        const picked = pickMilestone('Link this risk to a milestone? (enter number, or blank for none)');
+        if (picked === undefined) return;
+        milestoneId = picked;
       }
-      edit(pid, q => {
-        if (!q.risks) q.risks = [];
-        q.risks.push({ id: 'r' + Date.now(), title, severity, mitigation, owner, status: 'open', milestoneId });
-        q.activity.unshift({ user: me, action: 'added risk "' + title + '"' + (milestoneId ? ' → milestone' : ''), at: 'Just now' });
-      });
+      return run(addRisk, { id: pid, title, severity, mitigation, owner, milestoneId });
     },
     linkRiskToMilestone(pid, rid) {
-      const p = find(pid); if (!p) return;
-      const r = p.risks.find(x => x.id === rid); if (!r) return;
-      if ((p.milestones || []).length === 0) { window.alert('No milestones to link to. Add a milestone first.'); return; }
-      const sorted = sortedMilestones(p);
-      const menu = sorted.map((m, i) => (i + 1) + '. ' + m.name).join('\n');
-      const ans = window.prompt('Link to which milestone?\n\n' + menu + '\n0. None (make it project-wide)', r.milestoneId ? String(sorted.findIndex(m => m.id === r.milestoneId) + 1) : '');
-      if (ans === null) return;
-      if (ans.trim() === '' || ans.trim() === '0') { edit(pid, q => { const rr = q.risks.find(x => x.id === rid); if (rr) rr.milestoneId = null; }); return; }
-      const idx = parseInt(ans.trim(), 10) - 1;
-      if (idx >= 0 && idx < sorted.length) edit(pid, q => { const rr = q.risks.find(x => x.id === rid); if (rr) rr.milestoneId = sorted[idx].id; });
+      const r = riskOf(rid);
+      if (!r) return;
+      if ((project?.milestones || []).length === 0) {
+        window.alert('No milestones to link to. Add a milestone first.');
+        return;
+      }
+      const sorted = sortedMilestones(project);
+      const preset = r.milestoneId ? String(sorted.findIndex((m) => m.id === r.milestoneId) + 1) : '';
+      const picked = pickMilestone('Link to which milestone?', preset);
+      if (picked === undefined) return;
+      return run(updateRisk, { id: pid, riskId: rid, milestoneId: picked });
     },
     toggleAcceptanceCriterion(pid, mid, idx) {
-      edit(pid, p => {
-        const m = p.milestones.find(x => x.id === mid); if (!m) return;
-        if (!m.acceptanceCriteria || !m.acceptanceCriteria[idx]) return;
-        m.acceptanceCriteria[idx].done = !m.acceptanceCriteria[idx].done;
-        const ap = milestoneAcceptanceProgress(m);
-        if (ap.total > 0 && ap.pct === 100 && m.status !== 'done') {
-          m.status = 'done';
-          p.activity.unshift({ user: me, action: 'auto-closed milestone "' + m.name + '" (all acceptance criteria met)', at: 'Just now' });
-        }
-      });
+      const m = milestoneOf(mid);
+      const c = m && (m.acceptanceCriteria || [])[idx];
+      if (!c) return;
+      // The API closes the milestone itself once the last criterion is ticked.
+      return run(updateCriterion, { id: pid, milestoneId: mid, index: idx, done: !c.done });
     },
     addAcceptanceCriterion(pid, mid) {
       const txt = window.prompt('Acceptance criterion (e.g. "All SOPs HOD-signed"):');
       if (!txt || !txt.trim()) return;
-      edit(pid, p => {
-        const m = p.milestones.find(x => x.id === mid); if (!m) return;
-        if (!m.acceptanceCriteria) m.acceptanceCriteria = [];
-        m.acceptanceCriteria.push({ text: txt.trim(), done: false });
-      });
+      return run(addCriterion, { id: pid, milestoneId: mid, text: txt.trim() });
     },
-    addProjComment(pid, txt) {
-      const t = (txt || '').trim(); if (!t) return false;
-      edit(pid, p => { p.activity.unshift({ user: me, action: 'commented: "' + t + '"', at: 'Just now' }); });
-      return true;
+    async addProjComment(pid, txt) {
+      const t = (txt || '').trim();
+      if (!t) return false;
+      return run(addComment, { id: pid, text: t });
     },
-    duplicateProject(pid) {
-      const p = find(pid); if (!p) return;
-      if (!window.confirm('Duplicate "' + p.name + '" as a new project?')) return;
-      mutate('projects', ps => {
-        const src = ps.find(x => x.id === pid); if (!src) return;
-        const copy = JSON.parse(JSON.stringify(src));
-        copy.id = 'proj' + Date.now();
-        copy.code = src.code + '-COPY';
-        copy.name = src.name + ' (Copy)';
-        copy.status = 'planning';
-        copy.progress = 0;
-        copy.milestones.forEach(m => { m.status = 'todo'; });
-        copy.tasks.forEach(t => { t.status = 'todo'; });
-        copy.activity = [{ user: me, action: 'duplicated from ' + src.code, at: 'Just now' }];
-        ps.unshift(copy);
-      });
-      window.alert('✓ Project duplicated.');
+    /** KPIs pane — the prototype only promised this dialog; it now writes through the KPI endpoint. */
+    addKpi(pid) {
+      const name = window.prompt('KPI name (e.g. SOPs reviewed):');
+      if (!name || !name.trim()) return;
+      const current = Number.parseFloat(window.prompt('Current value:', '0') || '0');
+      const target = Number.parseFloat(window.prompt('Target value:', '100') || '100');
+      const unit = window.prompt('Unit (%, days, blank for none):', '') || '';
+      if (Number.isNaN(current) || Number.isNaN(target)) {
+        window.alert('Current and target must be numbers.');
+        return;
+      }
+      return run(addKpi, { id: pid, name: name.trim(), current, target, unit });
     },
-    deleteProject(pid) {
-      const p = find(pid); if (!p) return false;
+    /** Team pane — same idea for the two "+ Invite" links. */
+    inviteMember(pid) {
+      const name = window.prompt('TDPL member name:');
+      if (!name || !name.trim()) return;
+      const role = window.prompt('Role on this project (e.g. Project Lead, Analyst):', '') || '';
+      return run(addMember, { id: pid, name: name.trim(), role });
+    },
+    inviteExternal(pid) {
+      const name = window.prompt('External collaborator name:');
+      if (!name || !name.trim()) return;
+      const email = window.prompt('Email:', '') || '';
+      const role = window.prompt('Role / organisation:', '') || '';
+      return run(addExternal, { id: pid, name: name.trim(), email, role });
+    },
+    async duplicateProject(p) {
+      if (!p) return false;
+      if (!window.confirm('Duplicate "' + p.name + '" as a new project?')) return false;
+      const ok = await run(duplicate, p.id);
+      if (ok) window.alert('✓ Project duplicated.');
+      return ok;
+    },
+    async deleteProject(p) {
+      if (!p) return false;
       if (!window.confirm('Delete project "' + p.name + '"? This cannot be undone.')) return false;
-      mutate('projects', ps => ps.filter(x => x.id !== pid));
-      return true;
+      return run(remove, p.id);
     },
   };
 }

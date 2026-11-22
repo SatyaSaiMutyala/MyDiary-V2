@@ -4,10 +4,46 @@ import { VISIT_TYPES, RATING_AREAS } from '../../data/visits';
 import { EMPLOYEES } from '../../data/employees';
 import { parseDate, formatDateLong, todayStr } from '../../utils/dates';
 
+/** Fallback for the team picker when GET /api/users is not allowed (it is admin-only). */
 export const EMPLOYEE_OPTIONS = EMPLOYEES.flatMap(g => g.people.map(p => ({ name: p.name, role: p.role })));
 
-export function myVisits(visits, viewerName) {
-  return visits.filter(v => v.owner === viewerName);
+/** "Venkata Cherukuri (CMD)" and "venkata cherukuri" are the same person (server-side rule, mirrored here). */
+export const samePerson = (a, b) =>
+  String(a ?? '').replace(/\(.*?\)/g, '').replace(/\s+/g, ' ').trim().toLowerCase() ===
+  String(b ?? '').replace(/\(.*?\)/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
+
+/**
+ * The editor's draft → the body POST /api/visits · PATCH /api/visits/:id accept. Only these keys exist on
+ * the API; anything else the server sent back (id, history, avgRating, createdBy, timestamps) is dropped,
+ * because the endpoints refuse unknown fields.
+ */
+export function visitBody(d, status) {
+  return {
+    title: (d.title || '').trim(),
+    type: d.type,
+    status,
+    owner: d.owner || '',
+    date: d.date,
+    timeIn: d.timeIn || '',
+    timeOut: d.timeOut || '',
+    org: { name: d.org?.name || '', branch: d.org?.branch || '', address: d.org?.address || '', city: d.org?.city || '', state: d.org?.state || '', gps: d.org?.gps || '' },
+    host: { name: d.host?.name || '', designation: d.host?.designation || '', phone: d.host?.phone || '', email: d.host?.email || '' },
+    team: [...(d.team || [])],
+    externalParticipants: d.externalParticipants || '',
+    purpose: d.purpose || '',
+    scope: d.scope || '',
+    references: d.references || '',
+    tags: [...(d.tags || [])],
+    ratings: RATING_AREAS.reduce((acc, a) => ({ ...acc, [a.key]: d.ratings?.[a.key] || 0 }), {}),
+    overallAssessment: d.overallAssessment || '',
+    executiveSummary: d.executiveSummary || '',
+    observations: (d.observations || []).map(o => ({ category: o.category || 'Other', observation: o.observation || '', evidence: o.evidence || '' })),
+    photos: d.photos || 0,
+    actionItems: (d.actionItems || []).map(a => ({ text: a.text || '', owner: a.owner || '', deadline: a.deadline || '' })),
+    nextVisitDate: d.nextVisitDate || '',
+    followUpRequired: !!d.followUpRequired,
+    additionalRemarks: d.additionalRemarks || '',
+  };
 }
 
 export function avgRating(v) {
@@ -58,10 +94,10 @@ export function visitDetailHeadStyle(type) {
   return { background: map[type] || `linear-gradient(135deg, ${tokens.greenDeep}, ${tokens.tealDark})`, color: type === 'regulatory' ? tokens.greenDeep : '#fff' };
 }
 
-// openVisitModal() — blank draft
+// openVisitModal() — blank draft. `id: null` marks it as not saved yet (POST, not PATCH).
 export function newVisitDraft(owner) {
   return {
-    id: 'v' + Date.now(), owner,
+    id: null, owner,
     title: '', type: 'branch-office', status: 'draft',
     date: todayStr(), timeIn: '', timeOut: '',
     org: { name: '', branch: '', address: '', city: '', state: '', gps: '' },
