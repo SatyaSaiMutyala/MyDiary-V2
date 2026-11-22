@@ -2,7 +2,7 @@
   "name": "mydiary-v2-backend",
   "version": "0.1.0",
   "private": true,
-  "description": "MyDiary V2 API — Node 20, Express",
+  "description": "MyDiary V2 API \u2014 Node 20, Express",
   "type": "module",
   "main": "src/index.js",
   "engines": {
@@ -13,7 +13,9 @@
     "start": "node src/index.js",
     "test": "vitest run",
     "seed": "node src/seed.js",
-    "lint": "node scripts/check-syntax.js"
+    "lint": "node scripts/check-syntax.js",
+    "create-admin": "node scripts/create-admin.js",
+    "seed:departments": "node scripts/seed-departments.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

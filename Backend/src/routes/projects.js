@@ -12,15 +12,16 @@ export const projectsRouter = Router();
 projectsRouter.use(requireAuth, requireModule('projects'));
 
 /**
- * The portfolio is never empty on a fresh database: the 9 sample projects and 12 templates are inserted on
- * the first request that reaches this router (idempotent — see services/projects.js `ensureProjectSeed`).
+ * The template library is put in place on the first request that reaches this router, so the wizard's
+ * "Use template" list is never empty (idempotent — services/projects.js `ensureProjectTemplateSeed`).
+ * The portfolio itself starts empty: no sample projects are ever created.
  * @type {import('express').RequestHandler}
  */
-const seedPortfolio = async (_req, _res, next) => {
+const seedTemplateLibrary = async (_req, _res, next) => {
   await ensureProjectsSeeded();
   next();
 };
-projectsRouter.use(seedPortfolio);
+projectsRouter.use(seedTemplateLibrary);
 
 // The template library first, so "templates" is never read as a project id.
 projectsRouter.get('/templates', projects.listTemplates);

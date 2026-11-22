@@ -2,7 +2,6 @@ import { Router } from 'express';
 import * as integrations from '../controllers/integrations.js';
 import { requireAuth, requireModule } from '../middleware/auth.js';
 import { validateBody } from '../middleware/validate.js';
-import { ensureIntegrationsSeeded } from '../services/integrations.js';
 
 /**
  * /api/integrations — the register of which third-party tools are switched on (admin-only module).
@@ -11,10 +10,8 @@ import { ensureIntegrationsSeeded } from '../services/integrations.js';
 export const integrationsRouter = Router();
 integrationsRouter.use(requireAuth, requireModule('integrations'));
 
-/** The 15 starting rows appear on the first request after an empty database (idempotent). */
-integrationsRouter.use((_req, _res, next) => {
-  ensureIntegrationsSeeded().then(() => next(), next);
-});
+// The register starts EMPTY. The 15 default tools are demo data, so nothing writes them automatically;
+// add the ones you actually use with POST /api/integrations.
 
 integrationsRouter.get('/', integrations.list);
 integrationsRouter.post('/', validateBody(integrations.createSchema), integrations.create);

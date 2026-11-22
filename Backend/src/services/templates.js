@@ -3,7 +3,6 @@ import { config } from '../config.js';
 import { SEED_USED_COUNT, TEMPLATE_SEED } from '../data/templates.js';
 import { Template } from '../models/Template.js';
 import { notFound } from '../utils/errors.js';
-import { seedingAllowed as seedGuard } from './seedGuard.js';
 
 /** @param {string} id */
 export async function findTemplateOr404(id) {
@@ -14,21 +13,13 @@ export async function findTemplateOr404(id) {
 }
 
 /**
- * Puts the 12 library templates in place the first time the collection is empty — the same shape as
- * `ensureDefaultAdmin()` in services/users.js, and idempotent: with anything already stored it does nothing.
- * Called by the templates router before every request, so a fresh database is never an empty library.
+ * The 12 agenda templates are LIBRARY data: the Templates page and the Schedule form's template picker are
+ * empty without them, and no business record is invented, so they are written on every database including
+ * production. Called by the templates router before every request. Idempotent: with anything already
+ * stored it does nothing.
  * @returns {Promise<number>} how many templates were inserted (0 when the library already existed)
  */
-/**
- * Writing the starting set is only automatic on a database that is safe to write to: the embedded dev
- * database (MONGODB_URI empty) or a test database. Against a real connection string it waits for an
- * explicit `SEED_TEMPLATES=true`, so opening this page against production never seeds by itself.
- */
-// One rule for the whole app — see services/seedGuard.js.
-const seedingAllowed = seedGuard;
-
 export async function ensureTemplateSeed() {
-  if (!seedingAllowed()) return 0;
   await Template.createIndexes();
   if ((await Template.countDocuments()) > 0) return 0;
   // insertMany keeps the prototype's order, which `defaultSort: 'createdAt'` then reproduces on the page.

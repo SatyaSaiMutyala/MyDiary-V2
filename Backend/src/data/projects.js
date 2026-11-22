@@ -2,7 +2,8 @@
  * The starting set of the Projects module: the 9 sample projects and the 12 project templates of
  * web/src/data/projects.js, copied verbatim (the same idea as data/roster.js for the TDPL roster).
  *
- * Inserted by services/projects.js `ensureProjectSeed()` the first time each collection is empty, the
+ * The templates are inserted by services/projects.js `ensureProjectTemplateSeed()`; the sample projects
+ * are DEMO data and only go in when `seedSampleProjects()` is called by hand. Originally this was the
  * way `ensureDefaultAdmin()` creates the first admin on boot. Template milestone/task/risk entries carry
  * day offsets; a project built from a template turns them into real dates.
  *

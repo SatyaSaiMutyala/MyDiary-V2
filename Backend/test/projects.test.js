@@ -6,6 +6,9 @@ import { auth, createAndLogin, login, startTestApp } from './helpers.js';
 let ctx;
 let token = '';
 let empToken = '';
+// What a brand-new database looks like, read BEFORE this suite loads its fixtures.
+let emptyPortfolio = -1;
+let libraryOnFirstRequest = -1;
 
 const base = {
   name: 'NABL Mock Audit Prep',
@@ -35,13 +38,30 @@ beforeAll(async () => {
   // Someone without the projects module, to prove the guard works.
   const emp = await createAndLogin(ctx.app, token, { name: 'Pavan', email: 'pavan@trustlab.co.in', role: 'employee', title: 'Developer', department: 'IT & Digital', modules: ['dashboard'] });
   empToken = emp.token;
+
+  // A fresh database: the template LIBRARY fills itself, the portfolio does not.
+  emptyPortfolio = (await get('/api/projects?limit=200')).body.total;
+  libraryOnFirstRequest = (await get('/api/projects/templates?limit=50')).body.total;
+
+  // The 9 sample projects are demo data and no longer appear on their own, so this suite loads them
+  // explicitly as its fixture — that is the only reason they exist here.
+  const { seedSampleProjects } = await import('../src/services/projects.js');
+  await seedSampleProjects();
 });
 afterAll(() => ctx.stop());
 
 // ---------------------------------------------------------------- the starting set
 
 describe('the starting set', () => {
-  it('seeds the 9 sample projects and the 12 templates into an empty database', async () => {
+  it('starts with an EMPTY portfolio — no sample projects are ever created on their own', () => {
+    expect(emptyPortfolio).toBe(0);
+  });
+
+  it('fills the template library by itself, so the wizard always has templates to offer', () => {
+    expect(libraryOnFirstRequest).toBe(12);
+  });
+
+  it('carries every detail of a project once one exists', async () => {
     const r = await get('/api/projects?limit=200');
     expect(r.status).toBe(200);
     expect(r.body.total).toBe(9);
@@ -71,7 +91,7 @@ describe('the starting set', () => {
     expect(tpl.body.items[0].milestones).toHaveLength(7);
   });
 
-  it('gives the sample projects their activity feed from the Activity Log', async () => {
+  it('gives a project its activity feed from the Activity Log', async () => {
     const r = await get('/api/projects?limit=200&code=TL-OPS-2026-01');
     const one = await get(`/api/projects/${r.body.items[0].id}`);
     const feed = one.body.project.activity;
@@ -80,9 +100,16 @@ describe('the starting set', () => {
     expect(feed[3]).toMatchObject({ user: 'Mohammed Fayazuddin', action: 'created the project', at: '15 Oct 2026 · 10:00 AM' });
   });
 
-  it('does not seed again once the collections have rows', async () => {
-    expect((await get('/api/projects?limit=200')).body.total).toBe(9);
+  it('does not fill the library again once it has rows', async () => {
+    const { ensureProjectTemplateSeed } = await import('../src/services/projects.js');
+    expect(await ensureProjectTemplateSeed()).toBe(0);
     expect((await get('/api/projects/templates')).body.total).toBe(12);
+  });
+
+  it('refuses to write sample projects a second time', async () => {
+    const { seedSampleProjects } = await import('../src/services/projects.js');
+    expect(await seedSampleProjects()).toBe(0);
+    expect((await get('/api/projects?limit=200')).body.total).toBe(9);
   });
 
   it('needs the projects module', async () => {

@@ -6,6 +6,8 @@ import { auth, createAndLogin, login, startTestApp } from './helpers.js';
 let ctx;
 let token = ''; // Venkata Cherukuri — admin
 let empToken = ''; // an employee: no integrations module
+// What a brand-new database looks like, read BEFORE this suite loads its fixture.
+let emptyRegister = -1;
 
 const get = (p, t = token) => request(ctx.app).get(p).set(auth(t));
 const post = (p, b, t = token) => request(ctx.app).post(p).set(auth(t)).send(b);
@@ -19,11 +21,23 @@ beforeAll(async () => {
   ctx = await startTestApp();
   token = (await login(ctx.app)).token;
   empToken = (await createAndLogin(ctx.app, token, { name: 'Pavan', email: 'pavan@trustlab.co.in', role: 'employee', title: 'Developer', department: 'IT & Digital' })).token;
+
+  // A fresh database has an empty register: the 15 default tools are demo data and nothing writes them.
+  emptyRegister = (await get('/api/integrations?limit=200')).body.total;
+
+  // The list-contract tests below need rows to page and filter, so this suite loads the default set
+  // explicitly as its fixture. In the running app nothing calls this.
+  const { ensureDefaultIntegrations } = await import('../src/services/integrations.js');
+  await ensureDefaultIntegrations();
 });
 afterAll(() => ctx.stop());
 
-describe('seeding', () => {
-  it('fills the register with the 15 starting tools when the collection is empty', async () => {
+describe('the starting register', () => {
+  it('is EMPTY on a fresh database — no integration is ever created automatically', () => {
+    expect(emptyRegister).toBe(0);
+  });
+
+  it('carries the full card text for every tool once the set is loaded', async () => {
     const r = await get('/api/integrations?limit=200');
     expect(r.status).toBe(200);
     expect(r.body.total).toBe(15);
@@ -33,7 +47,7 @@ describe('seeding', () => {
     expect(r.body.items.every((i) => i.desc && i.lastSync && i.settings.syncFrequency)).toBe(true);
   });
 
-  it('stays idempotent — a second read does not add the set again', async () => {
+  it('stays idempotent — asking a second time adds nothing', async () => {
     const { ensureDefaultIntegrations } = await import('../src/services/integrations.js');
     expect(await ensureDefaultIntegrations()).toBe(0);
     expect((await get('/api/integrations?limit=200')).body.total).toBe(15);

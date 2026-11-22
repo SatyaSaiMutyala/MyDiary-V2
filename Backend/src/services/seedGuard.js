@@ -1,5 +1,13 @@
 /**
- * The single rule deciding whether this process may write a "starting set" of rows nobody asked for.
+ * The single rule deciding whether this process may write DEMO rows nobody asked for.
+ *
+ * Two kinds of starting data are not the same thing:
+ *   - LIBRARY data — the 12 agenda templates and the 12 project templates. The pickers in the UI are
+ *     empty without them and no business record is invented, so these are always written, production
+ *     included. They are reference data, not somebody's work.
+ *   - DEMO data — sample projects, the integration register, the employee roster, a default admin.
+ *     These look like real records the business never created. Nothing writes them automatically any
+ *     more; a script or a test has to ask, and this rule still refuses in production.
  *
  * Seeding is a convenience for development: it fills an empty database so the screens are not blank.
  * In production it is the opposite of helpful — it invents records the business never created. One rule

@@ -476,67 +476,71 @@ function projectSeedDoc(s) {
 export const seedingAllowed = seedGuard;
 
 /**
- * Puts the 12 templates and the 9 sample projects in place the first time each collection is empty — the same
- * idea as `ensureDefaultAdmin()` in services/users.js, and idempotent: with anything already stored it does
- * nothing. Called by the projects router before every request, so a fresh database is never an empty portfolio.
- *
- * The sample projects' activity lines are written as Activity Log entries (that is where the feed is read
- * from) with their original timestamps, and their created / updated dates are restored afterwards.
- * @returns {Promise<{ templates: number, projects: number }>}
+ * The 12 project templates are LIBRARY data: the project wizard's "Use template" list is empty without
+ * them, and no business record is invented, so they go on to every database including production.
+ * Idempotent — with templates already stored it does nothing.
+ * @returns {Promise<number>} how many templates were inserted
  */
-export async function ensureProjectSeed() {
-  if (!seedingAllowed()) {
-    console.log('[projects] starting set not inserted: MONGODB_URI points at a database that is not ours to seed');
-    return { templates: 0, projects: 0 };
-  }
-  await Promise.all([Project.createIndexes(), ProjectTemplate.createIndexes()]);
-  let templates = 0;
-  if ((await ProjectTemplate.countDocuments()) === 0) {
-    const ops = PROJECT_TEMPLATE_SEED.map((s, idx) => ({ updateOne: { filter: { key: s.id }, update: { $setOnInsert: templateSeedDoc(s, idx) }, upsert: true } }));
-    const r = await ProjectTemplate.bulkWrite(ops, { ordered: false });
-    templates = r.upsertedCount ?? 0;
-  }
-
-  let projects = 0;
-  if ((await Project.countDocuments()) === 0) {
-    const docs = await Project.insertMany(PROJECT_SEED.map(projectSeedDoc));
-    projects = docs.length;
-    /** @type {any[]} */
-    const entries = [];
-    for (let i = 0; i < docs.length; i += 1) {
-      const doc = docs[i];
-      const seed = PROJECT_SEED[i];
-      // UTC midnight, so the date the screens print back is the date the prototype had, in any timezone.
-      const createdAt = new Date(`${seed.createdAt}T00:00:00.000Z`);
-      const updatedAt = new Date(`${seed.updatedAt}T00:00:00.000Z`);
-      // `createdAt` is immutable once Mongoose has written it, so the sample dates go in through the driver.
-      await Project.collection.updateOne({ _id: doc._id }, { $set: { createdAt, updatedAt } });
-      for (const a of seed.activity ?? []) {
-        entries.push({
-          at: parseActivityAt(a.at) ?? createdAt,
-          user: { id: null, name: a.user },
-          action: /created the project/i.test(a.action) ? 'create' : 'update',
-          module: PROJECT_MODULE,
-          entity: doc.name,
-          entityId: doc._id.toString(),
-          details: a.action,
-          ip: '',
-        });
-      }
-    }
-    if (entries.length) await AuditLog.insertMany(entries);
-    if (projects) console.log(`[boot] seeded ${projects} projects and ${templates} project templates`);
-  }
-  return { templates, projects };
+export async function ensureProjectTemplateSeed() {
+  await ProjectTemplate.createIndexes();
+  if ((await ProjectTemplate.countDocuments()) > 0) return 0;
+  const ops = PROJECT_TEMPLATE_SEED.map((s, idx) => ({ updateOne: { filter: { key: s.id }, update: { $setOnInsert: templateSeedDoc(s, idx) }, upsert: true } }));
+  const r = await ProjectTemplate.bulkWrite(ops, { ordered: false });
+  return r.upsertedCount ?? 0;
 }
 
-/** True once we know the portfolio has rows, so the per-request guard stops hitting the DB. */
+/**
+ * The 9 sample projects are DEMO data — they look like real work the business never did, so NOTHING calls
+ * this automatically. A test or a script has to ask for it by name, and it still refuses in production.
+ *
+ * Their activity lines are written as Activity Log entries (that is where the feed is read from) with
+ * their original timestamps, and their created / updated dates are restored afterwards.
+ * @returns {Promise<number>} how many projects were inserted
+ */
+export async function seedSampleProjects() {
+  if (!seedGuard()) {
+    console.log('[projects] sample projects not inserted: this database is not one to fill with demo data');
+    return 0;
+  }
+  await Project.createIndexes();
+  if ((await Project.countDocuments()) > 0) return 0;
+  const docs = await Project.insertMany(PROJECT_SEED.map(projectSeedDoc));
+  /** @type {any[]} */
+  const entries = [];
+  for (let i = 0; i < docs.length; i += 1) {
+    const doc = docs[i];
+    const seed = PROJECT_SEED[i];
+    // UTC midnight, so the date the screens print back is the date the prototype had, in any timezone.
+    const createdAt = new Date(`${seed.createdAt}T00:00:00.000Z`);
+    const updatedAt = new Date(`${seed.updatedAt}T00:00:00.000Z`);
+    // `createdAt` is immutable once Mongoose has written it, so the sample dates go in through the driver.
+    await Project.collection.updateOne({ _id: doc._id }, { $set: { createdAt, updatedAt } });
+    for (const a of seed.activity ?? []) {
+      entries.push({
+        at: parseActivityAt(a.at) ?? createdAt,
+        user: { id: null, name: a.user },
+        action: /created the project/i.test(a.action) ? 'create' : 'update',
+        module: PROJECT_MODULE,
+        entity: doc.name,
+        entityId: doc._id.toString(),
+        details: a.action,
+        ip: '',
+      });
+    }
+  }
+  if (entries.length) await AuditLog.insertMany(entries);
+  console.log(`[seed] inserted ${docs.length} sample projects`);
+  return docs.length;
+}
+
+/** True once the template library is known to exist, so the per-request guard stops hitting the DB. */
 let seeded = false;
 
-/** Guard for the routes: makes sure the starting set exists before any projects request is served. */
+/** Guard for the routes: makes sure the TEMPLATE LIBRARY exists before any projects request is served.
+ *  It never creates projects — the portfolio starts empty and is filled by the people using the app. */
 export async function ensureProjectsSeeded() {
   if (seeded) return;
-  await ensureProjectSeed();
+  await ensureProjectTemplateSeed();
   seeded = true;
 }
 

@@ -28,7 +28,9 @@ export async function findIntegrationOr404(id) {
 const seedingAllowed = seedGuard;
 
 /**
- * Creates the 15 starting rows when the collection is empty — like ensureDefaultAdmin() on boot.
+ * Creates the 15 starting rows when the collection is empty. DEMO data: no route and no boot step calls
+ * this any more, so a production register stays empty until somebody adds a tool. A script or a test has
+ * to ask for it by name, and the production guard still refuses.
  * Idempotent: it does nothing once anything is in there, and the inserts are upserts by name so two
  * callers racing cannot double up.
  * @returns {Promise<number>} how many rows were written
