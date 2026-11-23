@@ -10,12 +10,14 @@ import { useDebounced } from '../../../utils/useDebounced';
 import { useGetUserQuery, useListUsersQuery, useRemoveUserMutation, useResetPasswordMutation, useUpdateUserMutation, useUserModulesQuery } from '../../../store/api/usersApi';
 import UserDialog from './UserDialog';
 import { ApiError, Fetching, PAGE_SIZE, Pager, SortCell, useToast } from './listUi';
+import { useDialog } from '../../../components/Dialogs';
 
 const ROLE_STYLE = { admin: { bg: tokens.tealSoft, color: tokens.teal }, manager: { bg: tokens.infoSoft, color: tokens.info }, employee: { bg: tokens.greySoft, color: tokens.grey } };
 const fmtDate = (iso) => (iso ? new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—');
 
 /** Users & Permissions — every row, filter, sort and page comes from GET /api/users. */
 export default function UsersTab() {
+  const dlg = useDialog();
   const { user: me } = useAuth();
   const [params, setParams] = useSearchParams();
   const { toast, show } = useToast();
@@ -54,15 +56,15 @@ export default function UsersTab() {
 
   const toggleStatus = async (u) => {
     const next = u.status === 'active' ? 'inactive' : 'active';
-    if (next === 'inactive' && !confirm(`Deactivate ${u.name}? They will lose access to every module until reactivated.`)) return;
+    if (next === 'inactive' && !await dlg.confirm(`Deactivate ${u.name}? They will lose access to every module until reactivated.`)) return;
     try { await update({ id: u.id, status: next }).unwrap(); show(`✓ ${u.name} is now ${next}.`); } catch (err) { show(err, 'error'); }
   };
   const removeUser = async (u) => {
-    if (!confirm(`Remove ${u.name} from MyDiary? This cannot be undone.`)) return;
+    if (!await dlg.confirm(`Remove ${u.name} from MyDiary? This cannot be undone.`)) return;
     try { await remove(u.id).unwrap(); show(`✓ ${u.name} removed.`); } catch (err) { show(err, 'error'); }
   };
   const reset = async (u) => {
-    const password = prompt(`New password for ${u.name} (at least 8 characters):`);
+    const password = await dlg.prompt(`New password for ${u.name} (at least 8 characters):`);
     if (password === null) return;
     try { await resetPassword({ id: u.id, password }).unwrap(); show(`✓ Password reset for ${u.name}. Tell them the new password.`); } catch (err) { show(err, 'error'); }
   };

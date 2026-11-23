@@ -34,6 +34,7 @@ import DetailCirculateModal from './modals/DetailCirculateModal';
 import { previewMinutes } from './modals/detailPreviewMinutes';
 import { exportMinutes, downloadTranscript } from './components/detailShared';
 import { openRsvpPreview } from './rsvpPreview';
+import { useDialog } from '../../components/Dialogs';
 
 const NO_CANDIDATES = 'No commitment-language sentences found in Decisions text. Try writing more explicit commitments (e.g. "CFO to send report by Friday").';
 /** Fields the action table edits inline; text ones are written back after a pause, selects immediately. */
@@ -41,6 +42,7 @@ const ACTION_DEBOUNCE = { desc: 700, deadline: 0, priority: 0, status: 0, owner:
 
 /** The web's extractActionsFromMinutes() preview — the same scan the server runs, used for the confirm box. */
 function minutesCandidates(minutes) {
+  const dlg = useDialog();
   const candidates = [];
   Object.values(minutes || {}).forEach(mins => {
     if (!mins || !mins.dec) return;
@@ -181,25 +183,25 @@ function MeetingDetail({ id }) {
   // Opens the Schedule form pre-filled with this meeting; saving overwrites it rather than duplicating.
   const editMeeting = () => navigate(`/meetings/${id}/edit`);
   const duplicateMeeting = async () => {
-    if (!confirm('Duplicate "' + m.title + '" as a new upcoming meeting?')) return;
+    if (!await dlg.confirm('Duplicate "' + m.title + '" as a new upcoming meeting?')) return;
     const copy = await run(duplicate(m.id));
     if (!copy) return;
-    alert('✓ Duplicated. Opening the new meeting.');
+    await dlg.alert('✓ Duplicated. Opening the new meeting.');
     navigate('/meetings/' + copy.id);
   };
-  const markCompleted = () => { if (!confirm('Mark this meeting as completed? You can still edit minutes and action items afterwards.')) return; run(setStatus({ id: m.id, status: 'completed' })); };
-  const cancelMeeting = () => { const reason = prompt('Why is this meeting being cancelled?', 'Rescheduling to a later date'); if (reason === null) return; run(setStatus({ id: m.id, status: 'cancelled', cancelReason: reason })); };
-  const restoreMeeting = () => { if (!confirm('Restore this meeting to upcoming?')) return; run(setStatus({ id: m.id, status: 'upcoming' })); };
+  const markCompleted = async () => { if (!await dlg.confirm('Mark this meeting as completed? You can still edit minutes and action items afterwards.')) return; run(setStatus({ id: m.id, status: 'completed' })); };
+  const cancelMeeting = async () => { const reason = await dlg.prompt('Why is this meeting being cancelled?', 'Rescheduling to a later date'); if (reason === null) return; run(setStatus({ id: m.id, status: 'cancelled', cancelReason: reason })); };
+  const restoreMeeting = async () => { if (!await dlg.confirm('Restore this meeting to upcoming?')) return; run(setStatus({ id: m.id, status: 'upcoming' })); };
   const deleteMeeting = async () => {
-    if (!confirm('Delete "' + m.title + '" permanently? Its action items and decisions go with it. This cannot be undone.')) return;
+    if (!await dlg.confirm('Delete "' + m.title + '" permanently? Its action items and decisions go with it. This cannot be undone.')) return;
     const ok = await run(removeMeeting(m.id));
     if (ok) navigate('/meetings');
   };
 
-  const editExternalEmail = (idx) => {
+  const editExternalEmail = async (idx) => {
     if (!m.external || !m.external[idx]) return;
     const cur = normExt(m.external[idx]);
-    const newEmail = prompt('Email for ' + cur.name + ' (so minutes reach them):', cur.email);
+    const newEmail = await dlg.prompt('Email for ' + cur.name + ' (so minutes reach them):', cur.email);
     if (newEmail === null) return;
     run(patchExternal({ id: m.id, index: idx, email: newEmail.trim() }));
   };
@@ -222,10 +224,10 @@ function MeetingDetail({ id }) {
   const cyclePresence = (attendee) => run(cyclePresenceApi({ id: m.id, name: attendee }));
 
   // ============ LIVE ============
-  const toggleRecording = () => {
+  const toggleRecording = async () => {
     if (recording.active) {
       set('recording', { active: false, meetingId: null, elapsed: 0, feedIdx: 0 });
-      alert('Recording stopped. ' + transcriptLen + ' transcript lines captured. Click "Generate AI Summary" on the AI Summary tab to process.');
+      await dlg.alert('Recording stopped. ' + transcriptLen + ' transcript lines captured. Click "Generate AI Summary" on the AI Summary tab to process.');
     } else {
       set('recording', { active: true, meetingId: m.id, elapsed: 0, feedIdx: 0 });
     }
@@ -241,15 +243,15 @@ function MeetingDetail({ id }) {
   };
   const logAllAIDecisions = async () => {
     if (!m.aiSummary) return;
-    if (!confirm('Log all ' + m.aiSummary.decisions.length + ' AI-detected decision(s) to the Decisions Registry?')) return;
+    if (!await dlg.confirm('Log all ' + m.aiSummary.decisions.length + ' AI-detected decision(s) to the Decisions Registry?')) return;
     const res = await run(logAi(m.id));
-    if (res) alert('✓ ' + (res.created?.length ?? 0) + ' decisions logged to the registry.');
+    if (res) await dlg.alert('✓ ' + (res.created?.length ?? 0) + ' decisions logged to the registry.');
   };
   const applyAIActions = async () => {
     if (!m.aiSummary) return;
     const res = await run(applyAi(m.id));
     if (!res) return;
-    alert((res.created?.length ?? 0) + ' AI-extracted action items added to Action Items.');
+    await dlg.alert((res.created?.length ?? 0) + ' AI-extracted action items added to Action Items.');
     setTab('actions');
   };
 
@@ -267,21 +269,21 @@ function MeetingDetail({ id }) {
     const a = await run(createAction({ id: m.id, desc: 'Follow-up from: ' + agendaText }));
     if (a) { setFocusActionId(a.id); setTab('actions'); }
   };
-  const attachFile = () => alert('File picker would open here. In production: attach image, PDF, document to this agenda item. Stored with the meeting and re-opened on review.');
+  const attachFile = () => dlg.alert('File picker would open here. In production: attach image, PDF, document to this agenda item. Stored with the meeting and re-opened on review.');
   const linkDecision = async (agendaIdx) => {
-    const decText = prompt('Enter the decision text to log in the Decisions Registry:');
+    const decText = await dlg.prompt('Enter the decision text to log in the Decisions Registry:');
     if (!decText || !decText.trim()) return;
-    const dept = prompt('Department (e.g. Accounts, Operations, Board):', 'Operations') || 'General';
+    const dept = await dlg.prompt('Department (e.g. Accounts, Operations, Board):', 'Operations') || 'General';
     const d = await run(createDecision({ id: m.id, agendaIdx, text: decText.trim(), department: dept }));
-    if (d) alert('✓ Decision logged to the registry.');
+    if (d) await dlg.alert('✓ Decision logged to the registry.');
   };
   const finaliseMinutes = async () => {
     if (m.minutesFinalised) {
-      if (!confirm('Minutes are finalised and locked.\n\nRe-open them for editing?')) return;
+      if (!await dlg.confirm('Minutes are finalised and locked.\n\nRe-open them for editing?')) return;
       run(reopen(m.id), '✓ Minutes re-opened for editing.');
       return;
     }
-    if (!confirm('Finalise minutes and circulate?\n\nOnce finalised, edits require explicit re-open. Draft will be locked.')) return;
+    if (!await dlg.confirm('Finalise minutes and circulate?\n\nOnce finalised, edits require explicit re-open. Draft will be locked.')) return;
     const ok = await run(finalise(m.id));
     if (ok) setCircOpen(true);
   };
@@ -290,7 +292,7 @@ function MeetingDetail({ id }) {
     const res = await run(circulate(m.id));
     if (!res) return;
     const total = res.recipients?.total ?? 0;
-    setTimeout(() => alert('✓ Minutes dispatched to ' + total + ' recipients. Delivery receipts will post to Notifications as they land.'), 150);
+    setTimeout(() => dlg.alert('✓ Minutes dispatched to ' + total + ' recipients. Delivery receipts will post to Notifications as they land.'), 150);
   };
   const circAddEmail = (idx) => { setCircOpen(false); editExternalEmail(idx); setTimeout(() => setCircOpen(true), 100); };
 
@@ -313,21 +315,21 @@ function MeetingDetail({ id }) {
   };
   const extractActionsFromMinutes = async () => {
     const candidates = minutesCandidates(minutes);
-    if (candidates.length === 0) { alert(NO_CANDIDATES); return; }
-    if (!confirm('Found ' + candidates.length + ' candidate action(s) in the minutes:\n\n' + candidates.slice(0, 5).map((c, i) => (i + 1) + '. ' + c.slice(0, 80)).join('\n') + (candidates.length > 5 ? '\n…and ' + (candidates.length - 5) + ' more.' : '') + '\n\nAdd them all to Action Items?')) return;
+    if (candidates.length === 0) { await dlg.alert(NO_CANDIDATES); return; }
+    if (!await dlg.confirm('Found ' + candidates.length + ' candidate action(s) in the minutes:\n\n' + candidates.slice(0, 5).map((c, i) => (i + 1) + '. ' + c.slice(0, 80)).join('\n') + (candidates.length > 5 ? '\n…and ' + (candidates.length - 5) + ' more.' : '') + '\n\nAdd them all to Action Items?')) return;
     const res = await run(extract(m.id));
-    if (res && !res.count) alert(res.message || NO_CANDIDATES);
+    if (res && !res.count) await dlg.alert(res.message || NO_CANDIDATES);
   };
   const remindOwnersNow = async () => {
     const open = (m.actions || []).filter(a => a.status !== 'done' && a.owner);
-    if (open.length === 0) { alert('No open actions with assigned owners to remind.'); return; }
-    if (!confirm('Send immediate reminder to ' + open.length + ' owner(s) with open actions?\n\nChannels: Email + MyDiary notification + WhatsApp (if integration connected).')) return;
+    if (open.length === 0) { await dlg.alert('No open actions with assigned owners to remind.'); return; }
+    if (!await dlg.confirm('Send immediate reminder to ' + open.length + ' owner(s) with open actions?\n\nChannels: Email + MyDiary notification + WhatsApp (if integration connected).')) return;
     const res = await run(remind(m.id));
-    if (res) alert('✓ Reminders dispatched to ' + (res.count ?? open.length) + ' owner(s).');
+    if (res) await dlg.alert('✓ Reminders dispatched to ' + (res.count ?? open.length) + ' owner(s).');
   };
   const toggleActionExpand = (actionId) => { if (expandedId === actionId) setExpandedId(null); else { setExpandedId(actionId); setExpandTab('subtasks'); } };
-  const addSubtask = (actionId) => {
-    const text = prompt('Sub-task description:');
+  const addSubtask = async (actionId) => {
+    const text = await dlg.prompt('Sub-task description:');
     if (!text || !text.trim()) return;
     run(addSubtaskApi({ id: actionId, meetingId: m.id, text: text.trim() }));
   };
@@ -338,10 +340,10 @@ function MeetingDetail({ id }) {
     run(setSubtaskApi({ id: actionId, meetingId: m.id, index: idx, done: !s.done }));
   };
   const addComment = (actionId, text) => run(addCommentApi({ id: actionId, meetingId: m.id, text }));
-  const addDependency = (actionId) => {
+  const addDependency = async (actionId) => {
     const others = (m.actions || []).filter(a => a.id !== actionId);
-    if (others.length === 0) { alert('No other action items in this meeting to depend on. Create one first.'); return; }
-    const pick = prompt('Which action does this depend on? Enter the row number (1–' + others.length + '):\n\n' + others.map((a, i) => (i + 1) + '. ' + a.desc.slice(0, 60)).join('\n'));
+    if (others.length === 0) { await dlg.alert('No other action items in this meeting to depend on. Create one first.'); return; }
+    const pick = await dlg.prompt('Which action does this depend on? Enter the row number (1–' + others.length + '):\n\n' + others.map((a, i) => (i + 1) + '. ' + a.desc.slice(0, 60)).join('\n'));
     const idx = parseInt(pick, 10) - 1;
     if (isNaN(idx) || idx < 0 || idx >= others.length) return;
     run(addDependencyApi({ id: actionId, meetingId: m.id, dependsOn: others[idx].id }));

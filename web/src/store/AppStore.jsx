@@ -123,9 +123,12 @@ export function AppStoreProvider({ children }) {
       [entry(s, { action: 'notify', module: 'Notifications', entity: 'Notification', details: String(text).replace(/<[^>]+>/g, '') })]));
   }, []);
 
+  // Looking at someone else's work is an admin thing. The switcher is hidden for everyone else, and this
+  // refuses the change too, so the only reachable viewer for a non-admin is themselves.
   const setViewer = useCallback((name, role) => {
+    if (authUser && authUser.role !== 'admin' && name !== authUser.name) return;
     setState(s => withAudit({ ...s, viewer: { name, role } }, [entry(s, { action: 'auth', module: 'Session', entity: 'View as', details: `Switched view to ${name} (${role})` })]));
-  }, []);
+  }, [authUser]);
 
   /** Explicit audit entry: audit('auth', { module: 'Session', entity: 'Sign in', details: '…' }) */
   const audit = useCallback((action, { module = 'App', entity = '', details = '' } = {}) => {

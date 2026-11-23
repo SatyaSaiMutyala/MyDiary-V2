@@ -6,12 +6,14 @@ import { CHANNELS } from '../../../data/logs';
 import { ModalShell, FootNote, Btn, TextLink, AddBtn, Chip, FieldLabel, Field, TextInput, TextArea } from '../../../components';
 import { useListUsersQuery } from '../../../store/api/usersApi';
 import { EMPLOYEE_OPTIONS } from '../utils';
+import { useDialog } from '../../../components/Dialogs';
 
 const DATALIST_ID = 'log-int-datalist';
 const fuInputSx = { p: '6px 8px', border: `1px solid ${tokens.line}`, borderRadius: '4px', bgcolor: '#fff', fontSize: 11, fontFamily: 'inherit', height: 'auto', boxSizing: 'border-box', '&:focus': { outline: 'none', borderColor: tokens.teal } };
 
 /** .followup-row — text | owner (140px) | date (135px) | × */
 function FollowUpRow({ fu, onChange, onRemove }) {
+  const dlg = useDialog();
   return (
     <Grid container spacing={1} sx={{ alignItems: 'center', p: '8px 10px', bgcolor: tokens.cream, border: `1px solid ${tokens.line}`, borderRadius: '6px', mb: '6px' }}>
       <Grid size={{ xs: 12, md: 'grow' }}>
@@ -44,16 +46,16 @@ export default function LogModal({ open, draft, setDraft, viewer, onClose, onSav
   const d = draft;
   const upd = fn => setDraft(prev => { const c = JSON.parse(JSON.stringify(prev)); fn(c); return c; });
 
-  const addLogPerson = (kind) => {
+  const addLogPerson = async (kind) => {
     if (kind === 'int') {
       const v = intAdd.trim();
       if (!v) return;
       upd(c => c.with.push({ name: v, type: 'internal' }));
       setIntAdd('');
     } else {
-      const name = (window.prompt('External person name (e.g. "Priya Menon (Adani HR)"):') || '').trim();
+      const name = (await dlg.prompt('External person name (e.g. "Priya Menon (Adani HR)"):') || '').trim();
       if (!name) return;
-      const email = (window.prompt('Email (optional):') || '').trim();
+      const email = (await dlg.prompt('Email (optional):') || '').trim();
       upd(c => c.with.push({ name, type: 'external', email }));
     }
   };

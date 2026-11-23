@@ -9,6 +9,7 @@ import { errorMessage } from '../../../store/api/baseApi';
 import { useCreateRequestMutation } from '../../../store/api/meetingRequestsApi';
 import { EMPLOYEES } from '../../../data/employees';
 import { addDaysISO } from '../../../utils/dates';
+import { useDialog } from '../../../components/Dialogs';
 
 const lbl = { fontFamily: fonts.mono, fontSize: 10, letterSpacing: '0.1em', color: tokens.slate, fontWeight: 700, textTransform: 'uppercase', display: 'block' };
 const inputSx = { fontSize: 13, bgcolor: '#fff' };
@@ -16,6 +17,7 @@ const smallInputSx = { ...inputSx, p: '8px 10px' };
 
 /** openRequestModal() / checkCMDRouting() / submitMeetingRequest() — "Request a Meeting" dialog */
 export default function RequestMeetingModal({ open, onClose }) {
+  const dlg = useDialog();
   const { state } = useAppStore();
   const { user } = useAuth();
   const [createRequest, { isLoading: sending }] = useCreateRequestMutation();
@@ -44,18 +46,18 @@ export default function RequestMeetingModal({ open, onClose }) {
   const submit = async () => {
     const tp = topic.trim();
     const nt = notes.trim();
-    if (!to) return window.alert('Please pick who you want to meet.');
-    if (!date || !time) return window.alert('Please set a date and time.');
-    if (!tp) return window.alert('Please add a topic.');
+    if (!to) return await dlg.alert('Please pick who you want to meet.');
+    if (!date || !time) return await dlg.alert('Please set a date and time.');
+    if (!tp) return await dlg.alert('Please add a topic.');
 
     try {
       // The server applies the CMD → EA routing rule and writes the recipient's notification.
       const req = await createRequest({ to, proposedDate: date, proposedTime: time, durationMin: +dur, topic: tp, notes: nt }).unwrap();
       const recipient = req.routedTo || req.to;
       onClose();
-      setTimeout(() => window.alert('📨 Request sent to ' + recipient + (req.routedTo ? ' (EA — coordinating on behalf of ' + req.onBehalfOf + ')' : '') + '. They\'ll see it in their Requests tab.'), 100);
+      setTimeout(() => dlg.alert('📨 Request sent to ' + recipient + (req.routedTo ? ' (EA — coordinating on behalf of ' + req.onBehalfOf + ')' : '') + '. They\'ll see it in their Requests tab.'), 100);
     } catch (err) {
-      window.alert(errorMessage(err));
+      await dlg.alert(errorMessage(err));
     }
   };
 

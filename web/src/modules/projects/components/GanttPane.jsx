@@ -3,6 +3,7 @@ import { tokens, fonts } from '../../../theme/tokens';
 import { TODAY, parseDate, isOverdue, MONTHS_FULL, DAYS } from '../../../utils/dates';
 import { initials } from '../../../utils/people';
 import { projectAvgProgress, daysBetween, GANTT_ZOOM_CFG } from '../utils';
+import { useDialog } from '../../../components/Dialogs';
 
 const pulseBar = keyframes`0%,100% { box-shadow: 0 1px 3px rgba(0,0,0,0.1); } 50% { box-shadow: 0 0 0 4px rgba(197,48,48,0.3); }`;
 
@@ -21,6 +22,7 @@ const DIAMOND = { todo: tokens.slateSoft, done: tokens.teal, 'in-progress': toke
 
 /** .gantt-bar */
 function Bar({ left, width, kind, done, overdue, extraSx, onClick, children }) {
+  const dlg = useDialog();
   return (
     <Box onClick={onClick} sx={{ position: 'absolute', top: 9, height: 24, borderRadius: '4px', p: '0 10px', fontSize: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', overflow: 'hidden', fontWeight: 700, zIndex: 5, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', minWidth: 24, transition: 'all 0.1s', letterSpacing: '0.02em', whiteSpace: 'nowrap', color: '#fff', left, width, boxSizing: 'border-box', ...(BAR_STYLE[kind] || {}), ...(overdue ? BAR_STYLE['milestone-overdue'] : {}), ...(done ? { opacity: 0.55, textDecoration: 'line-through' } : {}), '&:hover': { zIndex: 10, boxShadow: '0 4px 10px rgba(0,0,0,0.15)', transform: 'translateY(-1px)' }, ...extraSx }}>
       {children}
@@ -67,7 +69,7 @@ export default function GanttPane({ p, actions, zoom, setZoom }) {
 
   const leftRows = [
     <Box key="sh-p" sx={sectionLabelSx}><span>📊 Project Overview</span></Box>,
-    <Box key="p" sx={labelSx} onClick={() => window.alert(`Project spans ${p.startDate} to ${p.endDate}`)}>{rowIco(tokens.greenDeep, 'P')}{rowName(p.name)}</Box>,
+    <Box key="p" sx={labelSx} onClick={() => dlg.alert(`Project spans ${p.startDate} to ${p.endDate}`)}>{rowIco(tokens.greenDeep, 'P')}{rowName(p.name)}</Box>,
   ];
   if (milestones.length) {
     leftRows.push(<Box key="sh-m" sx={sectionLabelSx}><span>🏁 Milestones ({milestones.length})</span></Box>);
@@ -103,7 +105,7 @@ export default function GanttPane({ p, actions, zoom, setZoom }) {
     sectionRow('s-p'),
     <Box key="p" sx={rowSx}>
       {cells}
-      <Bar left={projLeft} width={projWidth} kind="milestone-done" extraSx={{ background: `linear-gradient(90deg, ${tokens.greenDeep}, ${tokens.tealDark})`, top: 9 }} onClick={() => window.alert('Project: ' + p.name)}>{p.code} · {projectAvgProgress(p)}%</Bar>
+      <Bar left={projLeft} width={projWidth} kind="milestone-done" extraSx={{ background: `linear-gradient(90deg, ${tokens.greenDeep}, ${tokens.tealDark})`, top: 9 }} onClick={() => dlg.alert('Project: ' + p.name)}>{p.code} · {projectAvgProgress(p)}%</Bar>
     </Box>,
   ];
 
@@ -126,7 +128,7 @@ export default function GanttPane({ p, actions, zoom, setZoom }) {
           <Bar left={leftPx} width={widthPx} kind={kind} onClick={() => actions.updateMilestoneStatus(p.id, m.id, m.status === 'done' ? 'todo' : 'done')}>
             {widthPx > 80 ? (idx + 1) + '. ' + (m.name.length > maxChars ? m.name.slice(0, maxChars) + '…' : m.name) : (idx + 1)}
           </Bar>
-          <Box onClick={() => window.alert(`Milestone: ${m.name}\nDue: ${m.dueDate}\nOwner: ${m.owner}\nStatus: ${m.status}`)} sx={{ position: 'absolute', top: 10, left: diamondLeft, width: 22, height: 22, bgcolor: DIAMOND[dk], transform: 'rotate(45deg)', zIndex: 12, cursor: 'pointer', border: '2px solid #fff', boxShadow: '0 2px 6px rgba(0,0,0,0.2)', ml: '-11px', boxSizing: 'border-box', '&::before': { content: '""', position: 'absolute', inset: 3, bgcolor: '#fff', opacity: 0.4, borderRadius: '2px' } }} />
+          <Box onClick={() => dlg.alert(`Milestone: ${m.name}\nDue: ${m.dueDate}\nOwner: ${m.owner}\nStatus: ${m.status}`)} sx={{ position: 'absolute', top: 10, left: diamondLeft, width: 22, height: 22, bgcolor: DIAMOND[dk], transform: 'rotate(45deg)', zIndex: 12, cursor: 'pointer', border: '2px solid #fff', boxShadow: '0 2px 6px rgba(0,0,0,0.2)', ml: '-11px', boxSizing: 'border-box', '&::before': { content: '""', position: 'absolute', inset: 3, bgcolor: '#fff', opacity: 0.4, borderRadius: '2px' } }} />
         </Box>
       );
       prevEnd = m.dueDate;

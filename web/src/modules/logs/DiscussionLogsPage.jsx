@@ -17,6 +17,7 @@ import PersonTimeline from './components/PersonTimeline';
 import FollowupsView from './components/FollowupsView';
 import LogModal from './modals/LogModal';
 import LogDetailModal from './modals/LogDetailModal';
+import { useDialog } from '../../components/Dialogs';
 
 const quickBtnSx = { p: '11px 18px', bgcolor: tokens.yellow, color: tokens.greenDeep, border: 'none', borderRadius: '8px', fontWeight: 700, fontSize: 13, fontFamily: 'inherit', letterSpacing: '0.02em', whiteSpace: 'nowrap', '&:hover': { bgcolor: '#fff' } };
 
@@ -26,6 +27,7 @@ const MINE = { mine: 'true' };
 const GRID_LIMIT = 200;
 
 export default function DiscussionLogsPage() {
+  const dlg = useDialog();
   const { state } = useAppStore();
   const { user } = useAuth();
   const viewer = user?.name || state.viewer.name;
@@ -66,9 +68,9 @@ export default function DiscussionLogsPage() {
     setQuick('');
   };
 
-  const pickLogTemplate = () => {
+  const pickLogTemplate = async () => {
     const menu = LOG_TEMPLATES.map((t, i) => (i + 1) + '. ' + t.emoji + ' ' + t.name).join('\n');
-    const pick = window.prompt('Which discussion log template?\n\n' + menu + '\n\nEnter a number, or blank to cancel.');
+    const pick = await dlg.prompt('Which discussion log template?\n\n' + menu + '\n\nEnter a number, or blank to cancel.');
     if (!pick) return;
     const idx = parseInt(pick.trim(), 10) - 1;
     if (idx < 0 || idx >= LOG_TEMPLATES.length) return;
@@ -77,29 +79,29 @@ export default function DiscussionLogsPage() {
 
   const toggleLogFU = async (logId, fuId) => {
     try { await toggleFollowUp({ id: logId, fuId }).unwrap(); }
-    catch (err) { window.alert(errorMessage(err)); }
+    catch (err) { await dlg.alert(errorMessage(err)); }
   };
 
   const saveLog = async (d) => {
-    if (!d.topic.trim()) { window.alert('Please enter a topic (short title for the log).'); return; }
-    if (d.with.length === 0) { window.alert('Please add at least one person you spoke with.'); return; }
-    if (!d.summary.trim()) { window.alert('Please capture what was discussed.'); return; }
+    if (!d.topic.trim()) { await dlg.alert('Please enter a topic (short title for the log).'); return; }
+    if (d.with.length === 0) { await dlg.alert('Please add at least one person you spoke with.'); return; }
+    if (!d.summary.trim()) { await dlg.alert('Please capture what was discussed.'); return; }
     const body = toLogBody(d);
     let saved;
     try {
       saved = d.id ? await updateLog({ id: d.id, ...body }).unwrap() : await createLog(body).unwrap();
     } catch (err) {
-      window.alert(errorMessage(err));   // the server's words, as they came
+      await dlg.alert(errorMessage(err));   // the server's words, as they came
       return;
     }
     setDraft(null);
-    setTimeout(() => window.alert('✓ Log saved. ' + (saved.followUps.length ? saved.followUps.length + ' follow-up(s) tracked. ' : '') + 'Find it later via My Discussion Logs or by searching for "' + saved.tags.slice(0, 2).join(', ') + '".'), 100);
+    setTimeout(() => dlg.alert('✓ Log saved. ' + (saved.followUps.length ? saved.followUps.length + ' follow-up(s) tracked. ' : '') + 'Find it later via My Discussion Logs or by searching for "' + saved.tags.slice(0, 2).join(', ') + '".'), 100);
   };
 
   const deleteLog = async (id) => {
-    if (!window.confirm('Delete this log? This cannot be undone.')) return;
+    if (!await dlg.confirm('Delete this log? This cannot be undone.')) return;
     try { await removeLog(id).unwrap(); closeDetail(); }
-    catch (err) { window.alert(errorMessage(err)); }
+    catch (err) { await dlg.alert(errorMessage(err)); }
   };
 
   const allFUs = followUpsQuery.data?.items || [];

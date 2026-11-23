@@ -12,11 +12,13 @@ import { newVisitDraft, applyVisitTemplate, samePerson, visitBody } from './util
 import VisitCard from './components/VisitCard';
 import VisitModal from './modals/VisitModal';
 import VisitDetailModal from './modals/VisitDetailModal';
+import { useDialog } from '../../components/Dialogs';
 
 /** One page of reports is plenty for the type tabs and the four summary cards, which count the whole list. */
 const LIMIT = 200;
 
 export default function VisitsPage() {
+  const dlg = useDialog();
   const { state } = useAppStore();
   const { user } = useAuth();
   const viewer = state.viewer.name;
@@ -52,9 +54,9 @@ export default function VisitsPage() {
     }
   };
 
-  const pickVisitTemplate = () => {
+  const pickVisitTemplate = async () => {
     const menu = VISIT_TEMPLATES.map((t, i) => (i + 1) + '. ' + t.emoji + ' ' + t.name).join('\n');
-    const pick = window.prompt('Which visit template?\n\n' + menu + '\n\nEnter a number, or blank to cancel.');
+    const pick = await dlg.prompt('Which visit template?\n\n' + menu + '\n\nEnter a number, or blank to cancel.');
     if (!pick) return;
     const idx = parseInt(pick.trim(), 10) - 1;
     if (idx < 0 || idx >= VISIT_TEMPLATES.length) return;
@@ -69,11 +71,11 @@ export default function VisitsPage() {
   };
 
   const saveVisit = async (targetStatus, d) => {
-    if (!d.title.trim()) { window.alert('Please enter a visit title.'); return; }
+    if (!d.title.trim()) { await dlg.alert('Please enter a visit title.'); return; }
     if (targetStatus === 'submitted') {
-      if (!d.org.name.trim()) { window.alert('Organisation name required to submit.'); return; }
-      if (!d.purpose.trim()) { window.alert('Purpose of visit required to submit.'); return; }
-      if (!d.overallAssessment) { window.alert('Overall Assessment required to submit.'); return; }
+      if (!d.org.name.trim()) { await dlg.alert('Organisation name required to submit.'); return; }
+      if (!d.purpose.trim()) { await dlg.alert('Purpose of visit required to submit.'); return; }
+      if (!d.overallAssessment) { await dlg.alert('Overall Assessment required to submit.'); return; }
     }
     // The server stamps submittedAt, writes the Activity Log line and notifies the follow-up owners.
     const body = visitBody(d, targetStatus);
@@ -81,11 +83,11 @@ export default function VisitsPage() {
       if (d.id) await updateVisit({ id: d.id, ...body }).unwrap();
       else await createVisit(body).unwrap();
     } catch (err) {
-      window.alert(errorMessage(err));   // the server's wording, shown as-is
+      await dlg.alert(errorMessage(err));   // the server's wording, shown as-is
       return;
     }
     setDraft(null);
-    setTimeout(() => window.alert(targetStatus === 'submitted' ? '✓ Visit report submitted. Action items dispatched to owners.' : '💾 Draft saved.'), 100);
+    setTimeout(() => dlg.alert(targetStatus === 'submitted' ? '✓ Visit report submitted. Action items dispatched to owners.' : '💾 Draft saved.'), 100);
   };
 
   const tabs = [

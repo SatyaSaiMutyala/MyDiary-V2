@@ -6,12 +6,14 @@ import { ApiError, Fetching } from '../settings/components/listUi';
 import { useListTemplatesQuery } from '../../store/api/templatesApi';
 import { TYPES } from '../../data/meetings';
 import { tokens, fonts } from '../../theme/tokens';
+import { useDialog } from '../../components/Dialogs';
 
 const ORDER = ['internal', 'customer', 'supplier', 'consultants', 'board'];
 const LEFT = { customer: tokens.blue, supplier: tokens.orange, board: tokens.yellow, consultants: tokens.purple };
 
 /** 📋 Agenda Templates Library (prototype view-templates + renderTemplates / applyTemplate), fed by GET /api/templates */
 export default function TemplatesPage() {
+  const dlg = useDialog();
   const navigate = useNavigate();
   // One page of the whole library (12 seeded templates): the cards are grouped by meeting type, not paged.
   const { data, error, isLoading, isFetching, refetch } = useListTemplatesQuery({ limit: 200, sort: 'createdAt' });
@@ -20,10 +22,10 @@ export default function TemplatesPage() {
   const grouped = {};
   templates.forEach(t => { if (!grouped[t.type]) grouped[t.type] = []; grouped[t.type].push(t); });
 
-  const applyTemplate = (id) => {
+  const applyTemplate = async (id) => {
     const t = templates.find(x => x.id === id);
     if (!t) return;
-    if (confirm('Use template "' + t.name + '"? This will pre-fill a new ' + t.type + ' meeting with its ' + t.agendaCount + ' agenda items.')) {
+    if (await dlg.confirm('Use template "' + t.name + '"? This will pre-fill a new ' + t.type + ' meeting with its ' + t.agendaCount + ' agenda items.')) {
       navigate('/meetings/new', { state: { type: t.type, templateId: t.id } });
     }
   };
@@ -32,7 +34,7 @@ export default function TemplatesPage() {
     <Box>
       <PageHeader code="TL-OPS-DRM-001" parts={['Meeting Management', 'Templates']} icon="📋" title="Agenda Templates Library"
         sub="Pre-built agendas for recurring meeting types — load into any new meeting to save setup time and keep reviews consistent."
-        actions={<Btn variant="primary" size="lg" onClick={() => alert('Template creator opens')}>+ New Template</Btn>} />
+        actions={<Btn variant="primary" size="lg" onClick={() => dlg.alert('Template creator opens')}>+ New Template</Btn>} />
 
       {isFetching && <Fetching on />}
       <ApiError error={error} onRetry={refetch} sx={{ mb: '20px' }} />

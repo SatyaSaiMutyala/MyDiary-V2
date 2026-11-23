@@ -7,11 +7,13 @@ import { Btn, Card } from '../../../components';
 const barBtnSx = { bgcolor: 'rgba(255,255,255,.12)', borderColor: 'rgba(255,255,255,.4)', '&:hover': { bgcolor: 'rgba(255,255,255,.22)', borderColor: '#fff', color: '#fff' } };
 import { tokens, fonts } from '../../../theme/tokens';
 import { initials, ownerAvatarColor } from '../../../utils/people';
+import { useDialog } from '../../../components/Dialogs';
 
 const monoLbl = (extra = {}) => ({ fontFamily: fonts.mono, fontSize: 10, color: tokens.slate, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, ...extra });
 
 /** Agenda tab: context card · carried forward · agenda list + parking lot · contributions · pre-read · presence · polls */
 export default function DetailAgendaPane({ m, onEdit, onAddParking, onRmParking, onCyclePresence }) {
+  const dlg = useDialog();
   return (
     <Box>
       {m.contextCard && <ContextCard ctx={m.contextCard} />}
@@ -137,7 +139,7 @@ function PreRead({ preRead }) {
   const pct = Math.round((opened / preRead.length) * 100);
   return (
     <Card num="P" title="Pre-Read Engagement" sub={`Who's reviewed the briefing pack · ${pct}% opened`}
-      right={<Btn size="sm" sx={barBtnSx} onClick={() => alert('Reminder nudges sent to ' + (preRead.length - opened) + ' attendees who have not yet opened the pack.')}>🔔 Nudge Un-opened</Btn>}>
+      right={<Btn size="sm" sx={barBtnSx} onClick={() => dlg.alert('Reminder nudges sent to ' + (preRead.length - opened) + ' attendees who have not yet opened the pack.')}>🔔 Nudge Un-opened</Btn>}>
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
         {preRead.map((p, i) => (
           <Box key={i} sx={{ display: 'grid', gridTemplateColumns: '1fr 100px', gap: '10px', alignItems: 'center', p: '6px 10px', bgcolor: tokens.cream, borderRadius: '5px' }}>
@@ -198,7 +200,7 @@ function Polls({ polls }) {
   );
   return (
     <Card num="⚖" title="Resolutions & Votes" sub="Board-meeting voting with audit trail"
-      right={<Btn size="sm" sx={barBtnSx} onClick={() => alert('Add new resolution — opens the resolution composer with ayes/noes/absent template.')}>+ Add Resolution</Btn>}>
+      right={<Btn size="sm" sx={barBtnSx} onClick={() => dlg.alert('Add new resolution — opens the resolution composer with ayes/noes/absent template.')}>+ Add Resolution</Btn>}>
       {polls.map((p, i) => {
         const total = p.ayes + p.noes + p.absts;
         return (

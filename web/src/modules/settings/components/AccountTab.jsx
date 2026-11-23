@@ -93,7 +93,7 @@ export default function AccountTab() {
           <Row k="Role" v={ROLE_LABEL[me?.role] || me?.role || '—'} />
           <Row k="Status" v={me?.status === 'inactive' ? 'Inactive' : 'Active'} />
           {isSelf && me?.createdAt ? <Row k="Account since" v={new Date(me.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })} /> : null}
-          {!isSelf && <Typography sx={{ fontSize: 12, color: tokens.warn, mt: 1.5 }}>You are viewing as {viewer.name} (demo roster). Profile and password changes apply only to your own signed-in account — switch back to yourself in the top bar.</Typography>}
+          {!isSelf && <Typography sx={{ fontSize: 12, color: tokens.warn, mt: 1.5 }}>You are viewing as {viewer.name}. Profile and password changes apply only to your own signed-in account — switch back to yourself in the top bar.</Typography>}
           <Box sx={{ display: 'flex', gap: 1, mt: 2, flexWrap: 'wrap' }}>
             {isSelf && <Btn onClick={() => setDialog('profile')}>✎ Edit profile</Btn>}
             {isSelf && <Btn onClick={() => setDialog('password')}>🔑 Change password</Btn>}

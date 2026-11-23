@@ -2,11 +2,13 @@ import { Box } from '@mui/material';
 import { Btn } from '../../../components';
 import { tokens } from '../../../theme/tokens';
 import { eaBadgeSx } from '../utils';
+import { useDialog } from '../../../components/Dialogs';
 
 const EA = () => <Box component="span" sx={eaBadgeSx()}>EA</Box>;
 
 /** .ea-banner — three variants (renderDiary 9739–9767) */
 export default function EaBanner({ viewer, owner, canEdit, onSwitchOwner }) {
+  const dlg = useDialog();
   const isDelegated = owner !== viewer.name;
   let body, action;
   if (isDelegated) {
@@ -17,7 +19,7 @@ export default function EaBanner({ viewer, owner, canEdit, onSwitchOwner }) {
     action = <Btn size="sm" variant="primary" sx={{ ml: 'auto' }} onClick={() => onSwitchOwner('Venkata Cherukuri')}>Open CMD's Diary →</Btn>;
   } else {
     body = <><strong>Pallavi Elisetti (EA)</strong> has edit access to this diary. Entries she adds for you are marked <EA />.</>;
-    action = <Btn size="sm" sx={{ ml: 'auto' }} onClick={() => window.alert('Delegation settings → manage who can view/edit your diary, set visibility for different categories (e.g., Personal always private).')}>⚙ Delegation Settings</Btn>;
+    action = <Btn size="sm" sx={{ ml: 'auto' }} onClick={() => dlg.alert('Delegation settings → manage who can view/edit your diary, set visibility for different categories (e.g., Personal always private).')}>⚙ Delegation Settings</Btn>;
   }
   const ico = isDelegated ? '👁' : '💼';
   return (

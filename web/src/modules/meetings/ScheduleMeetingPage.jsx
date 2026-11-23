@@ -13,6 +13,7 @@ import { parseDate, formatDate, formatTime } from '../../utils/dates';
 import ScheduleStepper from './components/scheduleStepper';
 import ScheduleTypePicker from './components/scheduleTypePicker';
 import ScheduleTypeFields, { Row, col1, col2, col3 } from './components/scheduleTypeFields';
+import { useDialog } from '../../components/Dialogs';
 
 const DURATIONS = { '30 minutes': '30m', '45 minutes': '45m', '1 hour': '1h', '1 hour 30 minutes': '1h 30m', '2 hours': '2h', 'Half day': '4h', 'Full day': '8h' };
 const MODES = ['📍 In-person', '💻 Virtual', '🔀 Hybrid'];
@@ -25,6 +26,7 @@ const SUB_BADGE_DEFAULT = { internal: 'Ops Review', customer: 'New Business Pitc
 
 /** One .agenda-item row (editable) */
 function AgendaItem({ idx, item, onChange, onDelete, autoFocus }) {
+  const dlg = useDialog();
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: '6px', sm: '10px' }, p: '10px 12px', bgcolor: tokens.cream, border: `1px solid ${tokens.line}`, borderRadius: tokens.radiusSm }}>
       <Box component="span" sx={{ color: tokens.slateSofter, cursor: 'grab', p: '2px', fontSize: 14, userSelect: 'none' }}>⋮⋮</Box>
@@ -96,7 +98,7 @@ export default function ScheduleMeetingPage() {
   const [chair, setChair] = useState('Venkata Cherukuri (CMD)');
   const [minuteTaker, setMinuteTaker] = useState('Pallavi (EA)');
 
-  const addChip = (kind) => {
+  const addChip = async (kind) => {
     const v = (kind === 'ext' ? extAdd : intAdd).trim();
     if (!v) return;
     if (kind === 'ext') {
@@ -106,9 +108,9 @@ export default function ScheduleMeetingPage() {
       let name = v;
       if (emailMatch) { name = emailMatch[1].trim(); email = emailMatch[2].trim(); }
       if (!email) {
-        email = (window.prompt('Email address for ' + name + ' (so minutes reach them):', '') || '').trim();
+        email = (await dlg.prompt('Email address for ' + name + ' (so minutes reach them):', '') || '').trim();
         if (!email) {
-          if (!window.confirm('Add ' + name + ' without an email? They won\'t receive circulated minutes until an email is added.')) return;
+          if (!await dlg.confirm('Add ' + name + ' without an email? They won\'t receive circulated minutes until an email is added.')) return;
         }
       }
       setExternals(x => [...x, { name, email }]);
@@ -174,11 +176,11 @@ export default function ScheduleMeetingPage() {
   const tc = TYPE_COLORS[type] || TYPE_COLORS.internal;
 
   // saveScheduleDraft()
-  const saveDraft = () => window.alert('✓ Draft saved. You can resume editing from My Meetings → Drafts section (not shown in this prototype).');
+  const saveDraft = () => dlg.alert('✓ Draft saved. You can resume editing from My Meetings → Drafts section (not shown in this prototype).');
 
   // POST /api/meetings for a new meeting, PATCH /api/meetings/:id when editing one.
   const saveNewMeeting = async () => {
-    if (!type) { window.alert('Please choose a meeting type first.'); return; }
+    if (!type) { await dlg.alert('Please choose a meeting type first.'); return; }
     const agendaItems = agenda.map(a => a.text || '').filter(Boolean);
     const agendaTimes = agenda.filter(a => a.text).map(a => a.time || '10m');
     const subBadge = (ts[SUB_BADGE[type]] ?? SUB_BADGE_DEFAULT[type] ?? '').replace('— Select —', '').trim();
@@ -212,15 +214,15 @@ export default function ScheduleMeetingPage() {
           agenda: agendaItems,
           agendaTimes,
         }).unwrap();
-        window.alert('✓ Meeting updated.');
+        await dlg.alert('✓ Meeting updated.');
         navigate(`/meetings/${m.id}`);
         return;
       }
       const m = await createMeeting(body).unwrap();
-      window.alert('✓ Meeting scheduled.\n\nCalendar invites would be dispatched to all attendees.\nPre-read reminder scheduled for 24 hrs before.\nMinutes draft auto-created.');
+      await dlg.alert('✓ Meeting scheduled.\n\nCalendar invites would be dispatched to all attendees.\nPre-read reminder scheduled for 24 hrs before.\nMinutes draft auto-created.');
       navigate(`/meetings/${m.id}`);
     } catch (err) {
-      window.alert(errorMessage(err));
+      await dlg.alert(errorMessage(err));
     }
   };
 
@@ -351,7 +353,7 @@ export default function ScheduleMeetingPage() {
               {isEdit ? 'Editing' : 'Scheduling'}: <strong>{TYPES[type].name}</strong> · <strong>{dateLabel}</strong>, <strong>{timeLabel}</strong> · <strong>{attendeeTotal} attendees</strong>
             </Typography>
             <Box sx={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-              <Btn variant="ghost" onClick={() => { if (window.confirm(isEdit ? 'Discard your changes to this meeting?' : 'Discard this meeting draft?')) navigate(isEdit ? `/meetings/${editId}` : '/meetings'); }}>Cancel</Btn>
+              <Btn variant="ghost" onClick={async () => { if (await dlg.confirm(isEdit ? 'Discard your changes to this meeting?' : 'Discard this meeting draft?')) navigate(isEdit ? `/meetings/${editId}` : '/meetings'); }}>Cancel</Btn>
               {!isEdit && <Btn onClick={saveDraft}>💾 Save as Draft</Btn>}
               <Btn variant="primary" onClick={saveNewMeeting} disabled={saving}>{saving ? (isEdit ? 'Saving…' : 'Scheduling…') : (isEdit ? 'Save Changes →' : 'Schedule Meeting →')}</Btn>
             </Box>

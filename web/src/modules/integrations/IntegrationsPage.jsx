@@ -5,6 +5,7 @@ import { ApiError, Fetching, useToast } from '../settings/components/listUi';
 import { useConnectIntegrationMutation, useListIntegrationsQuery } from '../../store/api/integrationsApi';
 import { errorMessage } from '../../store/api/baseApi';
 import { tokens, fonts } from '../../theme/tokens';
+import { useDialog } from '../../components/Dialogs';
 
 const STATUS = {
   connected: { bg: tokens.tealSoft, color: tokens.tealDark, label: '● Connected', btn: 'Manage' },
@@ -20,6 +21,7 @@ const STATUS = {
  * Google, Zoom, Slack or anything else, so the row survives a refresh without any live connection existing.
  */
 export default function IntegrationsPage() {
+  const dlg = useDialog();
   const { data, error, isLoading, isFetching, refetch } = useListIntegrationsQuery({ limit: 200, sort: 'order' });
   const [connect, { isLoading: connecting }] = useConnectIntegrationMutation();
   const { toast, show } = useToast();
@@ -31,12 +33,12 @@ export default function IntegrationsPage() {
 
   const toggleIntegration = async (i) => {
     if (i.status === 'connected') {
-      if (confirm('Manage ' + i.name + '? (would open the settings panel for this integration)')) {
-        alert(i.name + ' settings panel — scope, re-auth, sync frequency, disconnect.');
+      if (await dlg.confirm('Manage ' + i.name + '? (would open the settings panel for this integration)')) {
+        await dlg.alert(i.name + ' settings panel — scope, re-auth, sync frequency, disconnect.');
       }
       return;
     }
-    if (!confirm('Connect to ' + i.name + '? You will be redirected to authenticate.')) return;
+    if (!await dlg.confirm('Connect to ' + i.name + '? You will be redirected to authenticate.')) return;
     try {
       await connect({ id: i.id }).unwrap();
       show(i.name + ' is switched on.');

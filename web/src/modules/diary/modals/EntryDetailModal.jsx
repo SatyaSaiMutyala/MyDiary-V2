@@ -11,6 +11,7 @@ import { useUpdateDiaryEntryMutation } from '../../../store/api/diaryApi';
 import { usePatchExternalMutation } from '../../../store/api/meetingsApi';
 import { openRsvpPreview } from '../../meetings/rsvpPreview';
 import { DETAIL_HEAD } from '../utils';
+import { useDialog } from '../../../components/Dialogs';
 
 const Row = ({ ico, children }) => (
   <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: '12px', p: '8px 0', fontSize: 13, lineHeight: 1.5 }}>
@@ -22,6 +23,7 @@ const sumSx = { display: 'inline-flex', gap: '8px', ml: '8px', fontFamily: fonts
 
 /** Entry detail popover (openEntryDetail 10362–10457) */
 export default function EntryDetailModal({ entry, canEdit, onClose, onDelete }) {
+  const dlg = useDialog();
   const navigate = useNavigate();
   const [updateEntry] = useUpdateDiaryEntryMutation();
   const [patchMeetingExternal] = usePatchExternalMutation();
@@ -61,7 +63,7 @@ export default function EntryDetailModal({ entry, canEdit, onClose, onDelete }) 
             await updateEntry({ id: entry.id, external }).unwrap();
           }
         } catch (err) {
-          window.alert(errorMessage(err));
+          await dlg.alert(errorMessage(err));
         }
       },
     });

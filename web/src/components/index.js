@@ -7,3 +7,4 @@ export { SummaryCard, DmsCard, Card, VSection, EmptyState, MonoHeading, Gradient
 export { default as TabBar, FilterPill, Segmented } from './Tabs';
 export { FieldLabel, TextInput, TextArea, SelectInput, Field, SearchBox, FilterSelect, ToggleRow, Chip, DelBtn } from './Fields';
 export { default as ModalShell, FootNote } from './ModalShell';
+export { DialogProvider, useDialog } from './Dialogs';

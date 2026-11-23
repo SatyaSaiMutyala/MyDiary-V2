@@ -13,8 +13,10 @@ import { actionToTodo, collectTodoItems, samePerson } from './utils';
 import TodoCard from './components/TodoCard';
 import StandaloneTaskModal from './modals/StandaloneTaskModal';
 import CompleteDialog from './modals/CompleteDialog';
+import { useDialog } from '../../components/Dialogs';
 
 function BannerStat({ val, lbl, valColor, sx }) {
+  const dlg = useDialog();
   return (
     <Box sx={{ textAlign: 'center', ...sx }}>
       <Box sx={{ fontFamily: fonts.serif, fontSize: 26, fontWeight: 700, lineHeight: 1, color: valColor }}>{val}</Box>
@@ -86,15 +88,15 @@ export default function MyTodoPage() {
       });
     }
   };
-  const nudgeOwner = (owner) => {
+  const nudgeOwner = async (owner) => {
     notify({ type: 'action', icon: '🔔', text: `Nudge sent to <strong>${owner}</strong> re: a task you delegated.` });
-    alert('🔔 Nudge sent to ' + owner + ". They'll see it in their inbox and get a push notification.");
+    await dlg.alert('🔔 Nudge sent to ' + owner + ". They'll see it in their inbox and get a push notification.");
   };
-  const reassignTodo = (src, srcId, tid) => {
-    const newOwner = prompt('Reassign to (type employee name):');
+  const reassignTodo = async (src, srcId, tid) => {
+    const newOwner = await dlg.prompt('Reassign to (type employee name):');
     if (!newOwner || !newOwner.trim()) return;
     const name = newOwner.trim();
-    if (src === 'meetings') updateActionItem({ id: tid, meetingId: srcId, owner: name }).unwrap().catch(err => alert(errorMessage(err)));
+    if (src === 'meetings') updateActionItem({ id: tid, meetingId: srcId, owner: name }).unwrap().catch(err => dlg.alert(errorMessage(err)));
     else if (src === 'standalone') mutate('standaloneTasks', ts => { const t = ts.find(x => x.id === tid); if (t) t.owner = name; });
     else if (src === 'visits') mutate('visits', vs => { const v = vs.find(x => x.id === srcId); if (!v) return; const parts = tid.split('-'); const idx = parseInt(parts[parts.length - 1], 10); const ai = v.actionItems && v.actionItems[idx]; if (ai) ai.owner = name; });
   };
@@ -141,7 +143,7 @@ export default function MyTodoPage() {
         <Avatar name={me} size={60} fontSize={20} sx={{ border: '3px solid rgba(255,255,255,0.3)' }} />
         <Box>
           <Box sx={{ fontFamily: fonts.serif, fontSize: 22, fontWeight: 700, letterSpacing: '-0.01em' }}>{me === 'Venkata Cherukuri' ? 'Your To-Do inbox' : `${me}'s To-Do inbox`}</Box>
-          <Box sx={{ fontFamily: fonts.mono, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', opacity: 0.85, mt: '3px' }}>{state.viewer.role}{me !== 'Venkata Cherukuri' ? ' · Demo view' : ''}</Box>
+          <Box sx={{ fontFamily: fonts.mono, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', opacity: 0.85, mt: '3px' }}>{state.viewer.role}{me !== (user?.name ?? me) ? ' · Viewing as another user' : ''}</Box>
         </Box>
         <Box sx={{ display: 'flex', gap: '20px', ml: { xs: 0, md: 'auto' }, flexWrap: 'wrap', alignItems: 'center' }}>
           <BannerStat val={open.length} lbl="Open" />

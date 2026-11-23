@@ -5,12 +5,14 @@ import { ModalShell, Btn } from '../../../components';
 import { tokens, fonts } from '../../../theme/tokens';
 import { EMPLOYEES } from '../../../data/employees';
 import { TODAY } from '../../../utils/dates';
+import { useDialog } from '../../../components/Dialogs';
 
 const labelSx = { fontFamily: fonts.mono, fontSize: 10, letterSpacing: '0.1em', color: tokens.slate, fontWeight: 700, textTransform: 'uppercase', display: 'block' };
 const ctrlSx = { width: '100%', mt: '6px', p: '10px 12px', border: `1px solid ${tokens.line}`, borderRadius: '6px', fontFamily: 'inherit', fontSize: 13, bgcolor: '#fff', color: tokens.ink, boxSizing: 'border-box', '&:focus': { outline: 'none', borderColor: tokens.teal, boxShadow: `0 0 0 3px ${tokens.tealSoft}` } };
 
 /** openStandaloneTask / submitStandaloneTask — "⚡ New Ad-hoc Task" composer */
 export default function StandaloneTaskModal({ open, onClose, onSubmit }) {
+  const dlg = useDialog();
   const today = new Date(TODAY).toISOString().slice(0, 10);
   const in7 = new Date(TODAY.getTime() + 7 * 86400000).toISOString().slice(0, 10);
   const [desc, setDesc] = useState('');
@@ -19,11 +21,11 @@ export default function StandaloneTaskModal({ open, onClose, onSubmit }) {
   const [priority, setPriority] = useState('medium');
   const people = EMPLOYEES.flatMap(g => (g.people || g.members || []).map(m => ({ ...m, group: g.group })));
 
-  const submit = () => {
+  const submit = async () => {
     const d = desc.trim();
-    if (!d) { alert('Task description is required.'); return; }
-    if (!owner) { alert('Please select who to allocate this task to.'); return; }
-    if (!deadline) { alert('Please set a deadline.'); return; }
+    if (!d) { await dlg.alert('Task description is required.'); return; }
+    if (!owner) { await dlg.alert('Please select who to allocate this task to.'); return; }
+    if (!deadline) { await dlg.alert('Please set a deadline.'); return; }
     onSubmit({ desc: d, owner, deadline, priority });
   };
 

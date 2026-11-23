@@ -14,6 +14,7 @@ import ProjectTemplatesModal from './modals/ProjectTemplatesModal';
 import ProjectWizardModal from './modals/ProjectWizardModal';
 import useProjectActions from './useProjectActions';
 import { overdueMilestones, isMine, blankDraft } from './utils';
+import { useDialog } from '../../components/Dialogs';
 
 const STAT_ACCENT = {
   teal: { bar: tokens.teal, icoBg: tokens.tealSofter, icoColor: tokens.tealDark },
@@ -36,6 +37,7 @@ const FILTER_PARAMS = {
 
 /** .proj-stat-card */
 function StatCard({ accent = 'teal', icon, label, value, sub }) {
+  const dlg = useDialog();
   const a = STAT_ACCENT[accent];
   return (
     <Box sx={{ bgcolor: tokens.card, border: `1px solid ${tokens.line}`, borderRadius: tokens.radius, p: '18px 20px', position: 'relative', overflow: 'hidden', boxShadow: tokens.shadowSm, height: '100%', '&::before': { content: '""', position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, bgcolor: a.bar } }}>
@@ -93,7 +95,7 @@ export default function ProjectsPage() {
       <PageHeader parts={['Project Management', 'Portfolio']} icon="📁" title="My Projects"
         sub="Milestones · Deadlines · Revisions · Team Collaboration · Progress Tracking — your full project portfolio across TrustLab."
         actions={<>
-          <Btn size="lg" onClick={() => window.alert('Export portfolio report — PDF summary of all projects with status, milestones, and team allocation.')}>📤 Export</Btn>
+          <Btn size="lg" onClick={() => dlg.alert('Export portfolio report — PDF summary of all projects with status, milestones, and team allocation.')}>📤 Export</Btn>
           <Btn size="lg" variant="primary" onClick={() => openProjectModal()}>+ New Project</Btn>
         </>} />
 

@@ -6,6 +6,7 @@ import { tokens, fonts } from '../../../theme/tokens';
 import { DIARY_CATS } from '../../../data/diary';
 import { EMPLOYEES } from '../../../data/employees';
 import { CAT_BTN_SELECTED, toISO } from '../utils';
+import { useDialog } from '../../../components/Dialogs';
 
 const sectionLabelSx = { fontSize: 11, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: tokens.slate };
 const countSx = { fontFamily: fonts.mono, fontSize: 10, color: tokens.slateSoft, fontWeight: 400, letterSpacing: '0.05em', textTransform: 'none' };
@@ -13,6 +14,7 @@ const CAT_KEYS = ['meeting', 'focus', 'personal', 'travel', 'ooo', 'reminder'];
 
 /** New Diary Entry modal (openEntryModal / renderEntryModal / saveEntry 10171–10360) */
 export default function EntryModal({ open, onClose, owner, viewer, date, preset, onSave }) {
+  const dlg = useDialog();
   const isDelegated = owner !== viewer.name;
   const [d, setD] = useState(() => ({
     cat: preset?.cat || 'meeting',
@@ -28,7 +30,7 @@ export default function EntryModal({ open, onClose, owner, viewer, date, preset,
   const [saving, setSaving] = useState(false);   // one click, one entry: onSave is a POST
   const patch = (p) => setD(prev => ({ ...prev, ...p }));
 
-  const addAttendee = (kind) => {
+  const addAttendee = async (kind) => {
     if (kind === 'int') {
       const v = intAdd.trim();
       if (!v) return;
@@ -41,8 +43,8 @@ export default function EntryModal({ open, onClose, owner, viewer, date, preset,
       let name = raw, email = '';
       if (em) { name = em[1].trim(); email = em[2].trim(); }
       if (!email) {
-        email = (window.prompt('Email for ' + name + ' (so they get the calendar invite):') || '').trim();
-        if (!email && !window.confirm('Add without email? They will not receive the invite.')) return;
+        email = (await dlg.prompt('Email for ' + name + ' (so they get the calendar invite):') || '').trim();
+        if (!email && !await dlg.confirm('Add without email? They will not receive the invite.')) return;
       }
       patch({ external: [...d.external, { name, email }] });
       setExtAdd('');
@@ -55,7 +57,7 @@ export default function EntryModal({ open, onClose, owner, viewer, date, preset,
 
   const save = async () => {
     if (saving) return;
-    if (!d.title.trim()) { window.alert('Please enter a title.'); return; }
+    if (!d.title.trim()) { await dlg.alert('Please enter a title.'); return; }
     setSaving(true);
     try {
       await onSave({

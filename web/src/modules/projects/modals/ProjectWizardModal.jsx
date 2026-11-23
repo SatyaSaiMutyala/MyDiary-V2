@@ -9,6 +9,7 @@ import { useListUsersQuery } from '../../../store/api/usersApi';
 import { PROJ_CATEGORIES, PROJ_STATUSES } from '../../../data/projects';
 import { EMPLOYEES } from '../../../data/employees';
 import { WIZ_STEPS, draftToBody, newId } from '../utils';
+import { useDialog } from '../../../components/Dialogs';
 
 const DATALIST_ID = 'proj-emp-datalist';
 const listProps = { inputProps: { list: DATALIST_ID } };
@@ -22,6 +23,7 @@ const PRI_OPTS = [['low', 'Low'], ['medium', 'Med'], ['high', 'High'], ['critica
  * id yet) or one PATCH; the API tells the team and writes the activity line. onSaved() after a save.
  */
 export default function ProjectWizardModal({ draft: initialDraft, onClose, onSaved }) {
+  const dlg = useDialog();
   const [d, setD] = useState(() => JSON.parse(JSON.stringify(initialDraft)));
   const [step, setStep] = useState(1);
   const isEdit = !!d.id;
@@ -37,10 +39,10 @@ export default function ProjectWizardModal({ draft: initialDraft, onClose, onSav
   // imperative-style draft edit (PROJ_DRAFT.x = v; renderProjectModal())
   const ed = (fn) => setD(prev => { const next = JSON.parse(JSON.stringify(prev)); fn(next); return next; });
 
-  const wizNext = () => {
+  const wizNext = async () => {
     if (step === 1) {
-      if (!d.name.trim()) { window.alert('Project Name is required.'); return; }
-      if (!d.description.trim()) { window.alert('Project Description is required.'); return; }
+      if (!d.name.trim()) { await dlg.alert('Project Name is required.'); return; }
+      if (!d.description.trim()) { await dlg.alert('Project Description is required.'); return; }
     }
     if (step < 4) setStep(step + 1);
   };
@@ -49,8 +51,8 @@ export default function ProjectWizardModal({ draft: initialDraft, onClose, onSav
 
   const saveProject = async () => {
     if (inFlight.current) return;
-    if (!d.name.trim()) { window.alert('Project name required.'); return; }
-    if (!d.description.trim()) { window.alert('Project description required.'); return; }
+    if (!d.name.trim()) { await dlg.alert('Project name required.'); return; }
+    if (!d.description.trim()) { await dlg.alert('Project description required.'); return; }
     const body = draftToBody(d);
     inFlight.current = true;
     try {
@@ -59,10 +61,10 @@ export default function ProjectWizardModal({ draft: initialDraft, onClose, onSav
         : await createProject({ ...body, ...(d.templateId ? { templateId: d.templateId } : {}) }).unwrap();
       onClose();
       if (onSaved) onSaved(saved, isEdit);
-      setTimeout(() => window.alert('✓ Project saved.'), 100);
+      setTimeout(() => dlg.alert('✓ Project saved.'), 100);
     } catch (err) {
       // The server's own wording, shown as-is.
-      window.alert(errorMessage(err));
+      await dlg.alert(errorMessage(err));
     } finally {
       inFlight.current = false;
     }

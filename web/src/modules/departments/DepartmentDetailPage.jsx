@@ -17,6 +17,7 @@ import { makeDebouncer } from './utils';
 import DeptSection, { SectionNote, ColHeader, EmptyLine } from './components/DeptSection';
 import { TaskRow, WeeklyRow, MonthlyRow, PositionRow, DAILY_HEADER_COLS, WM_COLS } from './components/TaskRows';
 import ReviewCadenceSection from './components/ReviewCadenceSection';
+import { useDialog } from '../../components/Dialogs';
 
 const DAILY_HEADER = [
   { label: '#', sx: { textAlign: 'center' } }, { label: 'TASK' }, { label: 'TIME' }, { label: 'ASSIGNED TO', sx: { textAlign: 'left', pl: '8px' } }, { label: '' },
@@ -40,6 +41,7 @@ const Scroller = ({ minWidth, children }) => (
  * Reads GET /api/departments/:id; every edit below is one call to that department's sub-resources.
  */
 export default function DepartmentDetailPage() {
+  const dlg = useDialog();
   const { id } = useParams();
   const navigate = useNavigate();
   const [RC_AGENDA_TAB, setRCAgendaTab] = useState('weekly');
@@ -88,20 +90,20 @@ export default function DepartmentDetailPage() {
         const cur = d?.reviewCadence.monthly.dayOfMonth;
         void run(putCadenceCall({ id, monthly: { dayOfMonth: cur === 'last' ? 1 : 'last' } }));
       },
-      addRCSection(tab) {
-        const heading = window.prompt('Section heading (e.g. "Stockouts & Near-Stockouts"):');
+      async addRCSection(tab) {
+        const heading = await dlg.prompt('Section heading (e.g. "Stockouts & Near-Stockouts"):');
         if (!heading || !heading.trim()) return;
         void run(addSectionCall({ id, tab, heading: heading.trim() }));
       },
       updateRCSection(tab, sid, field, value) {
         later(`sec:${sid}:${field}`, () => updateSectionCall({ id, tab, sectionId: sid, [field]: value }));
       },
-      removeRCSection(tab, sid) {
-        if (!window.confirm('Remove this agenda section and all its points?')) return;
+      async removeRCSection(tab, sid) {
+        if (!await dlg.confirm('Remove this agenda section and all its points?')) return;
         void run(removeSectionCall({ id, tab, sectionId: sid }));
       },
-      addRCPoint(tab, sid) {
-        const text = window.prompt('Agenda point text:');
+      async addRCPoint(tab, sid) {
+        const text = await dlg.prompt('Agenda point text:');
         if (!text || !text.trim()) return;
         void run(addPointCall({ id, tab, sectionId: sid, text: text.trim() }));
       },
@@ -115,23 +117,23 @@ export default function DepartmentDetailPage() {
       },
 
       // ===== DEPARTMENT CRUD =====
-      editDepartmentMeta() {
+      async editDepartmentMeta() {
         if (!d) return;
-        const name = window.prompt('Department name:', d.name); if (name === null) return;
-        const icon = window.prompt('Icon (one emoji):', d.icon) || d.icon;
-        const description = window.prompt('Short description:', d.description || '');
+        const name = await dlg.prompt('Department name:', d.name); if (name === null) return;
+        const icon = await dlg.prompt('Icon (one emoji):', d.icon) || d.icon;
+        const description = await dlg.prompt('Short description:', d.description || '');
         void run(updateDepartment({ id, name: name.trim() || d.name, icon, ...(description !== null ? { description } : {}) }));
       },
       async deleteDepartment() {
         if (!d) return;
-        if (!window.confirm('Delete department "' + d.name + '"? This removes all its positions and tasks. Cannot be undone.')) return;
+        if (!await dlg.confirm('Delete department "' + d.name + '"? This removes all its positions and tasks. Cannot be undone.')) return;
         const ok = await run(removeDepartment(id));
         if (ok) navigate('/departments');
       },
-      addPosition() {
-        const name = window.prompt('Position name (e.g. "Lab Technician"):');
+      async addPosition() {
+        const name = await dlg.prompt('Position name (e.g. "Lab Technician"):');
         if (!name || !name.trim()) return;
-        const description = window.prompt('What does this position do?', '') || '';
+        const description = await dlg.prompt('What does this position do?', '') || '';
         void run(addPositionCall({ id, name: name.trim(), description }));
       },
       updatePosition(pid, field, value) {
@@ -159,27 +161,27 @@ export default function DepartmentDetailPage() {
         const t = taskOf('monthly', tid); if (!t) return;
         void run(updateTaskCall({ id, kind: 'monthly', taskId: tid, dayOfMonth: t.dayOfMonth === 'last' ? 1 : 'last' }));
       },
-      removePosition(pid) {
-        if (!window.confirm('Remove this position? Tasks assigned to it will revert to "All in department".')) return;
+      async removePosition(pid) {
+        if (!await dlg.confirm('Remove this position? Tasks assigned to it will revert to "All in department".')) return;
         void run(removePositionCall({ id, positionId: pid }));
       },
-      addDeptTask(kind) {
+      async addDeptTask(kind) {
         if (!d) return;
         const labels = { opening: 'Opening shift task', closing: 'Closing shift task', weekly: 'Weekly task (for managers)', monthly: 'Monthly task (for heads)' };
-        const text = window.prompt(labels[kind] + ' description:');
+        const text = await dlg.prompt(labels[kind] + ' description:');
         if (!text || !text.trim()) return;
-        const defaultTime = window.prompt('Default time (HH:MM):', kind === 'opening' ? '09:00' : kind === 'closing' ? '18:00' : '10:00') || '';
+        const defaultTime = await dlg.prompt('Default time (HH:MM):', kind === 'opening' ? '09:00' : kind === 'closing' ? '18:00' : '10:00') || '';
 
         const extra = {};
         if (kind === 'weekly') {
           const dowMenu = DAYS_OF_WEEK_FULL.map((dn, i) => i + '=' + dn).join(' · ');
-          const dowRaw = window.prompt('Which day(s) of the week? Enter comma-separated numbers (' + dowMenu + ')\n\nExamples:\n  1          → every Monday\n  1,5       → Mondays and Fridays\n  1,2,3,4,5 → Mon–Fri', '1');
+          const dowRaw = await dlg.prompt('Which day(s) of the week? Enter comma-separated numbers (' + dowMenu + ')\n\nExamples:\n  1          → every Monday\n  1,5       → Mondays and Fridays\n  1,2,3,4,5 → Mon–Fri', '1');
           if (dowRaw === null) return;
           const picked = dowRaw.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n) && n >= 0 && n <= 6);
           extra.daysOfWeek = picked.length ? Array.from(new Set(picked)) : [1];
         }
         if (kind === 'monthly') {
-          const dom = window.prompt('Which date of the month? Enter 1-31, or type "last" for the last day of every month:', '1');
+          const dom = await dlg.prompt('Which date of the month? Enter 1-31, or type "last" for the last day of every month:', '1');
           if (dom === null) return;
           const trimmed = (dom || '').trim().toLowerCase();
           if (trimmed === 'last' || trimmed === 'l') extra.dayOfMonth = 'last';
@@ -189,7 +191,7 @@ export default function DepartmentDetailPage() {
         let positionIds = [];
         if (d.positions.length > 0) {
           const menu = d.positions.map((p, i) => (i + 1) + '. ' + p.name).join('\n');
-          const pick = window.prompt('Tag to which position(s)? Enter comma-separated numbers, or blank for "All in department".\n\n' + menu + '\n\nExamples:\n  1          → only position 1\n  1,3       → positions 1 AND 3\n  (blank)  → everyone in the department');
+          const pick = await dlg.prompt('Tag to which position(s)? Enter comma-separated numbers, or blank for "All in department".\n\n' + menu + '\n\nExamples:\n  1          → only position 1\n  1,3       → positions 1 AND 3\n  (blank)  → everyone in the department');
           if (pick && pick.trim() !== '') {
             const nums = pick.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n) && n >= 1 && n <= d.positions.length);
             positionIds = Array.from(new Set(nums.map(n => d.positions[n - 1].id)));
@@ -203,8 +205,8 @@ export default function DepartmentDetailPage() {
         if (immediate) void run(updateTaskCall(body));
         else later(`task:${tid}:${field}`, () => updateTaskCall(body));
       },
-      removeDeptTask(kind, tid) {
-        if (!window.confirm('Remove this task?')) return;
+      async removeDeptTask(kind, tid) {
+        if (!await dlg.confirm('Remove this task?')) return;
         void run(removeTaskCall({ id, kind, taskId: tid }));
       },
     };

@@ -5,6 +5,7 @@ import { tokens, fonts } from '../../../theme/tokens';
 import { errorMessage } from '../../../store/api/baseApi';
 import { useAddCommentMutation, useUpdateActionItemMutation } from '../../../store/api/actionItemsApi';
 import { useGetMeetingQuery } from '../../../store/api/meetingsApi';
+import { useDialog } from '../../../components/Dialogs';
 
 const CONFIG = {
   complete: { ico: '✓', label: 'Mark Task as Complete', sub: 'Status will update in the source meeting and your comment is added to the action trail.', placeholder: 'Completion note — what was done, any output / document produced, follow-up needed? (optional)', btnText: '✓ Mark Complete & Notify Chair', btnClass: 'primary', headClass: '', required: false },
@@ -19,6 +20,7 @@ const CONFIG = {
  * and refreshes the meeting through RTK tags.
  */
 export default function CompleteDialog({ ctx, onClose }) {
+  const dlg = useDialog();
   const [txt, setTxt] = useState('');
   const [updateActionItem, { isLoading: saving }] = useUpdateActionItemMutation();
   const [addComment, { isLoading: commenting }] = useAddCommentMutation();
@@ -32,20 +34,20 @@ export default function CompleteDialog({ ctx, onClose }) {
 
   const submit = async () => {
     const text = txt.trim();
-    if (mode === 'blocker' && !text) { alert('Please describe what is blocking you so the chair can help unblock.'); return; }
+    if (mode === 'blocker' && !text) { await dlg.alert('Please describe what is blocking you so the chair can help unblock.'); return; }
     const newStatus = mode === 'complete' ? 'done' : mode === 'progress' ? 'in-progress' : 'blocked';
     try {
       await updateActionItem({ id: a.id, meetingId: a.meetingId, status: newStatus }).unwrap();
       if (text) await addComment({ id: a.id, meetingId: a.meetingId, text }).unwrap();
     } catch (err) {
-      alert(errorMessage(err));
+      await dlg.alert(errorMessage(err));
       return;
     }
     const toast = mode === 'complete' ? `✓ Completed. ${m.chair} notified. Visible in meeting under Action Items.` :
       mode === 'progress' ? '⏳ Status set to In Progress. Chair notified.' :
       `⚠ Blocker raised. ${m.chair} notified — expect a reply.`;
     onClose();
-    setTimeout(() => alert(toast), 100);
+    setTimeout(() => dlg.alert(toast), 100);
   };
 
   const headSlot = (

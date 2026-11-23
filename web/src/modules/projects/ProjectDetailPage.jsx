@@ -20,9 +20,11 @@ import KpisPane from './components/KpisPane';
 import RisksPane from './components/RisksPane';
 import ActivityPane from './components/ActivityPane';
 import ProjectWizardModal from './modals/ProjectWizardModal';
+import { useDialog } from '../../components/Dialogs';
 
 /** renderProjectDetail() — hero with ring, 4 meta tiles, 8 tabs, panes, footer bar. One GET /api/projects/:id. */
 export default function ProjectDetailPage() {
+  const dlg = useDialog();
   const { id } = useParams();
   const navigate = useNavigate();
   const { data: p, error, isLoading } = useGetProjectQuery(id);
@@ -124,7 +126,7 @@ export default function ProjectDetailPage() {
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
           <Btn size="sm" onClick={() => navigate('/projects')}>← Back to Portfolio</Btn>
           <Btn size="sm" onClick={() => setWizDraft(JSON.parse(JSON.stringify(p)))}>✎ Edit Project</Btn>
-          <Btn size="sm" onClick={() => window.alert('Export project report — PDF summary with all sections, timeline chart, and team view.')}>📤 Export Report</Btn>
+          <Btn size="sm" onClick={() => dlg.alert('Export project report — PDF summary with all sections, timeline chart, and team view.')}>📤 Export Report</Btn>
         </Box>
       </Box>
 

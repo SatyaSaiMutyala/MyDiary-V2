@@ -22,6 +22,7 @@ import MonthView from './components/MonthView';
 import AgendaView from './components/AgendaView';
 import EntryModal from './modals/EntryModal';
 import EntryDetailModal from './modals/EntryDetailModal';
+import { useDialog } from '../../components/Dialogs';
 
 /** One window's worth of calendar rows (the list contract's ceiling). */
 const WINDOW_LIMIT = 200;
@@ -37,6 +38,7 @@ const EMPTY = [];
  * request per month and moving inside a month is answered from the RTK Query cache.
  */
 export default function DiaryPage() {
+  const dlg = useDialog();
   const { state } = useAppStore();
   const { user } = useAuth();
   const me = user?.name || state.viewer.name;
@@ -98,8 +100,8 @@ export default function DiaryPage() {
   };
   const toggleCal = (key) => setVisibleCals(v => ({ ...v, [key]: !v[key] }));
 
-  const openEntryModal = (preset) => {
-    if (!canEdit) { window.alert('You have view-only access to this diary.'); return; }
+  const openEntryModal = async (preset) => {
+    if (!canEdit) { await dlg.alert('You have view-only access to this diary.'); return; }
     setEntryModal({ preset: preset || null, key: Date.now() });
   };
 
@@ -108,26 +110,26 @@ export default function DiaryPage() {
     try {
       saved = await createEntry(entryToApiBody(newEntry, { owner, me })).unwrap();
     } catch (err) {
-      window.alert(errorMessage(err));   // the server's words, so the person can fix the entry
+      await dlg.alert(errorMessage(err));   // the server's words, so the person can fix the entry
       return;
     }
     const extCount = saved.external.filter(e => e.email).length;
     const intCount = saved.attendees.length;
     setEntryModal(null);
     if (extCount || intCount) {
-      setTimeout(() => window.alert("✓ Entry added to " + saved.owner + "'s diary. Calendar invites dispatched to " + (intCount + extCount) + ' people.'), 100);
+      setTimeout(() => dlg.alert("✓ Entry added to " + saved.owner + "'s diary. Calendar invites dispatched to " + (intCount + extCount) + ' people.'), 100);
     } else {
-      setTimeout(() => window.alert('✓ Entry added.'), 100);
+      setTimeout(() => dlg.alert('✓ Entry added.'), 100);
     }
   };
 
   const deleteEntry = async (id) => {
-    if (!window.confirm('Delete this diary entry? This cannot be undone.')) return;
+    if (!await dlg.confirm('Delete this diary entry? This cannot be undone.')) return;
     try {
       await removeEntry(id).unwrap();
       setDetailId(null);
     } catch (err) {
-      window.alert(errorMessage(err));
+      await dlg.alert(errorMessage(err));
     }
   };
 

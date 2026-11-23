@@ -6,6 +6,7 @@ import { store } from '../store/redux/store';
 import { AppStoreProvider } from '../store/AppStore';
 import { AuthProvider } from '../auth/AuthContext';
 import { CrumbsProvider } from '../store/CrumbsContext';
+import { DialogProvider } from '../components/Dialogs';
 import router from './router';
 
 export default function App() {
@@ -16,7 +17,9 @@ export default function App() {
         <AuthProvider>
           <AppStoreProvider>
             <CrumbsProvider>
-              <RouterProvider router={router} />
+              <DialogProvider>
+                <RouterProvider router={router} />
+              </DialogProvider>
             </CrumbsProvider>
           </AppStoreProvider>
         </AuthProvider>
