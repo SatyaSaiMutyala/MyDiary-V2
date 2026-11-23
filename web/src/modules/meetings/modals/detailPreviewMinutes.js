@@ -1,5 +1,8 @@
-// previewMinutes(m, decisions) — opens a new window with the full A4 print document
+// previewMinutes(m, decisions, dlg) — opens a new window with the full A4 print document
 // (verbatim port of the prototype's previewMinutes HTML/CSS string).
+//
+// `dlg` is the page's useDialog(): a helper module cannot call the hook, so the page hands its
+// dialogs in, and a blocked pop-up is reported in a MyDiary dialog rather than a browser alert.
 import { TYPES } from '../../../data/meetings';
 import { TDPL_LOGO_FULL, TDPL_LOGO_ICON } from '../../../data/logos';
 import { parseDate, formatDateLong, formatTime, isOverdue } from '../../../utils/dates';
@@ -8,10 +11,10 @@ import { normExt } from '../../../utils/people';
 const LOGO_FULL_IMG = `<img src="${TDPL_LOGO_FULL}" alt="TrustLab Diagnostics" style="max-height:48px;width:auto;display:block">`;
 const LOGO_ICON_IMG = `<img src="${TDPL_LOGO_ICON}" alt="TrustLab Diagnostics" style="max-width:100%;max-height:100%;object-fit:contain;display:block">`;
 
-export function previewMinutes(m, allDecisions) {
+export function previewMinutes(m, allDecisions, dlg) {
   if (!m) return;
   const w = window.open('', '_blank', 'width=900,height=1100');
-  if (!w) { alert('Pop-up blocked. Please allow pop-ups to preview.'); return; }
+  if (!w) { dlg.alert('Pop-up blocked. Please allow pop-ups to preview.'); return; }
   const dt = parseDate(m.date);
   const externals = (m.external || []).map(normExt);
   const typeColors = { internal: '#0F8F76', customer: '#2563EB', supplier: '#DD6B20', consultants: '#7C3AED', board: '#F0B429', other: '#6B6B6B' };

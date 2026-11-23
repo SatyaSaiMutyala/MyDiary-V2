@@ -7,13 +7,13 @@ import { ModalShell, FootNote, Btn, TextLink, AddBtn, Chip, FieldLabel, Field, T
 import { useListUsersQuery } from '../../../store/api/usersApi';
 import { EMPLOYEE_OPTIONS } from '../utils';
 import { useDialog } from '../../../components/Dialogs';
+import { DateInput, TimeInput } from '../../../components/DateTimeInput';
 
 const DATALIST_ID = 'log-int-datalist';
 const fuInputSx = { p: '6px 8px', border: `1px solid ${tokens.line}`, borderRadius: '4px', bgcolor: '#fff', fontSize: 11, fontFamily: 'inherit', height: 'auto', boxSizing: 'border-box', '&:focus': { outline: 'none', borderColor: tokens.teal } };
 
 /** .followup-row — text | owner (140px) | date (135px) | × */
 function FollowUpRow({ fu, onChange, onRemove }) {
-  const dlg = useDialog();
   return (
     <Grid container spacing={1} sx={{ alignItems: 'center', p: '8px 10px', bgcolor: tokens.cream, border: `1px solid ${tokens.line}`, borderRadius: '6px', mb: '6px' }}>
       <Grid size={{ xs: 12, md: 'grow' }}>
@@ -23,7 +23,7 @@ function FollowUpRow({ fu, onChange, onRemove }) {
         <InputBase value={fu.owner || ''} placeholder="Owner" inputProps={{ list: DATALIST_ID }} onChange={e => onChange('owner', e.target.value)} sx={{ width: { xs: '100%', md: 140 }, '& .MuiInputBase-input': fuInputSx }} />
       </Grid>
       <Grid size={{ xs: 5, md: 'auto' }}>
-        <InputBase type="date" value={fu.deadline || ''} onChange={e => onChange('deadline', e.target.value)} sx={{ width: { xs: '100%', md: 135 }, '& .MuiInputBase-input': fuInputSx }} />
+        <DateInput value={fu.deadline || ''} onChange={e => onChange('deadline', e.target.value)} sx={{ width: { xs: '100%', md: 135 } }} inputSx={fuInputSx} />
       </Grid>
       <Grid size={{ xs: 1, md: 'auto' }}>
         <Box component="button" type="button" onClick={onRemove} sx={{ p: '4px 8px', bgcolor: 'transparent', border: '1px solid transparent', borderRadius: '4px', color: tokens.slateSoft, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit', '&:hover': { color: tokens.red, borderColor: tokens.red, bgcolor: tokens.redSoft } }}>×</Box>
@@ -37,6 +37,7 @@ function FollowUpRow({ fu, onChange, onRemove }) {
  * onSave(draft) performs validation alerts + store write in the page.
  */
 export default function LogModal({ open, draft, setDraft, viewer, onClose, onSave }) {
+  const dlg = useDialog();
   const [intAdd, setIntAdd] = useState('');
   // The internal datalist is the real roster: GET /api/users (admin-only, so everyone else gets the
   // bundled roster instead — the names are the same people).
@@ -104,8 +105,8 @@ export default function LogModal({ open, draft, setDraft, viewer, onClose, onSav
       </Box>
 
       <Grid container spacing="12px" sx={{ mb: '12px' }}>
-        <Grid size={{ xs: 12, sm: 4 }}><Field label="Date"><TextInput type="date" value={d.date} onChange={e => upd(c => { c.date = e.target.value; })} /></Field></Grid>
-        <Grid size={{ xs: 6, sm: 4 }}><Field label="Time"><TextInput type="time" value={d.time} onChange={e => upd(c => { c.time = e.target.value; })} /></Field></Grid>
+        <Grid size={{ xs: 12, sm: 4 }}><Field label="Date"><DateInput value={d.date} onChange={e => upd(c => { c.date = e.target.value; })} /></Field></Grid>
+        <Grid size={{ xs: 6, sm: 4 }}><Field label="Time"><TimeInput value={d.time} onChange={e => upd(c => { c.time = e.target.value; })} /></Field></Grid>
         <Grid size={{ xs: 6, sm: 4 }}><Field label="Duration" hint="optional"><TextInput value={d.duration} onChange={e => upd(c => { c.duration = e.target.value; })} placeholder="e.g. 5 min" /></Field></Grid>
       </Grid>
 

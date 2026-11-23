@@ -11,6 +11,7 @@ import { Decision } from '../models/Decision.js';
 import { Department } from '../models/Department.js';
 import { DiaryEntry } from '../models/DiaryEntry.js';
 import { DiscussionLog } from '../models/DiscussionLog.js';
+import { Reminder } from '../models/Reminder.js';
 import { Integration } from '../models/Integration.js';
 import { Meeting } from '../models/Meeting.js';
 import { MeetingRequest } from '../models/MeetingRequest.js';
@@ -236,6 +237,29 @@ registerSearch({
       title: l.topic,
       subtitle: [(l.with ?? []).map((w) => w.name).join(', '), l.channel, l.date].filter(Boolean).join(' \u00b7 '),
       route: `/logs?log=${l._id.toString()}`,
+    }));
+  },
+});
+
+registerSearch({
+  key: 'reminders',
+  label: 'Reminders',
+  canUse: (u) => hasModule(u, 'reminders'),
+  async search(q, limit, user) {
+    // Only what this person set or will receive — an admin sees the lot, as the list endpoint does.
+    const mine =
+      user.role === 'admin' ? {} : { $or: [{ creator: user.name }, { recipients: user.name }] };
+    const filter = searchFilter(q, ['title', 'note', 'recipients', 'creator']);
+    const docs = await Reminder.find(Object.keys(mine).length ? { $and: [mine, filter] } : filter)
+      .sort({ remindAt: -1, _id: -1 })
+      .limit(limit);
+    return docs.map((r) => ({
+      id: r._id.toString(),
+      title: r.title,
+      subtitle: [`${r.date} \u00b7 ${r.time}`, (r.recipients ?? []).join(', '), r.status]
+        .filter(Boolean)
+        .join(' \u00b7 '),
+      route: `/reminders?reminder=${r._id.toString()}`,
     }));
   },
 });

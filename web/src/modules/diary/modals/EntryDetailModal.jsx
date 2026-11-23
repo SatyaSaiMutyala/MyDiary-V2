@@ -38,6 +38,7 @@ export default function EntryDetailModal({ entry, canEdit, onClose, onDelete }) 
     const invitee = normExt(entry.external[idx]);
     const subject = entry.title;
     openRsvpPreview({
+      dlg,
       subject,
       dateStr: formatDateLong(parseDate(entry.date)),
       timeStr: entry.allDay ? 'All day' : (entry.startTime + (entry.endTime ? ' – ' + entry.endTime : '')),

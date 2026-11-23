@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Box } from '@mui/material';
 import { tokens } from '../../../theme/tokens';
 import { taskTimeSx } from './styles';
+import { TimeInput as TimePicker } from '../../../components/DateTimeInput';
 
 /**
  * Live-bound text input (prototype `oninput="..."`): keeps its own text while focused so the caret never
@@ -30,20 +31,18 @@ export default function LiveInput({ value, onCommit, sx, type = 'text', ...rest 
   );
 }
 
-/** Native <input type="time">, bound the same way so a half-typed time is never overwritten mid-save. */
+/**
+ * The task-row time field.
+ *
+ * It used to be a native <input type="time"> and had to keep its own text while focused, so a
+ * half-typed time was never overwritten mid-save. The app's picker has nothing to half-type — a
+ * time is chosen in one go — so the value passes straight through and commits on selection.
+ */
 export function TimeInput({ value, onCommit, sx, ...rest }) {
-  const ref = useRef(null);
-  const [local, setLocal] = useState(value ?? '');
-  useEffect(() => {
-    if (document.activeElement !== ref.current) setLocal(value ?? '');
-  }, [value]);
   return (
-    <Box
-      component="input"
-      type="time"
-      ref={ref}
-      value={local || ''}
-      onChange={(e) => { setLocal(e.target.value); onCommit(e.target.value); }}
+    <TimePicker
+      value={value ?? ''}
+      onChange={(e) => onCommit(e.target.value)}
       sx={{ ...taskTimeSx, ...sx }}
       {...rest}
     />

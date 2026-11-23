@@ -3,3 +3,6 @@ node_modules/
 .data/
 *.log
 coverage/
+
+# The Firebase service-account key: a private key, never committed.
+storage/firebase/

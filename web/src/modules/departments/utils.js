@@ -17,17 +17,20 @@ export function makeDebouncer(delay = 450) {
 // pickDepartmentTemplate (prototype 12824–12874) — the create body for the API, or null if cancelled.
 // Tasks point at their position by index (`positions: [0]`), which is how the templates describe them;
 // the API resolves those to the real position ids once it has created them.
-export function buildDepartmentFromTemplate(DEPT_TEMPLATES) {
+//
+// `dlg` is the page's useDialog() — a helper module cannot call the hook itself, so the page hands
+// its dialogs in. Every question is awaited before the next one is asked.
+export async function buildDepartmentFromTemplate(DEPT_TEMPLATES, dlg) {
   const menu = DEPT_TEMPLATES.map((t, i) => (i + 1) + '. ' + t.emoji + ' ' + t.name).join('\n');
-  const pick = window.prompt('Which department template?\n\n' + menu + '\n\nEnter a number, or blank to cancel.');
+  const pick = await dlg.prompt('Which department template?\n\n' + menu + '\n\nEnter a number, or blank to cancel.');
   if (!pick) return null;
   const idx = parseInt(pick.trim(), 10) - 1;
   if (idx < 0 || idx >= DEPT_TEMPLATES.length) return null;
   const tpl = DEPT_TEMPLATES[idx];
-  const name = window.prompt('Department name:', tpl.id === 'dt-blank' ? '' : '');
+  const name = await dlg.prompt('Department name:', tpl.id === 'dt-blank' ? '' : '');
   if (!name || !name.trim()) return null;
-  const icon = window.prompt('Icon (one emoji):', tpl.emoji) || tpl.emoji;
-  const description = window.prompt('Short description:', tpl.description.split('.')[0]) || '';
+  const icon = (await dlg.prompt('Icon (one emoji):', tpl.emoji)) || tpl.emoji;
+  const description = (await dlg.prompt('Short description:', tpl.description.split('.')[0])) || '';
 
   const lane = (list) => (list || []).map((t, i) => ({
     order: i + 1,
@@ -47,10 +50,10 @@ export function buildDepartmentFromTemplate(DEPT_TEMPLATES) {
 }
 
 // openDepartmentEditor (prototype 12876–12885)
-export function buildBlankDepartment() {
-  const name = window.prompt('Department name (e.g. "Clinical Laboratory"):');
+export async function buildBlankDepartment(dlg) {
+  const name = await dlg.prompt('Department name (e.g. "Clinical Laboratory"):');
   if (!name || !name.trim()) return null;
-  const icon = window.prompt('Icon (one emoji):', '🏢') || '🏢';
-  const description = window.prompt('Short description:', '') || '';
+  const icon = (await dlg.prompt('Icon (one emoji):', '🏢')) || '🏢';
+  const description = (await dlg.prompt('Short description:', '')) || '';
   return { name: name.trim(), icon, description };
 }

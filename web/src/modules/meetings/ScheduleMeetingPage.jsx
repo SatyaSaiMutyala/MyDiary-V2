@@ -14,6 +14,7 @@ import ScheduleStepper from './components/scheduleStepper';
 import ScheduleTypePicker from './components/scheduleTypePicker';
 import ScheduleTypeFields, { Row, col1, col2, col3 } from './components/scheduleTypeFields';
 import { useDialog } from '../../components/Dialogs';
+import { DateInput, TimeInput } from '../../components/DateTimeInput';
 
 const DURATIONS = { '30 minutes': '30m', '45 minutes': '45m', '1 hour': '1h', '1 hour 30 minutes': '1h 30m', '2 hours': '2h', 'Half day': '4h', 'Full day': '8h' };
 const MODES = ['📍 In-person', '💻 Virtual', '🔀 Hybrid'];
@@ -26,7 +27,6 @@ const SUB_BADGE_DEFAULT = { internal: 'Ops Review', customer: 'New Business Pitc
 
 /** One .agenda-item row (editable) */
 function AgendaItem({ idx, item, onChange, onDelete, autoFocus }) {
-  const dlg = useDialog();
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: '6px', sm: '10px' }, p: '10px 12px', bgcolor: tokens.cream, border: `1px solid ${tokens.line}`, borderRadius: tokens.radiusSm }}>
       <Box component="span" sx={{ color: tokens.slateSofter, cursor: 'grab', p: '2px', fontSize: 14, userSelect: 'none' }}>⋮⋮</Box>
@@ -42,6 +42,7 @@ function AgendaItem({ idx, item, onChange, onDelete, autoFocus }) {
 
 /** #view-schedule — Schedule a Meeting (selectType / changeType / addAgenda / addChip / saveNewMeeting …) */
 export default function ScheduleMeetingPage() {
+  const dlg = useDialog();
   const navigate = useNavigate();
   // "📋 Load from template…" sends the person to /templates; picking a card comes back here with
   // { type, templateId } so the chosen agenda can pre-fill this form.
@@ -278,8 +279,8 @@ export default function ScheduleMeetingPage() {
           <Card num={2} title="Meeting Basics" sub="When · Where · How long">
             <Row><Grid size={col1}><Field label="Meeting Title" req><TextInput value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Q3 Operations Review · Hyderabad Hub" /></Field></Grid></Row>
             <Row>
-              <Grid size={col3}><Field label="Date" req><TextInput type="date" value={date} onChange={e => setDate(e.target.value)} /></Field></Grid>
-              <Grid size={col3}><Field label="Start Time" req><TextInput type="time" value={time} onChange={e => setTime(e.target.value)} /></Field></Grid>
+              <Grid size={col3}><Field label="Date" req><DateInput value={date} onChange={e => setDate(e.target.value)} /></Field></Grid>
+              <Grid size={col3}><Field label="Start Time" req><TimeInput value={time} onChange={e => setTime(e.target.value)} /></Field></Grid>
               <Grid size={col3}><Field label="Duration"><SelectInput value={duration} onChange={e => setDuration(e.target.value)}>{Object.keys(DURATIONS).map(d => <option key={d}>{d}</option>)}</SelectInput></Field></Grid>
             </Row>
             <Row><Grid size={col1}><Field label="Mode"><Segmented options={MODES} value={mode} onChange={setMode} /></Field></Grid></Row>

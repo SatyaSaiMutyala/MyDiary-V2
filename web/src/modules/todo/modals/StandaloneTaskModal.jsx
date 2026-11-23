@@ -6,6 +6,7 @@ import { tokens, fonts } from '../../../theme/tokens';
 import { EMPLOYEES } from '../../../data/employees';
 import { TODAY } from '../../../utils/dates';
 import { useDialog } from '../../../components/Dialogs';
+import { DateInput } from '../../../components/DateTimeInput';
 
 const labelSx = { fontFamily: fonts.mono, fontSize: 10, letterSpacing: '0.1em', color: tokens.slate, fontWeight: 700, textTransform: 'uppercase', display: 'block' };
 const ctrlSx = { width: '100%', mt: '6px', p: '10px 12px', border: `1px solid ${tokens.line}`, borderRadius: '6px', fontFamily: 'inherit', fontSize: 13, bgcolor: '#fff', color: tokens.ink, boxSizing: 'border-box', '&:focus': { outline: 'none', borderColor: tokens.teal, boxShadow: `0 0 0 3px ${tokens.tealSoft}` } };
@@ -53,7 +54,7 @@ export default function StandaloneTaskModal({ open, onClose, onSubmit }) {
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
           <Box component="label" sx={labelSx}>Deadline ✱</Box>
-          <Box component="input" type="date" value={deadline} min={today} onChange={e => setDeadline(e.target.value)} sx={ctrlSx} />
+          <DateInput value={deadline} min={today} onChange={e => setDeadline(e.target.value)} sx={ctrlSx} />
         </Grid>
       </Grid>
       <Box>

@@ -16,7 +16,6 @@ const SERVER_ICON = { users: '👤', audit: '🧾' };
 
 /** <kbd> chip inside .cmd-hint */
 function Kbd({ children }) {
-  const dlg = useDialog();
   return <Box component="kbd" sx={{ bgcolor: tokens.card, p: '2px 6px', borderRadius: '3px', border: `1px solid ${tokens.line}`, fontFamily: 'inherit', fontSize: 10 }}>{children}</Box>;
 }
 
@@ -25,6 +24,7 @@ function Kbd({ children }) {
  * props: open, onClose
  */
 export default function CommandPalette({ open, onClose }) {
+  const dlg = useDialog();
   const { state } = useAppStore();
   const { status } = useAuth();
   const navigate = useNavigate();

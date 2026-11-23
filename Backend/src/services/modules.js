@@ -15,6 +15,7 @@ export const MODULES = [
   { key: 'activity', label: 'My Activity', group: 'Personal' },
   { key: 'diary', label: 'My Diary', group: 'Personal' },
   { key: 'logs', label: 'My Discussion Logs', group: 'Personal' },
+  { key: 'reminders', label: 'Reminders', group: 'Personal' },
   { key: 'todo', label: 'My To-Do', group: 'Personal' },
   { key: 'visits', label: 'My Visit Observations', group: 'Personal' },
   { key: 'projects', label: 'My Projects', group: 'Project Management' },

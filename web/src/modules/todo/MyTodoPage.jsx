@@ -16,7 +16,6 @@ import CompleteDialog from './modals/CompleteDialog';
 import { useDialog } from '../../components/Dialogs';
 
 function BannerStat({ val, lbl, valColor, sx }) {
-  const dlg = useDialog();
   return (
     <Box sx={{ textAlign: 'center', ...sx }}>
       <Box sx={{ fontFamily: fonts.serif, fontSize: 26, fontWeight: 700, lineHeight: 1, color: valColor }}>{val}</Box>
@@ -26,6 +25,7 @@ function BannerStat({ val, lbl, valColor, sx }) {
 }
 
 export default function MyTodoPage() {
+  const dlg = useDialog();
   const { state, mutate, notify } = useAppStore();
   const { user } = useAuth();
   const navigate = useNavigate();

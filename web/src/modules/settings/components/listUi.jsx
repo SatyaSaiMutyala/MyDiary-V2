@@ -1,8 +1,9 @@
 import { useCallback, useState } from 'react';
 import { Alert, AlertTitle, Box, LinearProgress, Snackbar, TableCell, Typography } from '@mui/material';
-import { Btn, TextInput } from '../../../components';
+import { Btn } from '../../../components';
 import { tokens, fonts } from '../../../theme/tokens';
 import { errorDetails, errorMessage } from '../../../store/api/baseApi';
+import { DateInput as DatePicker } from '../../../components/DateTimeInput';
 
 export const PAGE_SIZE = 25;
 
@@ -66,6 +67,7 @@ export function useToast() {
   return { toast, show };
 }
 
+/** The filter-bar date field: the app's date picker, sized for a toolbar. */
 export function DateInput(props) {
-  return <TextInput type="date" sx={{ width: 'auto' }} inputSx={{ minWidth: 138, fontSize: 12.5 }} {...props} />;
+  return <DatePicker sx={{ width: 'auto' }} inputSx={{ minWidth: 138, fontSize: 12.5 }} {...props} />;
 }

@@ -22,7 +22,6 @@ const DIAMOND = { todo: tokens.slateSoft, done: tokens.teal, 'in-progress': toke
 
 /** .gantt-bar */
 function Bar({ left, width, kind, done, overdue, extraSx, onClick, children }) {
-  const dlg = useDialog();
   return (
     <Box onClick={onClick} sx={{ position: 'absolute', top: 9, height: 24, borderRadius: '4px', p: '0 10px', fontSize: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', overflow: 'hidden', fontWeight: 700, zIndex: 5, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', minWidth: 24, transition: 'all 0.1s', letterSpacing: '0.02em', whiteSpace: 'nowrap', color: '#fff', left, width, boxSizing: 'border-box', ...(BAR_STYLE[kind] || {}), ...(overdue ? BAR_STYLE['milestone-overdue'] : {}), ...(done ? { opacity: 0.55, textDecoration: 'line-through' } : {}), '&:hover': { zIndex: 10, boxShadow: '0 4px 10px rgba(0,0,0,0.15)', transform: 'translateY(-1px)' }, ...extraSx }}>
       {children}
@@ -32,6 +31,7 @@ function Bar({ left, width, kind, done, overdue, extraSx, onClick, children }) {
 
 /** renderGanttPane() — zoom toolbar, sticky label column, scrollable timeline with axis, bars, diamonds, today line */
 export default function GanttPane({ p, actions, zoom, setZoom }) {
+  const dlg = useDialog();
   const cfg = GANTT_ZOOM_CFG[zoom];
   const pxPerDay = cfg.pxPerDay;
 

@@ -11,6 +11,7 @@ import TemplatesPage from '../modules/templates/TemplatesPage';
 import MyActivityPage from '../modules/myactivity/MyActivityPage';
 import DiaryPage from '../modules/diary/DiaryPage';
 import DiscussionLogsPage from '../modules/logs/DiscussionLogsPage';
+import RemindersPage from '../modules/reminders/RemindersPage';
 import MyTodoPage from '../modules/todo/MyTodoPage';
 import VisitsPage from '../modules/visits/VisitsPage';
 import ProjectsPage from '../modules/projects/ProjectsPage';
@@ -41,6 +42,7 @@ const router = createBrowserRouter([
     { path: 'my-activity', element: <NeedsModule module="activity"><MyActivityPage /></NeedsModule> },
     { path: 'diary', element: <NeedsModule module="diary"><DiaryPage /></NeedsModule> },
     { path: 'logs', element: <NeedsModule module="logs"><DiscussionLogsPage /></NeedsModule> },
+    { path: 'reminders', element: <NeedsModule module="reminders"><RemindersPage /></NeedsModule> },
     { path: 'todo', element: <NeedsModule module="todo"><MyTodoPage /></NeedsModule> },
     { path: 'visits', element: <NeedsModule module="visits"><VisitsPage /></NeedsModule> },
     { path: 'projects', element: <NeedsModule module="projects"><ProjectsPage /></NeedsModule> },

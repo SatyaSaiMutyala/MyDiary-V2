@@ -10,6 +10,7 @@ import { PROJ_CATEGORIES, PROJ_STATUSES } from '../../../data/projects';
 import { EMPLOYEES } from '../../../data/employees';
 import { WIZ_STEPS, draftToBody, newId } from '../utils';
 import { useDialog } from '../../../components/Dialogs';
+import { DateInput } from '../../../components/DateTimeInput';
 
 const DATALIST_ID = 'proj-emp-datalist';
 const listProps = { inputProps: { list: DATALIST_ID } };
@@ -122,8 +123,8 @@ export default function ProjectWizardModal({ draft: initialDraft, onClose, onSav
                 <Grid size={{ xs: 6, sm: 4 }}><Field label="Status"><SelectInput value={d.status} onChange={e => ed(x => { x.status = e.target.value; })}>{Object.entries(PROJ_STATUSES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}</SelectInput></Field></Grid>
               </Grid>
               <Grid container spacing="12px">
-                <Grid size={{ xs: 12, sm: 6 }}><Field label="Start Date"><TextInput type="date" value={d.startDate} onChange={e => ed(x => { x.startDate = e.target.value; })} /></Field></Grid>
-                <Grid size={{ xs: 12, sm: 6 }}><Field label="End Date"><TextInput type="date" value={d.endDate} onChange={e => ed(x => { x.endDate = e.target.value; })} /></Field></Grid>
+                <Grid size={{ xs: 12, sm: 6 }}><Field label="Start Date"><DateInput value={d.startDate} onChange={e => ed(x => { x.startDate = e.target.value; })} /></Field></Grid>
+                <Grid size={{ xs: 12, sm: 6 }}><Field label="End Date"><DateInput value={d.endDate} onChange={e => ed(x => { x.endDate = e.target.value; })} /></Field></Grid>
               </Grid>
             </VSection>
           )}
@@ -167,7 +168,7 @@ export default function ProjectWizardModal({ draft: initialDraft, onClose, onSav
                 {d.milestones.map((m, i) => (
                   <Grid container key={m.id || i} spacing={1} sx={rowSx()}>
                     <Grid size={{ xs: 12, sm: 'grow' }}><TextInput value={m.name || ''} onChange={e => ed(x => { x.milestones[i].name = e.target.value; })} placeholder="Milestone name" /></Grid>
-                    <Grid size={{ xs: 6, sm: 3 }}><TextInput type="date" value={m.dueDate || ''} onChange={e => ed(x => { x.milestones[i].dueDate = e.target.value; })} /></Grid>
+                    <Grid size={{ xs: 6, sm: 3 }}><DateInput value={m.dueDate || ''} onChange={e => ed(x => { x.milestones[i].dueDate = e.target.value; })} /></Grid>
                     <Grid size={{ xs: 5, sm: 3 }}><TextInput value={m.owner || ''} onChange={e => ed(x => { x.milestones[i].owner = e.target.value; })} placeholder="Owner" {...listProps} /></Grid>
                     <Grid size="auto"><DelBtn onClick={() => ed(x => { x.milestones.splice(i, 1); })} /></Grid>
                   </Grid>
@@ -191,7 +192,7 @@ export default function ProjectWizardModal({ draft: initialDraft, onClose, onSav
                     <Grid container key={t.id || i} spacing="6px" sx={rowSx()}>
                       <Grid size={{ xs: 12, md: 'grow' }}><TextInput value={t.title || ''} onChange={e => ed(x => { x.tasks[i].title = e.target.value; })} placeholder="Task title" /></Grid>
                       <Grid size={{ xs: 6, md: 2 }}><TextInput value={t.assignee || ''} onChange={e => ed(x => { x.tasks[i].assignee = e.target.value; })} placeholder="Assignee" {...listProps} /></Grid>
-                      <Grid size={{ xs: 6, md: 2 }}><TextInput type="date" value={t.dueDate || ''} onChange={e => ed(x => { x.tasks[i].dueDate = e.target.value; })} /></Grid>
+                      <Grid size={{ xs: 6, md: 2 }}><DateInput value={t.dueDate || ''} onChange={e => ed(x => { x.tasks[i].dueDate = e.target.value; })} /></Grid>
                       <Grid size={{ xs: 5, md: 1.5 }}><SelectInput value={t.priority} onChange={e => ed(x => { x.tasks[i].priority = e.target.value; })}>{PRI_OPTS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</SelectInput></Grid>
                       <Grid size={{ xs: 5, md: 2 }}><SelectInput title="Link to milestone" value={t.milestoneId || ''} onChange={e => ed(x => { x.tasks[i].milestoneId = e.target.value || null; })}>{msOpts}</SelectInput></Grid>
                       <Grid size="auto"><DelBtn onClick={() => ed(x => { x.tasks.splice(i, 1); })} /></Grid>

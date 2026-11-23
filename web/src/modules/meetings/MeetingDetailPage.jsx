@@ -42,7 +42,6 @@ const ACTION_DEBOUNCE = { desc: 700, deadline: 0, priority: 0, status: 0, owner:
 
 /** The web's extractActionsFromMinutes() preview — the same scan the server runs, used for the confirm box. */
 function minutesCandidates(minutes) {
-  const dlg = useDialog();
   const candidates = [];
   Object.values(minutes || {}).forEach(mins => {
     if (!mins || !mins.dec) return;
@@ -62,6 +61,7 @@ export default function MeetingDetailPage() {
 }
 
 function MeetingDetail({ id }) {
+  const dlg = useDialog();
   const navigate = useNavigate();
   const { state, set } = useAppStore();
   const { toast, show } = useToast();
@@ -211,6 +211,7 @@ function MeetingDetail({ id }) {
     const invitee = normExt(m.external[idx]);
     const subject = m.title;
     openRsvpPreview({
+      dlg,
       subject, dateStr: formatDateLong(parseDate(m.date)), timeStr: formatTime(m.time), dur: m.dur, location: m.loc, modeStr: m.mode,
       organizer: m.chair, orgEmail: tdplEmail(m.chair), invitee, agenda: m.agenda || [], notes: '', logoDataUrl: TDPL_LOGO_FULL,
       // POST /rsvp records the answer and notifies the chair.
@@ -370,16 +371,16 @@ function MeetingDetail({ id }) {
       {error ? <ApiError error={error} onRetry={refetch} sx={{ mb: 1.5 }} /> : null}
 
       <DetailHead m={view} onEdit={editMeeting} onDuplicate={duplicateMeeting} onMarkCompleted={markCompleted} onCancel={cancelMeeting} onRestore={restoreMeeting} onDelete={deleteMeeting}
-        onPreview={() => previewMinutes(view, myDecisions)} onExport={() => exportMinutes(view)} onCirculate={() => setCircOpen(true)} onOpenRsvp={openRsvp} onEditEmail={editExternalEmail} />
+        onPreview={() => previewMinutes(view, myDecisions, dlg)} onExport={() => exportMinutes(view)} onCirculate={() => setCircOpen(true)} onOpenRsvp={openRsvp} onEditEmail={editExternalEmail} />
 
       <TabBar tabs={tabs} value={tab} onChange={setTab} sx={{ mb: '18px' }} />
 
       {tab === 'agenda' && <DetailAgendaPane m={view} onEdit={editMeeting} onAddParking={addParkingItem} onRmParking={rmParkingItem} onCyclePresence={cyclePresence} />}
-      {tab === 'live' && <DetailLivePane m={view} recording={recording} onToggleRecording={toggleRecording} onDownload={() => downloadTranscript(view)} onGenerateAI={() => { setTab('ai'); setTimeout(generateAISummary, 100); }} />}
+      {tab === 'live' && <DetailLivePane m={view} recording={recording} onToggleRecording={toggleRecording} onDownload={() => downloadTranscript(view, dlg)} onGenerateAI={() => { setTab('ai'); setTimeout(generateAISummary, 100); }} />}
       {tab === 'ai' && <DetailAIPane m={view} loading={aiLoading} onGoLive={() => setTab('live')} onGenerate={generateAISummary} onLogDecisions={logAllAIDecisions} onApplyActions={applyAIActions} />}
       {tab === 'decisions' && <DetailDecisionsPane m={view} decisions={myDecisions} onViewRegistry={() => navigate('/decisions')} />}
       {tab === 'minutes' && <DetailMinutesPane m={view} onUpdateMinutes={updateMinutes} onConvertToAction={addActionFromMinutes} onAttachFile={attachFile} onLinkDecision={linkDecision}
-        onPreview={() => previewMinutes(view, myDecisions)} onExport={() => exportMinutes(view)} onFinalise={finaliseMinutes} />}
+        onPreview={() => previewMinutes(view, myDecisions, dlg)} onExport={() => exportMinutes(view)} onFinalise={finaliseMinutes} />}
       {tab === 'actions' && <DetailActionsPane m={view} actionExtras={actionExtras} expandedId={expandedId} expandTab={expandTab} onToggleExpand={toggleActionExpand} onExpandTab={setExpandTab} focusActionId={focusActionId}
         onAdd={addAction} onUpdate={updateAction} onDelete={deleteAction} onSelectOwner={selectOwner} onExtract={extractActionsFromMinutes} onRemind={remindOwnersNow}
         onToggleSubtask={toggleSubtask} onAddSubtask={addSubtask} onAddDependency={addDependency} onAddComment={addComment} />}

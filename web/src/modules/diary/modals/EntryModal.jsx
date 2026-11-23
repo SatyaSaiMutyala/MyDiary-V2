@@ -7,6 +7,7 @@ import { DIARY_CATS } from '../../../data/diary';
 import { EMPLOYEES } from '../../../data/employees';
 import { CAT_BTN_SELECTED, toISO } from '../utils';
 import { useDialog } from '../../../components/Dialogs';
+import { DateInput, TimeInput } from '../../../components/DateTimeInput';
 
 const sectionLabelSx = { fontSize: 11, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: tokens.slate };
 const countSx = { fontFamily: fonts.mono, fontSize: 10, color: tokens.slateSoft, fontWeight: 400, letterSpacing: '0.05em', textTransform: 'none' };
@@ -116,9 +117,9 @@ export default function EntryModal({ open, onClose, owner, viewer, date, preset,
       </Field>
 
       <Grid container spacing="12px" sx={{ mb: '12px' }}>
-        <Grid size={{ xs: 12, sm: 4 }}><Field label="Date"><TextInput type="date" value={d.date} onChange={e => patch({ date: e.target.value })} /></Field></Grid>
-        <Grid size={{ xs: 6, sm: 4 }}><Field label="Start"><TextInput type="time" value={d.startTime} disabled={d.allDay} onChange={e => patch({ startTime: e.target.value })} /></Field></Grid>
-        <Grid size={{ xs: 6, sm: 4 }}><Field label="End"><TextInput type="time" value={d.endTime} disabled={d.allDay} onChange={e => patch({ endTime: e.target.value })} /></Field></Grid>
+        <Grid size={{ xs: 12, sm: 4 }}><Field label="Date"><DateInput value={d.date} onChange={e => patch({ date: e.target.value })} /></Field></Grid>
+        <Grid size={{ xs: 6, sm: 4 }}><Field label="Start"><TimeInput value={d.startTime} disabled={d.allDay} onChange={e => patch({ startTime: e.target.value })} /></Field></Grid>
+        <Grid size={{ xs: 6, sm: 4 }}><Field label="End"><TimeInput value={d.endTime} disabled={d.allDay} onChange={e => patch({ endTime: e.target.value })} /></Field></Grid>
       </Grid>
 
       <Box sx={{ mb: '12px' }}>

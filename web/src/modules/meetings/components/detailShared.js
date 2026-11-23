@@ -13,9 +13,10 @@ function downloadText(txt, filename) {
   URL.revokeObjectURL(url);
 }
 
-// downloadTranscript(meetingId) — verbatim
-export function downloadTranscript(m) {
-  if (!m || !m.transcript || !m.transcript.length) { alert('No transcript to download.'); return; }
+// downloadTranscript(m, dlg) — verbatim. `dlg` is the caller's useDialog(), since a helper module
+// cannot call the hook itself.
+export function downloadTranscript(m, dlg) {
+  if (!m || !m.transcript || !m.transcript.length) { dlg.alert('No transcript to download.'); return; }
   let txt = 'TRANSCRIPT · ' + m.title + '\n' + formatDateLong(parseDate(m.date)) + '\n\n' + '='.repeat(60) + '\n\n';
   m.transcript.forEach(t => txt += '[' + t.time + '] ' + t.speaker + ':\n' + t.text + '\n\n');
   downloadText(txt, m.title.replace(/[^\w]+/g, '-') + '-transcript.txt');

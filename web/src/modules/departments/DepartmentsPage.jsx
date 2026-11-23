@@ -7,6 +7,7 @@ import { DEPT_TEMPLATES } from '../../data/departments';
 import { useCreateDepartmentMutation, useListDepartmentsQuery } from '../../store/api/departmentsApi';
 import { ApiError, Fetching, useToast } from '../settings/components/listUi';
 import { buildDepartmentFromTemplate, buildBlankDepartment } from './utils';
+import { useDialog } from '../../components/Dialogs';
 
 const statL = { fontFamily: fonts.mono, fontSize: 9, color: tokens.slate, letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700, mt: '3px' };
 const statV = (color = tokens.ink) => ({ fontFamily: fonts.serif, fontSize: 18, fontWeight: 700, color, lineHeight: 1 });
@@ -17,6 +18,7 @@ export default function DepartmentsPage() {
   const { data, error, isLoading, isFetching, refetch } = useListDepartmentsQuery({ limit: 200, sort: 'order' });
   const [createDepartment] = useCreateDepartmentMutation();
   const { toast, show } = useToast();
+  const dlg = useDialog();
 
   const DEPARTMENTS = data?.items || [];
   const totalPositions = DEPARTMENTS.reduce((s, d) => s + d.positions.length, 0);
@@ -33,8 +35,8 @@ export default function DepartmentsPage() {
       show(err);
     }
   };
-  const pickDepartmentTemplate = () => createAndOpen(buildDepartmentFromTemplate(DEPT_TEMPLATES));
-  const openDepartmentEditor = () => createAndOpen(buildBlankDepartment());
+  const pickDepartmentTemplate = async () => createAndOpen(await buildDepartmentFromTemplate(DEPT_TEMPLATES, dlg));
+  const openDepartmentEditor = async () => createAndOpen(await buildBlankDepartment(dlg));
 
   return (
     <Box>

@@ -15,7 +15,12 @@ empty state, prompt(), confirm(), alert(), toast, modal, filter, tab and hover s
    lg = prototype's 1100px reflow). Everything must look right at 375px, 768px, 1280px.
 3. **Responsive**: stack columns on xs/sm, scroll wide tables/boards horizontally (`overflowX: 'auto'`),
    never let content overflow the viewport. Preserve the desktop look exactly at lg+.
-4. **Functionality**: keep `window.prompt/confirm/alert` exactly where the prototype uses them (same texts).
+4. **Functionality**: keep every question the prototype asks, with the same texts — but ask it through
+   MyDiary's own dialogs, never the browser's. `useDialog()` from `components/Dialogs` gives
+   `alert` / `confirm` / `prompt` / `toast`; all four are async, so `await` each answer before asking
+   the next. There is no `window.prompt/confirm/alert` left in `src/`, and none should be added.
+   A plain helper module cannot call the hook, so it takes `dlg` as a parameter and the page hands
+   its own in (see `projects/useProjectActions.js`, `departments/utils.js`, `meetings/rsvpPreview.js`).
    Keep all demo behaviours (recording simulator, AI summary 2.2s delay, RSVP preview window via
    `window.open` + `document.write` is fine, downloads via Blob, print preview via `window.open`).
 5. **Fonts**: body `fonts.sans` (DM Sans), mono labels `fonts.mono` (Space Mono), display titles `fonts.serif`

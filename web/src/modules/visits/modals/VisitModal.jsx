@@ -6,6 +6,7 @@ import { VISIT_TYPES, RATING_AREAS, OBS_CATEGORIES, OVERALL_OPTIONS } from '../.
 import { ModalShell, FootNote, Btn, TextLink, AddBtn, Chip, FieldLabel, Field, TextInput, TextArea, SelectInput, VSection, DelBtn } from '../../../components';
 import { useListUsersQuery } from '../../../store/api/usersApi';
 import { EMPLOYEE_OPTIONS } from '../utils';
+import { DateInput, TimeInput } from '../../../components/DateTimeInput';
 
 const DATALIST_ID = 'visit-team-datalist';
 // .obs-row input/select/textarea + .v-action-row input
@@ -85,9 +86,9 @@ export default function VisitModal({ open, draft, setDraft, onClose, onSave }) {
           <Grid size={{ xs: 12, sm: 6 }}><Field label="Status"><SelectInput {...bind('status')}><option value="draft">📝 Draft</option><option value="submitted">✓ Submitted</option></SelectInput></Field></Grid>
         </Grid>
         <Grid container spacing="12px">
-          <Grid size={{ xs: 12, sm: 4 }}><Field label="Date" req><TextInput type="date" {...bind('date')} /></Field></Grid>
-          <Grid size={{ xs: 6, sm: 4 }}><Field label="Time In"><TextInput type="time" {...bind('timeIn')} /></Field></Grid>
-          <Grid size={{ xs: 6, sm: 4 }}><Field label="Time Out"><TextInput type="time" {...bind('timeOut')} /></Field></Grid>
+          <Grid size={{ xs: 12, sm: 4 }}><Field label="Date" req><DateInput {...bind('date')} /></Field></Grid>
+          <Grid size={{ xs: 6, sm: 4 }}><Field label="Time In"><TimeInput {...bind('timeIn')} /></Field></Grid>
+          <Grid size={{ xs: 6, sm: 4 }}><Field label="Time Out"><TimeInput {...bind('timeOut')} /></Field></Grid>
         </Grid>
       </VSection>
 
@@ -170,7 +171,7 @@ export default function VisitModal({ open, draft, setDraft, onClose, onSave }) {
               <InputBase multiline minRows={1} value={o.observation || ''} onChange={e => upd(c => { c.observations[i].observation = e.target.value; })} placeholder="What did you observe?" sx={{ width: '100%', p: 0, '& .MuiInputBase-input': { ...smallInput, resize: 'vertical', minHeight: 36 } }} />
             </Grid>
             <Grid size={{ xs: 10, md: 3 }}>
-              <InputBase value={o.evidence || ''} onChange={e => upd(c => { c.observations[i].evidence = e.target.value; })} placeholder="Photo, SOP ref..." sx={{ width: '100%', '& .MuiInputBase-input': smallInput }} />
+              <InputBase value={o.evidence || ''} onChange={e => upd(c => { c.observations[i].evidence = e.target.value; })} placeholder="Photo, SOP ref..." sx={{ width: '100%' }} inputSx={smallInput} />
             </Grid>
             <Grid size={{ xs: 2, md: 'auto' }} sx={{ width: { md: 40 }, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <DelBtn onClick={() => upd(c => c.observations.splice(i, 1))} />
@@ -191,9 +192,9 @@ export default function VisitModal({ open, draft, setDraft, onClose, onSave }) {
       <VSection icon="⚡" head="ACTION ITEMS" meta="Auto-syncs to My To-Do on save">
         {v.actionItems.map((a, i) => (
           <Grid key={i} container spacing={1} sx={{ alignItems: 'center', p: '8px 10px', bgcolor: tokens.card, border: `1px solid ${tokens.line}`, borderLeft: `3px solid ${tokens.yellow}`, borderRadius: '5px', mb: '5px' }}>
-            <Grid size={{ xs: 12, md: 'grow' }}><InputBase value={a.text || ''} placeholder="Action to be taken" onChange={e => upd(c => { c.actionItems[i].text = e.target.value; })} sx={{ width: '100%', '& .MuiInputBase-input': smallInput }} /></Grid>
-            <Grid size={{ xs: 6, md: 3 }}><InputBase value={a.owner || ''} placeholder="Owner" inputProps={{ list: DATALIST_ID }} onChange={e => upd(c => { c.actionItems[i].owner = e.target.value; })} sx={{ width: '100%', '& .MuiInputBase-input': smallInput }} /></Grid>
-            <Grid size={{ xs: 5, md: 3 }}><InputBase type="date" value={a.deadline || ''} onChange={e => upd(c => { c.actionItems[i].deadline = e.target.value; })} sx={{ width: '100%', '& .MuiInputBase-input': smallInput }} /></Grid>
+            <Grid size={{ xs: 12, md: 'grow' }}><InputBase value={a.text || ''} placeholder="Action to be taken" onChange={e => upd(c => { c.actionItems[i].text = e.target.value; })} sx={{ width: '100%' }} inputSx={smallInput} /></Grid>
+            <Grid size={{ xs: 6, md: 3 }}><InputBase value={a.owner || ''} placeholder="Owner" inputProps={{ list: DATALIST_ID }} onChange={e => upd(c => { c.actionItems[i].owner = e.target.value; })} sx={{ width: '100%' }} inputSx={smallInput} /></Grid>
+            <Grid size={{ xs: 5, md: 3 }}><DateInput value={a.deadline || ''} onChange={e => upd(c => { c.actionItems[i].deadline = e.target.value; })} sx={{ width: '100%' }} inputSx={smallInput} /></Grid>
             <Grid size={{ xs: 1, md: 'auto' }} sx={{ width: { md: 40 }, display: 'flex', justifyContent: 'center' }}><DelBtn onClick={() => upd(c => c.actionItems.splice(i, 1))} /></Grid>
           </Grid>
         ))}
@@ -202,7 +203,7 @@ export default function VisitModal({ open, draft, setDraft, onClose, onSave }) {
 
       <VSection icon="🔁" head="FOLLOW-UP & SIGN-OFF">
         <Grid container spacing="12px" sx={row}>
-          <Grid size={{ xs: 12, sm: 6 }}><Field label="Next Visit Date" hint="if required"><TextInput type="date" {...bind('nextVisitDate')} /></Field></Grid>
+          <Grid size={{ xs: 12, sm: 6 }}><Field label="Next Visit Date" hint="if required"><DateInput {...bind('nextVisitDate')} /></Field></Grid>
           <Grid size={{ xs: 12, sm: 6 }}><Field label="Follow-Up Required?">
             <SelectInput value={v.followUpRequired ? 'true' : 'false'} onChange={e => upd(c => { c.followUpRequired = e.target.value === 'true'; })}>
               <option value="false">No — visit complete</option>

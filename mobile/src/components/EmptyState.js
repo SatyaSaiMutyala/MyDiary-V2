@@ -1,0 +1,19 @@
+import React from 'react';
+import { StyleSheet, View } from 'react-native';
+import { colors, vs } from '../theme';
+import { AppText } from './AppText';
+
+export function EmptyState({ text }) {
+  return (
+    <View style={styles.empty}>
+      <AppText variant="body" color={colors.inkMuted} style={styles.text}>
+        {text}
+      </AppText>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  empty: { alignItems: 'center', paddingVertical: vs(52) },
+  text: { textAlign: 'center' },
+});

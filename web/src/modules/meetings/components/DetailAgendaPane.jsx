@@ -13,7 +13,6 @@ const monoLbl = (extra = {}) => ({ fontFamily: fonts.mono, fontSize: 10, color: 
 
 /** Agenda tab: context card · carried forward · agenda list + parking lot · contributions · pre-read · presence · polls */
 export default function DetailAgendaPane({ m, onEdit, onAddParking, onRmParking, onCyclePresence }) {
-  const dlg = useDialog();
   return (
     <Box>
       {m.contextCard && <ContextCard ctx={m.contextCard} />}
@@ -135,6 +134,7 @@ function Contributions({ items }) {
 
 // renderPreRead
 function PreRead({ preRead }) {
+  const dlg = useDialog();
   const opened = preRead.filter(p => p.opened).length;
   const pct = Math.round((opened / preRead.length) * 100);
   return (
@@ -189,6 +189,7 @@ function Presence({ attendees, presence, onCycle }) {
 
 // renderPolls — board resolutions with bars
 function Polls({ polls }) {
+  const dlg = useDialog();
   const row = (lbl, lblColor, barColor, n, total) => (
     <Box sx={{ display: 'grid', gridTemplateColumns: '90px 1fr 60px', gap: '10px', alignItems: 'center', fontSize: 12 }}>
       <Box sx={{ fontWeight: 700, color: lblColor }}>{lbl}</Box>

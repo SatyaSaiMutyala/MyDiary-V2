@@ -10,6 +10,7 @@ import { useCreateRequestMutation } from '../../../store/api/meetingRequestsApi'
 import { EMPLOYEES } from '../../../data/employees';
 import { addDaysISO } from '../../../utils/dates';
 import { useDialog } from '../../../components/Dialogs';
+import { DateInput, TimeInput } from '../../../components/DateTimeInput';
 
 const lbl = { fontFamily: fonts.mono, fontSize: 10, letterSpacing: '0.1em', color: tokens.slate, fontWeight: 700, textTransform: 'uppercase', display: 'block' };
 const inputSx = { fontSize: 13, bgcolor: '#fff' };
@@ -86,11 +87,11 @@ export default function RequestMeetingModal({ open, onClose }) {
       <Grid container spacing={1.5} sx={{ mb: '14px' }}>
         <Grid size={{ xs: 12, sm: 4 }}>
           <Typography component="label" sx={lbl}>Proposed Date ✱</Typography>
-          <TextInput type="date" value={date} onChange={e => setDate(e.target.value)} sx={{ mt: '6px' }} inputSx={smallInputSx} />
+          <DateInput value={date} onChange={e => setDate(e.target.value)} sx={{ mt: '6px' }} inputSx={smallInputSx} />
         </Grid>
         <Grid size={{ xs: 12, sm: 4 }}>
           <Typography component="label" sx={lbl}>Proposed Time ✱</Typography>
-          <TextInput type="time" value={time} onChange={e => setTime(e.target.value)} sx={{ mt: '6px' }} inputSx={smallInputSx} />
+          <TimeInput value={time} onChange={e => setTime(e.target.value)} sx={{ mt: '6px' }} inputSx={smallInputSx} />
         </Grid>
         <Grid size={{ xs: 12, sm: 4 }}>
           <Typography component="label" sx={lbl}>Duration</Typography>

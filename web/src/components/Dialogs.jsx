@@ -59,26 +59,41 @@ export function DialogProvider({ children }) {
   const [toasts, setToasts] = useState([]);
   const queue = useRef([]);
   const inputRef = useRef(null);
+  /**
+   * The dialog on screen, mirrored outside React state.
+   *
+   * Both of the things below have to happen exactly once — queueing a dialog, and resolving the
+   * promise of the one being answered — and a setState updater is the wrong place for either:
+   * React calls updaters twice under StrictMode, which queued the same dialog twice and made an
+   * answered dialog reappear, so the button that opened it looked like it had done nothing.
+   */
+  const current = useRef(null);
 
-  const next = useCallback(() => {
-    const following = queue.current.shift() ?? null;
-    setValue(following?.defaultValue ?? '');
-    setDialog(following);
+  const show = useCallback((item) => {
+    current.current = item;
+    setValue(item?.defaultValue ?? '');
+    setDialog(item);
   }, []);
 
   const open = useCallback((spec) => new Promise((resolve) => {
     const item = { ...spec, resolve };
-    setDialog((current) => {
-      if (current) { queue.current.push(item); return current; }
-      setValue(item.defaultValue ?? '');
-      return item;
-    });
-  }), []);
+    if (current.current) {
+      queue.current.push(item);
+      return;
+    }
+    show(item);
+  }), [show]);
 
   const settle = useCallback((answer) => {
-    setDialog((d) => { d?.resolve(answer); return d; });
-    next();
-  }, [next]);
+    const answered = current.current;
+    if (!answered) {
+      return;
+    }
+    // Clear it first, so a second click on the same button cannot resolve it twice.
+    current.current = null;
+    answered.resolve(answer);
+    show(queue.current.shift() ?? null);
+  }, [show]);
 
   const api = useMemo(() => ({
     /** One message, one OK button. Resolves when it is dismissed. */

@@ -8,3 +8,4 @@ export { default as TabBar, FilterPill, Segmented } from './Tabs';
 export { FieldLabel, TextInput, TextArea, SelectInput, Field, SearchBox, FilterSelect, ToggleRow, Chip, DelBtn } from './Fields';
 export { default as ModalShell, FootNote } from './ModalShell';
 export { DialogProvider, useDialog } from './Dialogs';
+export { DateInput, TimeInput } from './DateTimeInput';

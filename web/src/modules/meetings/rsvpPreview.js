@@ -4,10 +4,13 @@
 // child window through window.handleRsvpResponse exactly like the prototype.
 //
 //  openRsvpPreview({ subject, dateStr, timeStr, dur, location, modeStr, organizer, orgEmail,
-//                    invitee: { name, email }, agenda: [], notes: '', logoDataUrl, onRespond })
-export function openRsvpPreview({ subject, dateStr, timeStr, dur = '', location, modeStr = '', organizer, orgEmail, invitee, agenda = [], notes = '', logoDataUrl = '', onRespond }) {
+//                    invitee: { name, email }, agenda: [], notes: '', logoDataUrl, onRespond, dlg })
+//
+//  `dlg` is the caller's useDialog(): this module cannot call the hook, so a blocked pop-up is
+//  reported in a MyDiary dialog rather than a browser alert.
+export function openRsvpPreview({ subject, dateStr, timeStr, dur = '', location, modeStr = '', organizer, orgEmail, invitee, agenda = [], notes = '', logoDataUrl = '', onRespond, dlg }) {
   const w = window.open('', 'rsvp-' + Date.now(), 'width=720,height=880');
-  if (!w) { alert('Pop-up blocked. Please allow pop-ups.'); return; }
+  if (!w) { dlg.alert('Pop-up blocked. Please allow pop-ups.'); return; }
 
   // Register callback on parent (this window) so the child can respond
   window.handleRsvpResponse = function (resp, note) {

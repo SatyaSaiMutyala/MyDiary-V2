@@ -5,6 +5,7 @@ import { tokens, fonts } from '../../../theme/tokens';
 import { isOverdue } from '../../../utils/dates';
 import DetailOwnerCell from './DetailOwnerCell';
 import DetailActionExpand from './DetailActionExpand';
+import { DateInput } from '../../../components/DateTimeInput';
 
 // 30px 2fr 1.3fr 1fr 0.8fr 0.8fr 40px — at <1100px the 6th column (Status) is dropped, as in the prototype CSS
 const COLS = { xs: '30px 2fr 1fr 1fr 0.8fr 40px', lg: '30px 2fr 1.3fr 1fr 0.8fr 0.8fr 40px' };
@@ -102,7 +103,7 @@ export default function DetailActionsPane({ m, actionExtras, expandedId, expandT
                   </Box>
                   <DetailOwnerCell action={a} open={ownerOpen === a.id} onToggle={() => setOwnerOpen(ownerOpen === a.id ? null : a.id)} onClose={() => setOwnerOpen(null)}
                     onSelect={(name, ext) => { onSelectOwner(a.id, name, ext); setOwnerOpen(null); }} />
-                  <Box component="input" type="date" value={a.deadline} onChange={(e) => onUpdate(a.id, 'deadline', e.target.value)} sx={{ ...fieldSx, ...(od ? { color: tokens.red, fontWeight: 700 } : {}) }} />
+                  <DateInput value={a.deadline} onChange={(e) => onUpdate(a.id, 'deadline', e.target.value)} sx={{ ...fieldSx, ...(od ? { color: tokens.red, fontWeight: 700 } : {}) }} />
                   <PillSelect style={PRIORITY_STYLE[a.priority] || PRIORITY_STYLE.medium} value={a.priority} onChange={(e) => onUpdate(a.id, 'priority', e.target.value)}>
                     <option value="high">HIGH</option>
                     <option value="medium">MED</option>
