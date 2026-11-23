@@ -358,11 +358,11 @@ function MeetingDetail({ id }) {
 
   const tabs = [
     { key: 'agenda', icon: '📋', label: 'Agenda', count: m.agenda.length },
-    { key: 'live', icon: '🎙', label: 'Live', count: transcriptLen ? transcriptLen : undefined },
+    { key: 'live', icon: '🎙️', label: 'Live', count: transcriptLen ? transcriptLen : undefined },
     { key: 'minutes', icon: '📝', label: 'Minutes' },
     { key: 'ai', icon: '✨', label: 'AI Summary', count: m.aiSummary ? 'Ready' : undefined },
     { key: 'actions', icon: '✓', label: 'Actions', count: `${openActions}/${totalActions}` },
-    { key: 'decisions', icon: '⚖', label: 'Decisions', count: myDecisions.length ? myDecisions.length : undefined },
+    { key: 'decisions', icon: '⚖️', label: 'Decisions', count: myDecisions.length ? myDecisions.length : undefined },
   ];
 
   return (

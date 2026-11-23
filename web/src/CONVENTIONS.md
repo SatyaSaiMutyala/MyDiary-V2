@@ -90,7 +90,7 @@ The token NAMES above are unchanged but their VALUES are now the Trust GateBook 
 IBM Plex Sans/Mono (via @fontsource in main.jsx), teal `#0F766E` accent, gold `#FFC81F`, panel title bars `#20605B`
 with a gold rule, 6px corners, white table heads with mono labels and the pink rule. `fonts.serif` is aliased to
 Plex Sans. Shared components already render the AIMS recipes (PageHeader = `.phead`, Card/VSection = teal title bar,
-TabBar = underline tabs, Btn = AIMS buttons, Pill = chip tones, ModalShell = AIMS dialog). Prefer them over local copies.
+TabBar = raised segmented tabs (sunk trough, white active pill in teal), Btn = AIMS buttons, Pill = chip tones, ModalShell = AIMS dialog). Prefer them over local copies.
 
 Shell: `src/layouts/` — DesktopRail (258/66px, pin in `md.rail.pinned`, hover-open), Topbar (60px, breadcrumb, ⌘,
 View-as, bell, user menu), PhoneChrome (<861px: app bar + drawer + bottom tabs). Login: `src/auth/LoginPage.jsx`.

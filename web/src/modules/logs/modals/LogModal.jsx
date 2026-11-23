@@ -7,7 +7,7 @@ import { ModalShell, FootNote, Btn, TextLink, AddBtn, Chip, FieldLabel, Field, T
 import { useListUsersQuery } from '../../../store/api/usersApi';
 import { EMPLOYEE_OPTIONS } from '../utils';
 import { useDialog } from '../../../components/Dialogs';
-import { DateInput, TimeInput } from '../../../components/DateTimeInput';
+import { DateInput, DurationInput, TimeInput } from '../../../components/DateTimeInput';
 
 const DATALIST_ID = 'log-int-datalist';
 const fuInputSx = { p: '6px 8px', border: `1px solid ${tokens.line}`, borderRadius: '4px', bgcolor: '#fff', fontSize: 11, fontFamily: 'inherit', height: 'auto', boxSizing: 'border-box', '&:focus': { outline: 'none', borderColor: tokens.teal } };
@@ -107,7 +107,7 @@ export default function LogModal({ open, draft, setDraft, viewer, onClose, onSav
       <Grid container spacing="12px" sx={{ mb: '12px' }}>
         <Grid size={{ xs: 12, sm: 4 }}><Field label="Date"><DateInput value={d.date} onChange={e => upd(c => { c.date = e.target.value; })} /></Field></Grid>
         <Grid size={{ xs: 6, sm: 4 }}><Field label="Time"><TimeInput value={d.time} onChange={e => upd(c => { c.time = e.target.value; })} /></Field></Grid>
-        <Grid size={{ xs: 6, sm: 4 }}><Field label="Duration" hint="optional"><TextInput value={d.duration} onChange={e => upd(c => { c.duration = e.target.value; })} placeholder="e.g. 5 min" /></Field></Grid>
+        <Grid size={{ xs: 6, sm: 4 }}><Field label="Duration" hint="optional"><DurationInput format="words" value={d.duration} onChange={e => upd(c => { c.duration = e.target.value; })} placeholder="How long?" /></Field></Grid>
       </Grid>
 
       <Field label="Topic — a quick title" req sx={{ mb: '12px' }}>

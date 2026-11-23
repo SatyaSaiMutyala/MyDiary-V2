@@ -14,11 +14,9 @@ import ScheduleStepper from './components/scheduleStepper';
 import ScheduleTypePicker from './components/scheduleTypePicker';
 import ScheduleTypeFields, { Row, col1, col2, col3 } from './components/scheduleTypeFields';
 import { useDialog } from '../../components/Dialogs';
-import { DateInput, TimeInput } from '../../components/DateTimeInput';
+import { DateInput, DurationInput, TimeInput } from '../../components/DateTimeInput';
 
-const DURATIONS = { '30 minutes': '30m', '45 minutes': '45m', '1 hour': '1h', '1 hour 30 minutes': '1h 30m', '2 hours': '2h', 'Half day': '4h', 'Full day': '8h' };
 const MODES = ['📍 In-person', '💻 Virtual', '🔀 Hybrid'];
-const DURATION_LABEL = Object.fromEntries(Object.entries(DURATIONS).map(([label, v]) => [v, label]));
 
 /** The type-specific field that becomes the meeting's `subBadge`, and the one that becomes `clientName`. */
 const SUB_BADGE = { internal: 'subType', customer: 'purpose', supplier: 'topic', consultants: 'engArea', board: 'classification', other: 'category' };
@@ -33,8 +31,8 @@ function AgendaItem({ idx, item, onChange, onDelete, autoFocus }) {
       <Box sx={{ width: 24, height: 24, borderRadius: '50%', bgcolor: tokens.greenDeep, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: fonts.mono, fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{String(idx + 1).padStart(2, '0')}</Box>
       <Box component="input" type="text" autoFocus={autoFocus} value={item.text} placeholder="Agenda item..." onChange={e => onChange({ ...item, text: e.target.value })}
         sx={{ flex: 1, minWidth: 0, bgcolor: 'transparent', border: 'none', fontSize: 13, outline: 'none', p: '2px 4px', borderRadius: '3px', fontFamily: 'inherit', color: tokens.ink, '&:focus': { bgcolor: '#fff', boxShadow: `0 0 0 2px ${tokens.teal}` }, '&::placeholder': { color: tokens.slateSoft } }} />
-      <Box component="input" type="text" value={item.time} onChange={e => onChange({ ...item, time: e.target.value })}
-        sx={{ width: 60, bgcolor: '#fff', border: `1px solid ${tokens.line}`, borderRadius: '4px', p: '4px 6px', fontSize: 11, textAlign: 'center', fontFamily: fonts.mono, color: tokens.ink, flexShrink: 0 }} />
+      <DurationInput size="sm" value={item.time} onChange={e => onChange({ ...item, time: e.target.value })}
+        sx={{ width: 64, flexShrink: 0 }} inputSx={{ bgcolor: '#fff' }} />
       <DelBtn onClick={onDelete} />
     </Box>
   );
@@ -75,7 +73,7 @@ export default function ScheduleMeetingPage() {
   const [title, setTitle] = useState('');
   const [date, setDate] = useState('2026-11-24');
   const [time, setTime] = useState('10:00');
-  const [duration, setDuration] = useState('1 hour');
+  const [duration, setDuration] = useState('1h');
   const [mode, setMode] = useState(MODES[0]);
   const [loc, setLoc] = useState('');
   const [vlink, setVlink] = useState('');
@@ -142,7 +140,7 @@ export default function ScheduleMeetingPage() {
     setTitle(existing.title || '');
     if (existing.date) setDate(existing.date);
     if (existing.time) setTime(existing.time);
-    setDuration(DURATION_LABEL[existing.dur] || '1 hour');
+    setDuration(existing.dur || '1h');
     setMode(MODES.includes(existing.mode) ? existing.mode : MODES[0]);
     setLoc(existing.loc && existing.loc !== 'TBD' ? existing.loc : '');
     setChair(existing.chair || '');
@@ -190,7 +188,7 @@ export default function ScheduleMeetingPage() {
       type,
       title: title.trim() || 'New ' + TYPES[type].name,
       date, time,
-      dur: DURATIONS[duration] || '1h',
+      dur: duration || '1h',
       mode,
       // Everything left blank is omitted so the API's own defaults apply (chair = me, loc = TBD, agenda times 10m,
       // presence / pre-read built from the attendee list).
@@ -281,7 +279,7 @@ export default function ScheduleMeetingPage() {
             <Row>
               <Grid size={col3}><Field label="Date" req><DateInput value={date} onChange={e => setDate(e.target.value)} /></Field></Grid>
               <Grid size={col3}><Field label="Start Time" req><TimeInput value={time} onChange={e => setTime(e.target.value)} /></Field></Grid>
-              <Grid size={col3}><Field label="Duration"><SelectInput value={duration} onChange={e => setDuration(e.target.value)}>{Object.keys(DURATIONS).map(d => <option key={d}>{d}</option>)}</SelectInput></Field></Grid>
+              <Grid size={col3}><Field label="Duration"><DurationInput value={duration} onChange={e => setDuration(e.target.value)} /></Field></Grid>
             </Row>
             <Row><Grid size={col1}><Field label="Mode"><Segmented options={MODES} value={mode} onChange={setMode} /></Field></Grid></Row>
             <Row>

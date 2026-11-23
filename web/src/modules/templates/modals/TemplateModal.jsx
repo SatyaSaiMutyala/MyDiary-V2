@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Box, Typography } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { ModalShell, Btn, Field, FieldLabel, TextInput, TextArea, SelectInput, DelBtn, AddBtn } from '../../../components';
+import { ModalShell, Btn, Field, FieldLabel, TextInput, TextArea, SelectInput, DelBtn, AddBtn, DurationInput } from '../../../components';
 import { useDialog } from '../../../components/Dialogs';
 import { errorMessage } from '../../../store/api/baseApi';
 import { useCreateTemplateMutation, useUpdateTemplateMutation } from '../../../store/api/templatesApi';
@@ -22,9 +22,8 @@ function AgendaRow({ idx, item, onChange, onDelete, autoFocus }) {
       <Box component="input" type="text" autoFocus={autoFocus} value={item.text} placeholder="Agenda item…"
         onChange={(e) => onChange({ ...item, text: e.target.value })}
         sx={{ flex: 1, minWidth: 0, bgcolor: 'transparent', border: 'none', fontSize: 13, outline: 'none', p: '2px 4px', borderRadius: '3px', fontFamily: 'inherit', color: tokens.ink, '&:focus': { bgcolor: '#fff', boxShadow: `0 0 0 2px ${tokens.teal}` }, '&::placeholder': { color: tokens.slateSoft } }} />
-      <Box component="input" type="text" value={item.time || ''} placeholder="10m"
-        onChange={(e) => onChange({ ...item, time: e.target.value })}
-        sx={{ width: 56, bgcolor: tokens.cream, border: `1px solid ${tokens.line}`, borderRadius: '4px', p: '4px 6px', fontSize: 11, textAlign: 'center', fontFamily: fonts.mono, color: tokens.ink, flexShrink: 0, outline: 'none' }} />
+      <DurationInput size="sm" value={item.time || ''} onChange={(e) => onChange({ ...item, time: e.target.value })}
+        sx={{ width: 64, flexShrink: 0 }} inputSx={{ bgcolor: tokens.cream }} />
       <DelBtn onClick={onDelete} />
     </Box>
   );

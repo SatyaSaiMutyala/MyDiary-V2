@@ -10,7 +10,7 @@ import { useCreateRequestMutation } from '../../../store/api/meetingRequestsApi'
 import { EMPLOYEES } from '../../../data/employees';
 import { addDaysISO } from '../../../utils/dates';
 import { useDialog } from '../../../components/Dialogs';
-import { DateInput, TimeInput } from '../../../components/DateTimeInput';
+import { DateInput, DurationInput, TimeInput } from '../../../components/DateTimeInput';
 
 const lbl = { fontFamily: fonts.mono, fontSize: 10, letterSpacing: '0.1em', color: tokens.slate, fontWeight: 700, textTransform: 'uppercase', display: 'block' };
 const inputSx = { fontSize: 13, bgcolor: '#fff' };
@@ -53,7 +53,7 @@ export default function RequestMeetingModal({ open, onClose }) {
 
     try {
       // The server applies the CMD → EA routing rule and writes the recipient's notification.
-      const req = await createRequest({ to, proposedDate: date, proposedTime: time, durationMin: +dur, topic: tp, notes: nt }).unwrap();
+      const req = await createRequest({ to, proposedDate: date, proposedTime: time, durationMin: +dur || 30, topic: tp, notes: nt }).unwrap();
       const recipient = req.routedTo || req.to;
       onClose();
       setTimeout(() => dlg.alert('📨 Request sent to ' + recipient + (req.routedTo ? ' (EA — coordinating on behalf of ' + req.onBehalfOf + ')' : '') + '. They\'ll see it in their Requests tab.'), 100);
@@ -95,10 +95,8 @@ export default function RequestMeetingModal({ open, onClose }) {
         </Grid>
         <Grid size={{ xs: 12, sm: 4 }}>
           <Typography component="label" sx={lbl}>Duration</Typography>
-          <SelectInput value={dur} onChange={e => setDur(e.target.value)} sx={{ mt: '6px', fontSize: 13, bgcolor: '#fff', p: '8px 32px 8px 10px' }}>
-            <option value="15">15 min</option><option value="30">30 min</option><option value="45">45 min</option>
-            <option value="60">1 hour</option><option value="90">1.5 hours</option><option value="120">2 hours</option>
-          </SelectInput>
+          {/* Stored as a plain number of minutes — `durationMin` on the request. */}
+          <DurationInput format="minutes" value={dur} onChange={e => setDur(e.target.value)} sx={{ mt: '6px' }} inputSx={smallInputSx} />
         </Grid>
       </Grid>
       <Box sx={{ mb: '14px' }}>

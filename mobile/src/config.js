@@ -2,18 +2,20 @@ import { Platform } from 'react-native';
 
 // Where the MyDiary v2 backend runs (Node + Express, MyDiary-V2/Backend).
 //
-// The app talks to the live server. To work against the backend on this Mac
-// instead (`cd Backend && npm run dev`, port 4000), set USE_LOCAL to true:
+// The app talks to the live server at https://mydiary.mytrustlab.co.in/api, which has served the
+// v2 API since 2026-11-23 (it used to be the v1 Laravel app). To work against the backend on this
+// Mac instead (`cd Backend && npm run dev`, port 4000), set USE_LOCAL to true:
 // - iPhone simulator reaches the Mac as "localhost".
 // - Android emulator reaches the Mac as 10.0.2.2.
 // - A real phone needs the Mac's Wi-Fi address; set LAN_HOST to use it.
-const USE_LOCAL = true;
+const USE_LOCAL = false;
 const LAN_HOST = '';
 const LOCAL_HOST =
   LAN_HOST || (Platform.OS === 'android' ? '10.0.2.2' : 'localhost');
 
-// TODO before the first store build: point this at the deployed v2 API.
-// The v1 server (mydiary.mytrustlab.co.in) is a different application — do not use it here.
+// The deployed v2 API. Checked 2026-11-23: /api/health answers
+// { name: 'MyDiary V2 API', env: 'production', db: 'connected' } and the old v1 Laravel routes are
+// gone from this domain, so there is no chance of talking to the wrong application.
 const LIVE_URL = 'https://mydiary.mytrustlab.co.in/api';
 const LOCAL_URL = `http://${LOCAL_HOST}:4000/api`;
 

@@ -1,21 +1,97 @@
 import { Box, ButtonBase } from '@mui/material';
 import { tokens, fonts } from '../theme/tokens';
 
-/** AIMS tabs: underline bar, teal indicator on the active tab, mono count chips. */
+/**
+ * The app's tab strip.
+ *
+ * A raised segmented bar rather than a bare underline: the row sits in its own sunk trough, and the
+ * chosen tab is a white card lifted off it in teal. The old version was a flat line of grey labels
+ * with a 2px underline, which on a busy page (a meeting's Agenda · Live · Minutes · AI · Actions ·
+ * Decisions) read as six loose words with no sign of which one you were on.
+ *
+ * Same contract as before — `tabs` of `{ key, label, icon?, count?, countSx? }`, `value`, `onChange` —
+ * so every page that already uses it gets the new look with no change.
+ */
 export default function TabBar({ tabs, value, onChange, sx }) {
   return (
-    <Box sx={{ display: 'flex', gap: 0, mb: '18px', borderBottom: `1px solid ${tokens.line}`, overflowX: 'auto', ...sx }}>
-      {tabs.map(t => {
-        const active = t.key === value;
-        return (
-          <ButtonBase key={t.key} onClick={() => onChange(t.key)} sx={{ minHeight: 40, px: '14px', fontSize: 13, fontWeight: active ? 600 : 500, color: active ? tokens.teal : tokens.muted, fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap', borderBottom: `2px solid ${active ? tokens.teal : 'transparent'}`, mb: '-1px', '&:hover': { color: tokens.teal } }}>
-            {t.icon && <span>{t.icon}</span>} {t.label}
-            {t.count !== undefined && (
-              <Box component="span" sx={{ fontFamily: fonts.mono, fontSize: 11, fontWeight: 600, px: '7px', height: 18, display: 'inline-flex', alignItems: 'center', bgcolor: active ? tokens.tealSoft : tokens.greySoft, color: active ? tokens.teal : tokens.grey, borderRadius: '20px', ...t.countSx }}>{t.count}</Box>
-            )}
-          </ButtonBase>
-        );
-      })}
+    <Box role="tablist" sx={{ display: 'flex', mb: '18px', maxWidth: '100%', ...sx }}>
+      <Box
+        sx={{
+          // Phone: the trough spans the width and the tabs wrap onto a second row, so none of them
+          // is hidden off-screen. Desktop: one inline strip, only as wide as its tabs.
+          display: { xs: 'flex', sm: 'inline-flex' },
+          flexWrap: { xs: 'wrap', sm: 'nowrap' },
+          width: { xs: '100%', sm: 'auto' },
+          alignItems: 'center',
+          gap: '2px',
+          p: '4px',
+          maxWidth: '100%',
+          // A touch deeper than the page canvas, with an inset edge, so the trough reads as
+          // recessed and the chosen tab clearly sits on top of it.
+          bgcolor: '#E8EDF1',
+          border: `1px solid ${tokens.line}`,
+          borderRadius: '10px',
+          boxShadow: 'inset 0 1px 2px rgba(16,21,28,.05)',
+          overflowX: { xs: 'visible', sm: 'auto' },
+          scrollbarWidth: 'none',
+          '&::-webkit-scrollbar': { display: 'none' },
+        }}
+      >
+        {tabs.map(t => {
+          const active = t.key === value;
+          return (
+            <ButtonBase
+              key={t.key}
+              role="tab"
+              aria-selected={active}
+              onClick={() => onChange(t.key)}
+              sx={{
+                minHeight: 34,
+                px: { xs: '10px', sm: '14px' },
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '7px',
+                flexShrink: 0,
+                fontFamily: 'inherit',
+                fontSize: 13,
+                fontWeight: active ? 600 : 500,
+                letterSpacing: active ? '-0.005em' : 0,
+                color: active ? tokens.teal : tokens.grey,
+                bgcolor: active ? tokens.card : 'transparent',
+                boxShadow: active ? '0 1px 2px rgba(16,21,28,.10), 0 2px 8px rgba(16,21,28,.06)' : 'none',
+                transition: 'color .15s ease, background-color .15s ease, box-shadow .15s ease',
+                '&:hover': active ? {} : { color: tokens.ink, bgcolor: 'rgba(255,255,255,.62)' },
+                '&.Mui-focusVisible': { boxShadow: `0 0 0 2px rgba(15,118,110,.35)` },
+              }}
+            >
+              {t.icon && (
+                // Colour only on the tab you are on; the rest sit back in grey.
+                <Box component="span" sx={{ fontSize: 13.5, lineHeight: 1, display: 'inline-flex', filter: active ? 'none' : 'grayscale(30%)', opacity: active ? 1 : 0.82 }}>
+                  {t.icon}
+                </Box>
+              )}
+              <Box component="span" sx={{ whiteSpace: 'nowrap' }}>{t.label}</Box>
+              {t.count !== undefined && (
+                <Box
+                  component="span"
+                  sx={{
+                    fontFamily: fonts.mono, fontSize: 10.5, fontWeight: 700, letterSpacing: '0.02em',
+                    px: '6px', minWidth: 18, height: 18,
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    bgcolor: active ? tokens.tealSoft : 'rgba(16,21,28,.07)',
+                    color: active ? tokens.teal : tokens.grey,
+                    borderRadius: '20px',
+                    ...t.countSx,
+                  }}
+                >
+                  {t.count}
+                </Box>
+              )}
+            </ButtonBase>
+          );
+        })}
+      </Box>
     </Box>
   );
 }
