@@ -111,7 +111,7 @@ const baseQuery = async (args, api, extra) => {
 export const baseApi = createApi({
   reducerPath: 'api',
   baseQuery,
-  tagTypes: ['Me', 'User', 'Modules', 'Audit', 'Search', 'Meeting', 'Action', 'Request', 'Decision', 'Notification', 'Department', 'Template', 'Integration', 'Visit', 'Log', 'DiaryEntry', 'Project', 'Reminder'],
+  tagTypes: ['Me', 'User', 'Modules', 'Audit', 'Search', 'Meeting', 'Action', 'Request', 'Decision', 'Notification', 'Department', 'LabRun', 'Template', 'Integration', 'Visit', 'Log', 'DiaryEntry', 'Project', 'Reminder'],
   endpoints: () => ({}),
 });
 

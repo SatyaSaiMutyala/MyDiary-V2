@@ -5,8 +5,10 @@ import {
   Bell,
   Calendar,
   ChevronRight,
+  Moon,
   Plus,
   SquareCheck,
+  Sun,
   TriangleAlert,
 } from 'lucide-react-native';
 import { AppText } from '../components/AppText';
@@ -20,6 +22,7 @@ import { LogoMark } from '../components/Logo';
 import { MeetingCard } from '../components/MeetingCard';
 import { Notice } from '../components/Notice';
 import { ScreenScroll } from '../components/ScreenScroll';
+import { ShiftCard } from '../components/ShiftCard';
 import { ShimmerRows } from '../components/Shimmer';
 import { Stat } from '../components/Stat';
 import { StatusDot } from '../components/StatusDot';
@@ -31,6 +34,7 @@ import { useListActionItemsQuery } from '../store/api/actionItemsApi';
 import { useListDiaryQuery } from '../store/api/diaryApi';
 import { useListMeetingsQuery } from '../store/api/meetingsApi';
 import { useListNotificationsQuery } from '../store/api/notificationsApi';
+import { useLabDayQuery } from '../store/api/labReadinessApi';
 import { useListVisitsQuery } from '../store/api/visitsApi';
 import { initialsOf } from '../utils/people';
 import { dueDate, fullDate, greeting, realToday } from '../utils/dates';
@@ -117,7 +121,13 @@ export function HomeScreen() {
 
   // The next meeting, and the three things most owed by me.
   const nextMeetingQ = useListMeetingsQuery(
-    { limit: 1, mine: true, status: 'upcoming', date_from: today, sort: 'date' },
+    {
+      limit: 1,
+      mine: true,
+      status: 'upcoming',
+      date_from: today,
+      sort: 'date',
+    },
     { skip: !sees('meetings') },
   );
   const owedQ = useListActionItemsQuery(
@@ -125,6 +135,22 @@ export function HomeScreen() {
     { skip: !sees('todo') },
   );
   const unread = useListNotificationsQuery({ ...COUNT, unread: 'true' });
+
+  // The laboratory's two rounds today, across every unit — only for people who record them.
+  const labDay = useLabDayQuery(
+    { date: today },
+    { skip: !sees('labReadiness') },
+  );
+
+  // How far each round has got: how many units are signed off, and whether any is still untouched.
+  const rounds = ['opening', 'closing'].map(phase => {
+    const units = labDay.data?.units ?? [];
+    const signed = units.filter(u => u.phases[phase].signedAt).length;
+    const started = units.filter(
+      u => !u.phases[phase].signedAt && u.phases[phase].done > 0,
+    ).length;
+    return { phase, units: units.length, signed, started };
+  });
 
   const nextMeeting = nextMeetingQ.data?.items?.[0];
   const owed = owedQ.data?.items ?? [];
@@ -156,7 +182,11 @@ export function HomeScreen() {
               <LogoMark size={26} />
             </IconTile>
             <View style={styles.unit}>
-              <AppText variant="meta" color={colors.onTealSoft} numberOfLines={1}>
+              <AppText
+                variant="meta"
+                color={colors.onTealSoft}
+                numberOfLines={1}
+              >
                 {me?.title || 'TrustLab Diagnostics'}
               </AppText>
               <AppText variant="label" color={colors.white} numberOfLines={1}>
@@ -212,6 +242,38 @@ export function HomeScreen() {
             iconColor={colors.onTealSoft}
             style={styles.date}
           />
+          {labDay.data?.units?.length ? (
+            <View style={styles.shifts}>
+              {rounds.map(r => (
+                <ShiftCard
+                  key={r.phase}
+                  icon={r.phase === 'opening' ? Sun : Moon}
+                  name={
+                    r.phase === 'opening' ? 'Opening round' : 'Closing round'
+                  }
+                  state={
+                    r.signed === r.units
+                      ? 'All signed'
+                      : `${r.signed}/${r.units} signed`
+                  }
+                  detail={
+                    r.signed === r.units
+                      ? 'Every unit is closed out'
+                      : r.started
+                      ? `${r.started} in progress`
+                      : 'Not started yet'
+                  }
+                  signed={r.signed === r.units}
+                  onPress={() =>
+                    nav.navigate('LabReadiness', {
+                      phase: r.phase,
+                      date: today,
+                    })
+                  }
+                />
+              ))}
+            </View>
+          ) : null}
         </TealHeader>
 
         <View style={styles.content}>
@@ -382,7 +444,6 @@ export function HomeScreen() {
               )}
             </>
           ) : null}
-
         </View>
       </ScreenScroll>
     </View>
@@ -409,6 +470,7 @@ const styles = StyleSheet.create({
   date: { marginTop: vs(8) },
   content: { paddingHorizontal: s(13), paddingTop: vs(12) },
   notice: { marginBottom: vs(10) },
+  shifts: { flexDirection: 'row', gap: s(12), marginTop: vs(14) },
   pair: { flexDirection: 'row', gap: s(12) },
   pairItem: { flex: 1, ...shadow.card },
   stripTitle: { marginBottom: vs(6), marginTop: vs(8) },

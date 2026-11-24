@@ -42,10 +42,16 @@ const baseQuery = async (args, api, extra) => {
   } else if (e.status === 'CUSTOM_ERROR') {
     error = { status: 0, message: e.error || BAD_REPLY };
   } else {
+    // The API answers `{ error: { message, code, details } }`, and that message is written for the
+    // person to read, so it is used exactly as it comes. (`message` / `errors` at the top level are
+    // the older shape, kept so nothing that still sends it goes silent.)
     const body = e.data ?? {};
+    const sent = body.error ?? {};
     error = {
       status: e.status,
-      message: body.message || `Request failed (${e.status}).`,
+      message: sent.message || body.message || `Request failed (${e.status}).`,
+      code: sent.code,
+      details: sent.details,
       errors: body.errors,
     };
   }
@@ -114,6 +120,16 @@ export const errorMessage = (e, fallback = 'Something went wrong.') =>
   e?.message ?? fallback;
 
 export const fieldErrors = e => {
+  // The API's shape: [{ field, message }] — one message per field, first one wins.
+  if (Array.isArray(e?.details)) {
+    const out = {};
+    for (const d of e.details) {
+      if (d?.field && !(d.field in out)) {
+        out[d.field] = d.message;
+      }
+    }
+    return out;
+  }
   const errors = e?.errors ?? {};
   return Object.fromEntries(Object.entries(errors).map(([k, v]) => [k, v[0]]));
 };

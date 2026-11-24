@@ -83,6 +83,55 @@ const reviewCadenceSchema = new Schema(
   { _id: false, minimize: false },
 );
 
+/** Which units an activity applies to. */
+export const LAB_SCOPES = /** @type {const} */ (['all', 'nrl', 'field']);
+/** What kind of place a unit is. */
+export const LAB_UNIT_KINDS = /** @type {const} */ (['nrl', 'regional', 'satellite']);
+/** The two halves of a readiness day. */
+export const LAB_PHASES = /** @type {const} */ (['opening', 'closing']);
+
+/** One lab, department or collection point a readiness board is run for. */
+const labUnitSchema = new Schema({
+  key: { type: String, required: true, trim: true },
+  name: { type: String, required: true, trim: true },
+  kind: { type: String, enum: LAB_UNIT_KINDS, default: 'nrl' },
+  active: { type: Boolean, default: true },
+  order: { type: Number, default: 1 },
+});
+
+/**
+ * One line of the daily readiness checklist. `key` is the paper sheet's S.No (o02…o27 / c01…c26), which
+ * is what a completed record stores, so wording can be corrected later without orphaning old records.
+ */
+const labActivitySchema = new Schema({
+  key: { type: String, required: true, trim: true },
+  phase: { type: String, enum: LAB_PHASES, required: true },
+  section: { type: String, default: '', trim: true },
+  text: { type: String, required: true, trim: true },
+  scheduledTime: { type: String, default: '' },
+  scope: { type: String, enum: LAB_SCOPES, default: 'all' },
+  /** No photograph, no sign-off. */
+  photoRequired: { type: Boolean, default: false },
+  active: { type: Boolean, default: true },
+  order: { type: Number, default: 1 },
+});
+
+/**
+ * Lab Readiness — the clinical department's daily opening and closing board (v1's TDPL-LAB-SOP-014).
+ * Off for every department until an admin turns it on, so only the laboratory carries it.
+ */
+const labReadinessSchema = new Schema(
+  {
+    enabled: { type: Boolean, default: false },
+    units: { type: [labUnitSchema], default: () => [] },
+    activities: { type: [labActivitySchema], default: () => [] },
+    /** Sign-off after this local time is accepted but recorded as late. */
+    openingCutoff: { type: String, default: '09:30' },
+    closingCutoff: { type: String, default: '22:30' },
+  },
+  { _id: false, minimize: false },
+);
+
 /**
  * A department (web/src/data/departments.js, fully normalised by buildInitialDepartments()).
  * Positions, tasks and agenda sections/points are sub-documents, so their `_id` is the stable id the
@@ -102,6 +151,7 @@ const departmentSchema = new Schema(
     weeklyTasks: { type: [taskSchema], default: () => [] },
     monthlyTasks: { type: [taskSchema], default: () => [] },
     reviewCadence: { type: reviewCadenceSchema, default: () => ({}) },
+    labReadiness: { type: labReadinessSchema, default: () => ({}) },
     assignments: { type: [assignmentSchema], default: () => [] },
     createdBy: {
       id: { type: Schema.Types.ObjectId, ref: 'User', default: null },
@@ -158,6 +208,24 @@ function serializeCadence(rc) {
 }
 
 /** Exactly the department shape the web app renders (web/src/data/departments.js). @param {any} d */
+/** The readiness board's configuration, sorted the way the board renders it. @param {any} lr */
+export function serializeLabReadiness(lr) {
+  const byOrder = (a, b) => (a.order ?? 0) - (b.order ?? 0);
+  return {
+    enabled: Boolean(lr?.enabled),
+    openingCutoff: lr?.openingCutoff ?? '09:30',
+    closingCutoff: lr?.closingCutoff ?? '22:30',
+    units: [...(lr?.units ?? [])].sort(byOrder).map((u) => ({
+      id: u._id.toString(), key: u.key, name: u.name, kind: u.kind ?? 'nrl', active: u.active !== false, order: u.order ?? 1,
+    })),
+    activities: [...(lr?.activities ?? [])].sort(byOrder).map((a) => ({
+      id: a._id.toString(), key: a.key, phase: a.phase, section: a.section ?? '', text: a.text,
+      scheduledTime: a.scheduledTime ?? '', scope: a.scope ?? 'all',
+      photoRequired: Boolean(a.photoRequired), active: a.active !== false, order: a.order ?? 1,
+    })),
+  };
+}
+
 export function serializeDepartment(d) {
   return {
     id: d._id.toString(),
@@ -172,6 +240,7 @@ export function serializeDepartment(d) {
     weeklyTasks: (d.weeklyTasks ?? []).map((t) => serializeTask(t, 'weekly')),
     monthlyTasks: (d.monthlyTasks ?? []).map((t) => serializeTask(t, 'monthly')),
     reviewCadence: serializeCadence(d.reviewCadence),
+    labReadiness: serializeLabReadiness(d.labReadiness),
     assignments: (d.assignments ?? []).map((a) => ({ name: a.name, positionId: a.positionId ? a.positionId.toString() : null, role: a.role ?? 'member' })),
     createdBy: { id: d.createdBy?.id ? d.createdBy.id.toString() : null, name: d.createdBy?.name ?? '' },
     createdAt: (d.createdAt ?? new Date()).toISOString(),

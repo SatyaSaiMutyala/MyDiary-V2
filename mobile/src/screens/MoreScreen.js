@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import {
   AlarmClock,
   Bell,
+  FlaskConical,
   FolderKanban,
   KeyRound,
   LogOut,
@@ -49,6 +50,13 @@ const work = [
     icon: Users,
     title: 'My meetings',
     detail: 'Plan, take minutes, follow up actions',
+  },
+  {
+    to: 'LabReadiness',
+    module: 'labReadiness',
+    icon: FlaskConical,
+    title: 'Lab readiness',
+    detail: "The laboratory's opening and closing rounds, unit by unit",
   },
   {
     to: 'Logs',

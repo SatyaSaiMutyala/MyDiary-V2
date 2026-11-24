@@ -1,0 +1,418 @@
+{
+ "department": {
+  "id": "6b057f4c1eed9b66a740ea17",
+  "name": "Clinical Laboratory",
+  "code": "TDPL-CLIN-001"
+ },
+ "date": "2026-11-24",
+ "openingCutoff": "09:30",
+ "closingCutoff": "22:30",
+ "units": [
+  {
+   "key": "nrl-preanalytical",
+   "name": "Pre-analytical & Accessioning",
+   "kind": "nrl",
+   "phases": {
+    "opening": {
+     "total": 26,
+     "done": 0,
+     "complete": false,
+     "deviations": 0,
+     "photos": 0,
+     "signedAt": null,
+     "signedBy": "",
+     "late": false,
+     "status": "not-started"
+    },
+    "closing": {
+     "total": 26,
+     "done": 0,
+     "complete": false,
+     "deviations": 0,
+     "photos": 0,
+     "signedAt": null,
+     "signedBy": "",
+     "late": false,
+     "status": "not-started"
+    }
+   }
+  },
+  {
+   "key": "nrl-biochemistry",
+   "name": "Clinical Biochemistry",
+   "kind": "nrl",
+   "phases": {
+    "opening": {
+     "total": 26,
+     "done": 26,
+     "complete": true,
+     "deviations": 1,
+     "photos": 1,
+     "signedAt": "2026-11-24T12:14:00.343Z",
+     "signedBy": "Venkata Cherukuri",
+     "late": true,
+     "status": "signed"
+    },
+    "closing": {
+     "total": 26,
+     "done": 0,
+     "complete": false,
+     "deviations": 0,
+     "photos": 0,
+     "signedAt": null,
+     "signedBy": "",
+     "late": false,
+     "status": "not-started"
+    }
+   }
+  },
+  {
+   "key": "nrl-haematology",
+   "name": "Haematology & Coagulation",
+   "kind": "nrl",
+   "phases": {
+    "opening": {
+     "total": 26,
+     "done": 0,
+     "complete": false,
+     "deviations": 0,
+     "photos": 0,
+     "signedAt": null,
+     "signedBy": "",
+     "late": false,
+     "status": "not-started"
+    },
+    "closing": {
+     "total": 26,
+     "done": 0,
+     "complete": false,
+     "deviations": 0,
+     "photos": 0,
+     "signedAt": null,
+     "signedBy": "",
+     "late": false,
+     "status": "not-started"
+    }
+   }
+  },
+  {
+   "key": "nrl-clinpath",
+   "name": "Clinical Pathology",
+   "kind": "nrl",
+   "phases": {
+    "opening": {
+     "total": 26,
+     "done": 0,
+     "complete": false,
+     "deviations": 0,
+     "photos": 0,
+     "signedAt": null,
+     "signedBy": "",
+     "late": false,
+     "status": "not-started"
+    },
+    "closing": {
+     "total": 26,
+     "done": 0,
+     "complete": false,
+     "deviations": 0,
+     "photos": 0,
+     "signedAt": null,
+     "signedBy": "",
+     "late": false,
+     "status": "not-started"
+    }
+   }
+  },
+  {
+   "key": "nrl-serology",
+   "name": "Serology & Immunoassay",
+   "kind": "nrl",
+   "phases": {
+    "opening": {
+     "total": 26,
+     "done": 0,
+     "complete": false,
+     "deviations": 0,
+     "photos": 0,
+     "signedAt": null,
+     "signedBy": "",
+     "late": false,
+     "status": "not-started"
+    },
+    "closing": {
+     "total": 26,
+     "done": 0,
+     "complete": false,
+     "deviations": 0,
+     "photos": 0,
+     "signedAt": null,
+     "signedBy": "",
+     "late": false,
+     "status": "not-started"
+    }
+   }
+  },
+  {
+   "key": "nrl-microbiology",
+   "name": "Microbiology",
+   "kind": "nrl",
+   "phases": {
+    "opening": {
+     "total": 26,
+     "done": 0,
+     "complete": false,
+     "deviations": 0,
+     "photos": 0,
+     "signedAt": null,
+     "signedBy": "",
+     "late": false,
+     "status": "not-started"
+    },
+    "closing": {
+     "total": 26,
+     "done": 0,
+     "complete": false,
+     "deviations": 0,
+     "photos": 0,
+     "signedAt": null,
+     "signedBy": "",
+     "late": false,
+     "status": "not-started"
+    }
+   }
+  },
+  {
+   "key": "nrl-molecular",
+   "name": "Molecular Biology",
+   "kind": "nrl",
+   "phases": {
+    "opening": {
+     "total": 26,
+     "done": 0,
+     "complete": false,
+     "deviations": 0,
+     "photos": 0,
+     "signedAt": null,
+     "signedBy": "",
+     "late": false,
+     "status": "not-started"
+    },
+    "closing": {
+     "total": 26,
+     "done": 0,
+     "complete": false,
+     "deviations": 0,
+     "photos": 0,
+     "signedAt": null,
+     "signedBy": "",
+     "late": false,
+     "status": "not-started"
+    }
+   }
+  },
+  {
+   "key": "nrl-histopath",
+   "name": "Histopathology & Cytology",
+   "kind": "nrl",
+   "phases": {
+    "opening": {
+     "total": 26,
+     "done": 0,
+     "complete": false,
+     "deviations": 0,
+     "photos": 0,
+     "signedAt": null,
+     "signedBy": "",
+     "late": false,
+     "status": "not-started"
+    },
+    "closing": {
+     "total": 26,
+     "done": 0,
+     "complete": false,
+     "deviations": 0,
+     "photos": 0,
+     "signedAt": null,
+     "signedBy": "",
+     "late": false,
+     "status": "not-started"
+    }
+   }
+  },
+  {
+   "key": "lab-anantapur",
+   "name": "Anantapur",
+   "kind": "regional",
+   "phases": {
+    "opening": {
+     "total": 26,
+     "done": 0,
+     "complete": false,
+     "deviations": 0,
+     "photos": 0,
+     "signedAt": null,
+     "signedBy": "",
+     "late": false,
+     "status": "not-started"
+    },
+    "closing": {
+     "total": 26,
+     "done": 0,
+     "complete": false,
+     "deviations": 0,
+     "photos": 0,
+     "signedAt": null,
+     "signedBy": "",
+     "late": false,
+     "status": "not-started"
+    }
+   }
+  },
+  {
+   "key": "lab-noida",
+   "name": "Noida",
+   "kind": "regional",
+   "phases": {
+    "opening": {
+     "total": 26,
+     "done": 0,
+     "complete": false,
+     "deviations": 0,
+     "photos": 0,
+     "signedAt": null,
+     "signedBy": "",
+     "late": false,
+     "status": "not-started"
+    },
+    "closing": {
+     "total": 26,
+     "done": 0,
+     "complete": false,
+     "deviations": 0,
+     "photos": 0,
+     "signedAt": null,
+     "signedBy": "",
+     "late": false,
+     "status": "not-started"
+    }
+   }
+  },
+  {
+   "key": "lab-chandigarh",
+   "name": "Chandigarh",
+   "kind": "regional",
+   "phases": {
+    "opening": {
+     "total": 26,
+     "done": 0,
+     "complete": false,
+     "deviations": 0,
+     "photos": 0,
+     "signedAt": null,
+     "signedBy": "",
+     "late": false,
+     "status": "not-started"
+    },
+    "closing": {
+     "total": 26,
+     "done": 0,
+     "complete": false,
+     "deviations": 0,
+     "photos": 0,
+     "signedAt": null,
+     "signedBy": "",
+     "late": false,
+     "status": "not-started"
+    }
+   }
+  },
+  {
+   "key": "lab-bangalore",
+   "name": "Bangalore",
+   "kind": "regional",
+   "phases": {
+    "opening": {
+     "total": 26,
+     "done": 0,
+     "complete": false,
+     "deviations": 0,
+     "photos": 0,
+     "signedAt": null,
+     "signedBy": "",
+     "late": false,
+     "status": "not-started"
+    },
+    "closing": {
+     "total": 26,
+     "done": 0,
+     "complete": false,
+     "deviations": 0,
+     "photos": 0,
+     "signedAt": null,
+     "signedBy": "",
+     "late": false,
+     "status": "not-started"
+    }
+   }
+  },
+  {
+   "key": "lab-satellite-1",
+   "name": "Satellite Lab 1 (rename in Settings)",
+   "kind": "satellite",
+   "phases": {
+    "opening": {
+     "total": 26,
+     "done": 0,
+     "complete": false,
+     "deviations": 0,
+     "photos": 0,
+     "signedAt": null,
+     "signedBy": "",
+     "late": false,
+     "status": "not-started"
+    },
+    "closing": {
+     "total": 26,
+     "done": 0,
+     "complete": false,
+     "deviations": 0,
+     "photos": 0,
+     "signedAt": null,
+     "signedBy": "",
+     "late": false,
+     "status": "not-started"
+    }
+   }
+  },
+  {
+   "key": "lab-satellite-2",
+   "name": "Satellite Lab 2 (rename in Settings)",
+   "kind": "satellite",
+   "phases": {
+    "opening": {
+     "total": 26,
+     "done": 0,
+     "complete": false,
+     "deviations": 0,
+     "photos": 0,
+     "signedAt": null,
+     "signedBy": "",
+     "late": false,
+     "status": "not-started"
+    },
+    "closing": {
+     "total": 26,
+     "done": 0,
+     "complete": false,
+     "deviations": 0,
+     "photos": 0,
+     "signedAt": null,
+     "signedBy": "",
+     "late": false,
+     "status": "not-started"
+    }
+   }
+  }
+ ]
+}

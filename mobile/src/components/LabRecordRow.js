@@ -2,6 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Camera, ChevronRight, Moon, Sun } from 'lucide-react-native';
 
+import { clock } from '../lab/model';
 import { longDate } from '../utils/dates';
 import { colors, s, vs } from '../theme';
 import { AppText } from './AppText';
@@ -27,24 +28,34 @@ export function LabRecordRow({ record, onPress }) {
           {longDate(record.date)} · {opening ? 'Opening' : 'Closing'}
         </AppText>
         <View style={styles.tags}>
-          {record.signed ? (
-            <Pill label={`Signed ${record.signedAt}`} tone="signed" />
+          {record.signedAt ? (
+            <Pill
+              label={`Signed ${clock(record.signedAt)}${
+                record.late ? ' · late' : ''
+              }`}
+              tone={record.late ? 'watch' : 'signed'}
+            />
           ) : (
-            <Pill label="Open" tone="watch" />
+            <Pill label="Not signed" tone="watch" />
           )}
-          {record.dev ? (
-            <Pill label={`${record.dev} deviation`} tone="critical" />
+          {record.deviations ? (
+            <Pill
+              label={`${record.deviations} deviation${
+                record.deviations === 1 ? '' : 's'
+              }`}
+              tone="critical"
+            />
           ) : null}
-          {record.reopens ? (
-            <Pill label={`Reopened ×${record.reopens}`} tone="escalated" />
+          {record.reopened ? (
+            <Pill label={`Reopened ×${record.reopened}`} tone="escalated" />
           ) : null}
-          <IconText icon={Camera} text={String(record.photos)} />
+          {record.photos ? (
+            <IconText icon={Camera} text={String(record.photos)} />
+          ) : null}
         </View>
         <AppText variant="meta" color={colors.inkMuted} style={styles.by}>
-          {record.done} done · {record.na} N/A ·{' '}
-          {record.signed
-            ? `signed by ${record.signedBy}`
-            : `started by ${record.startedBy ?? 'unknown'}`}
+          {record.done} of {record.total} recorded
+          {record.signedBy ? ` · signed by ${record.signedBy}` : ''}
         </AppText>
       </View>
       <ChevronRight size={s(19)} color={colors.inkFaint} strokeWidth={2} />

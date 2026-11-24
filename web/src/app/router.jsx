@@ -9,6 +9,7 @@ import MeetingDetailPage from '../modules/meetings/MeetingDetailPage';
 import DecisionsPage from '../modules/decisions/DecisionsPage';
 import TemplatesPage from '../modules/templates/TemplatesPage';
 import MyActivityPage from '../modules/myactivity/MyActivityPage';
+import LabReadinessPage from '../modules/labreadiness/LabReadinessPage';
 import DiaryPage from '../modules/diary/DiaryPage';
 import DiscussionLogsPage from '../modules/logs/DiscussionLogsPage';
 import RemindersPage from '../modules/reminders/RemindersPage';
@@ -26,6 +27,7 @@ import { NeedsModule } from '../auth/NeedsModule';
 //  dashboard → /            list → /meetings        schedule → /meetings/new     detail → /meetings/:id
 //  edit a meeting → /meetings/:id/edit (the Schedule form, pre-filled, saving overwrites)
 //  decisions → /decisions   templates → /templates  myactivity → /my-activity    diary → /diary
+//  lab readiness board → /lab-readiness?unit=<key>&date=<YYYY-MM-DD>&phase=opening|closing
 //  logs → /logs             mytodo → /todo          visits → /visits
 //  projects → /projects     project-detail → /projects/:id
 //  departments → /departments   department-detail → /departments/:id   integrations → /integrations
@@ -40,6 +42,7 @@ const router = createBrowserRouter([
     { path: 'decisions', element: <NeedsModule module="decisions"><DecisionsPage /></NeedsModule> },
     { path: 'templates', element: <NeedsModule module="templates"><TemplatesPage /></NeedsModule> },
     { path: 'my-activity', element: <NeedsModule module="activity"><MyActivityPage /></NeedsModule> },
+    { path: 'lab-readiness', element: <NeedsModule module="labReadiness"><LabReadinessPage /></NeedsModule> },
     { path: 'diary', element: <NeedsModule module="diary"><DiaryPage /></NeedsModule> },
     { path: 'logs', element: <NeedsModule module="logs"><DiscussionLogsPage /></NeedsModule> },
     { path: 'reminders', element: <NeedsModule module="reminders"><RemindersPage /></NeedsModule> },

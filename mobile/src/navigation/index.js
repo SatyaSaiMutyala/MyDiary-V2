@@ -11,6 +11,11 @@ import { DiaryEntryFormScreen } from '../screens/DiaryEntryFormScreen';
 import { DiaryEntryScreen } from '../screens/DiaryEntryScreen';
 import { DiaryScreen } from '../screens/DiaryScreen';
 import { HomeScreen } from '../screens/HomeScreen';
+import { LabHistoryScreen } from '../screens/LabHistoryScreen';
+import { LabReadinessScreen } from '../screens/LabReadinessScreen';
+import { LabRecordScreen } from '../screens/LabRecordScreen';
+import { LabReopenScreen } from '../screens/LabReopenScreen';
+import { LabSignOffScreen } from '../screens/LabSignOffScreen';
 import { LogDetailScreen } from '../screens/LogDetailScreen';
 import { LogFormScreen } from '../screens/LogFormScreen';
 import { LogsScreen } from '../screens/LogsScreen';
@@ -175,6 +180,13 @@ export function RootNavigator() {
         <Stack.Screen name="Visits" component={VisitsScreen} />
         <Stack.Screen name="VisitDetail" component={VisitDetailScreen} />
         <Stack.Screen name="VisitForm" component={VisitFormScreen} />
+
+        {/* Lab Readiness — the laboratory's daily opening and closing rounds */}
+        <Stack.Screen name="LabReadiness" component={LabReadinessScreen} />
+        <Stack.Screen name="LabSignOff" component={LabSignOffScreen} />
+        <Stack.Screen name="LabReopen" component={LabReopenScreen} />
+        <Stack.Screen name="LabHistory" component={LabHistoryScreen} />
+        <Stack.Screen name="LabRecord" component={LabRecordScreen} />
 
         {/* Decisions registry — built */}
         <Stack.Screen name="Decisions" component={DecisionsScreen} />

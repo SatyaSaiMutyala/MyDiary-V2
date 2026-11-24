@@ -23,8 +23,8 @@ export function PhotoStrip({
   const run = async action => {
     const result = await action();
     setError(result.error);
-    if (result.uris.length) {
-      onAdd?.(result.uris.slice(0, room));
+    if (result.photos.length) {
+      onAdd?.(result.photos.slice(0, room));
     }
   };
 
@@ -39,8 +39,11 @@ export function PhotoStrip({
                 onPress={() => setOpen(p)}
                 style={styles.thumb}
               >
-                {p.uri ? (
-                  <Image source={{ uri: p.uri }} style={styles.image} />
+                {p.source ?? p.uri ? (
+                  <Image
+                    source={p.source ?? { uri: p.uri }}
+                    style={styles.image}
+                  />
                 ) : (
                   <ImageIcon
                     size={s(20)}

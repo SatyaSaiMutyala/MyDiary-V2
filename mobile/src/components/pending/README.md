@@ -11,9 +11,10 @@ v2 model instead — the markup and styles stay exactly as they are.
 | ActivityRow | My Activity |
 | DiscussionRow | Discussion Logs |
 | ProjectRow, KpiRow | Projects |
-| ChecklistItemRow | My Activity / To-Do |
 | PersonPicker, DepartmentPicker | any screen that picks a person |
 | RepeatFields | recurring diary entries |
-| AlertRow, ReminderRow, LabRecordRow, LabSections, ReopenLog | v1 only — no v2 module uses these yet |
-
+| AlertRow, ReminderRow | v1 only — no v2 module uses these yet |
 | PeopleField | needs PersonPicker, so it comes back with it |
+
+Brought back so far: **ChecklistItemRow, LabSections, LabRecordRow, ReopenLog** — with Lab Readiness
+(`src/screens/LabReadinessScreen.js`), pointed at the v2 board instead of v1's `lab/model.ts`.

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import * as departments from '../controllers/departments.js';
+import * as lab from '../controllers/labReadiness.js';
 import { requireAuth, requireModule } from '../middleware/auth.js';
 import { validateBody } from '../middleware/validate.js';
 
@@ -48,6 +49,17 @@ departmentsRouter.delete('/:id/cadence/:tab/sections/:sectionId', write, departm
 departmentsRouter.post('/:id/cadence/:tab/sections/:sectionId/points', write, validateBody(departments.pointSchema), departments.addPoint);
 departmentsRouter.patch('/:id/cadence/:tab/sections/:sectionId/points/:pointId', write, validateBody(departments.pointPatchSchema), departments.updatePoint);
 departmentsRouter.delete('/:id/cadence/:tab/sections/:sectionId/points/:pointId', write, departments.removePoint);
+
+// Lab Readiness — the clinical department's daily board: the switch, the cut-offs, the units and the
+// master checklist. The board itself is /api/lab-readiness (routes/labReadiness.js).
+departmentsRouter.put('/:id/lab-readiness', write, validateBody(lab.configSchema), lab.putConfig);
+departmentsRouter.post('/:id/lab-readiness/restore', write, lab.restoreStandard);
+departmentsRouter.post('/:id/lab-readiness/units', write, validateBody(lab.unitSchema), lab.addUnit);
+departmentsRouter.patch('/:id/lab-readiness/units/:unitId', write, validateBody(lab.unitPatchSchema), lab.patchUnit);
+departmentsRouter.delete('/:id/lab-readiness/units/:unitId', write, lab.removeUnit);
+departmentsRouter.post('/:id/lab-readiness/activities', write, validateBody(lab.activitySchema), lab.addActivity);
+departmentsRouter.patch('/:id/lab-readiness/activities/:activityId', write, validateBody(lab.activityPatchSchema), lab.patchActivity);
+departmentsRouter.delete('/:id/lab-readiness/activities/:activityId', write, lab.removeActivity);
 
 // Who works in this department
 departmentsRouter.put('/:id/assignments', write, validateBody(departments.assignmentsSchema), departments.putAssignments);

@@ -1,0 +1,1247 @@
+{
+ "department": {
+  "id": "6b057f4c1eed9b66a740ea17",
+  "name": "Clinical Laboratory",
+  "code": "TDPL-CLIN-001"
+ },
+ "config": {
+  "enabled": true,
+  "openingCutoff": "09:30",
+  "closingCutoff": "22:30",
+  "units": [
+   {
+    "id": "6b057f4d1eed9b66a740ecff",
+    "key": "nrl-preanalytical",
+    "name": "Pre-analytical & Accessioning",
+    "kind": "nrl",
+    "active": true,
+    "order": 1
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed00",
+    "key": "nrl-biochemistry",
+    "name": "Clinical Biochemistry",
+    "kind": "nrl",
+    "active": true,
+    "order": 2
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed01",
+    "key": "nrl-haematology",
+    "name": "Haematology & Coagulation",
+    "kind": "nrl",
+    "active": true,
+    "order": 3
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed02",
+    "key": "nrl-clinpath",
+    "name": "Clinical Pathology",
+    "kind": "nrl",
+    "active": true,
+    "order": 4
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed03",
+    "key": "nrl-serology",
+    "name": "Serology & Immunoassay",
+    "kind": "nrl",
+    "active": true,
+    "order": 5
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed04",
+    "key": "nrl-microbiology",
+    "name": "Microbiology",
+    "kind": "nrl",
+    "active": true,
+    "order": 6
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed05",
+    "key": "nrl-molecular",
+    "name": "Molecular Biology",
+    "kind": "nrl",
+    "active": true,
+    "order": 7
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed06",
+    "key": "nrl-histopath",
+    "name": "Histopathology & Cytology",
+    "kind": "nrl",
+    "active": true,
+    "order": 8
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed07",
+    "key": "lab-anantapur",
+    "name": "Anantapur",
+    "kind": "regional",
+    "active": true,
+    "order": 9
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed08",
+    "key": "lab-noida",
+    "name": "Noida",
+    "kind": "regional",
+    "active": true,
+    "order": 10
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed09",
+    "key": "lab-chandigarh",
+    "name": "Chandigarh",
+    "kind": "regional",
+    "active": true,
+    "order": 11
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed0a",
+    "key": "lab-bangalore",
+    "name": "Bangalore",
+    "kind": "regional",
+    "active": true,
+    "order": 12
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed0b",
+    "key": "lab-satellite-1",
+    "name": "Satellite Lab 1 (rename in Settings)",
+    "kind": "satellite",
+    "active": true,
+    "order": 13
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed0c",
+    "key": "lab-satellite-2",
+    "name": "Satellite Lab 2 (rename in Settings)",
+    "kind": "satellite",
+    "active": true,
+    "order": 14
+   }
+  ],
+  "activities": [
+   {
+    "id": "6b057f4d1eed9b66a740ed0d",
+    "key": "o02",
+    "phase": "opening",
+    "section": "Facility, safety & housekeeping",
+    "text": "Check that the laboratory is secure and that CCTV and access control are working",
+    "scheduledTime": "07:00",
+    "scope": "all",
+    "photoRequired": false,
+    "active": true,
+    "order": 1
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed0e",
+    "key": "o03",
+    "phase": "opening",
+    "section": "Facility, safety & housekeeping",
+    "text": "Check that mains power supply is available",
+    "scheduledTime": "07:05",
+    "scope": "all",
+    "photoRequired": false,
+    "active": true,
+    "order": 2
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed0f",
+    "key": "o04",
+    "phase": "opening",
+    "section": "Facility, safety & housekeeping",
+    "text": "Check that the UPS and backup power are available and charged",
+    "scheduledTime": "07:05",
+    "scope": "all",
+    "photoRequired": false,
+    "active": true,
+    "order": 3
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed10",
+    "key": "o05",
+    "phase": "opening",
+    "section": "Environmental monitoring",
+    "text": "Record the ambient temperature and humidity",
+    "scheduledTime": "07:10",
+    "scope": "all",
+    "photoRequired": true,
+    "active": true,
+    "order": 4
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed11",
+    "key": "o06",
+    "phase": "opening",
+    "section": "Facility, safety & housekeeping",
+    "text": "Check that the laboratory is clean and tidy",
+    "scheduledTime": "07:10",
+    "scope": "all",
+    "photoRequired": true,
+    "active": true,
+    "order": 5
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed12",
+    "key": "o07",
+    "phase": "opening",
+    "section": "Facility, safety & housekeeping",
+    "text": "Check that water supply is available",
+    "scheduledTime": "07:10",
+    "scope": "all",
+    "photoRequired": false,
+    "active": true,
+    "order": 6
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed13",
+    "key": "o08",
+    "phase": "opening",
+    "section": "Environmental monitoring",
+    "text": "Record refrigerator and freezer temperatures",
+    "scheduledTime": "07:15",
+    "scope": "all",
+    "photoRequired": true,
+    "active": true,
+    "order": 7
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed14",
+    "key": "o09",
+    "phase": "opening",
+    "section": "Reagents & consumables",
+    "text": "Check that reagents, controls and calibrators are stored under the required conditions",
+    "scheduledTime": "07:20",
+    "scope": "all",
+    "photoRequired": false,
+    "active": true,
+    "order": 8
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed15",
+    "key": "o10",
+    "phase": "opening",
+    "section": "Reagents & consumables",
+    "text": "Check reagent expiry dates and the open-vial validity of reagents in use",
+    "scheduledTime": "07:20",
+    "scope": "all",
+    "photoRequired": false,
+    "active": true,
+    "order": 9
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed16",
+    "key": "o11",
+    "phase": "opening",
+    "section": "Equipment start-up",
+    "text": "Check that all analyzers and instruments are in good working condition",
+    "scheduledTime": "07:25",
+    "scope": "all",
+    "photoRequired": false,
+    "active": true,
+    "order": 10
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed17",
+    "key": "o12",
+    "phase": "opening",
+    "section": "Equipment start-up",
+    "text": "Switch on the instruments required for the day",
+    "scheduledTime": "07:25",
+    "scope": "all",
+    "photoRequired": false,
+    "active": true,
+    "order": 11
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed18",
+    "key": "o13",
+    "phase": "opening",
+    "section": "Equipment start-up",
+    "text": "Check instruments for alarms or error messages and resolve them",
+    "scheduledTime": "07:30",
+    "scope": "all",
+    "photoRequired": false,
+    "active": true,
+    "order": 12
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed19",
+    "key": "o14",
+    "phase": "opening",
+    "section": "Equipment start-up",
+    "text": "Carry out the daily maintenance activities for each instrument",
+    "scheduledTime": "07:30",
+    "scope": "all",
+    "photoRequired": false,
+    "active": true,
+    "order": 13
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed1a",
+    "key": "o15",
+    "phase": "opening",
+    "section": "Equipment start-up",
+    "text": "Check that the calibration of all equipment is current",
+    "scheduledTime": "07:35",
+    "scope": "all",
+    "photoRequired": false,
+    "active": true,
+    "order": 14
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed1b",
+    "key": "o16",
+    "phase": "opening",
+    "section": "Reagents & consumables",
+    "text": "Check reagent levels on board each analyzer",
+    "scheduledTime": "07:35",
+    "scope": "all",
+    "photoRequired": false,
+    "active": true,
+    "order": 15
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed1c",
+    "key": "o17",
+    "phase": "opening",
+    "section": "Facility, safety & housekeeping",
+    "text": "Check that waste containers are in place, labelled and empty",
+    "scheduledTime": "07:40",
+    "scope": "all",
+    "photoRequired": true,
+    "active": true,
+    "order": 16
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed1d",
+    "key": "o18",
+    "phase": "opening",
+    "section": "Facility, safety & housekeeping",
+    "text": "Check that adequate PPE is available",
+    "scheduledTime": "07:40",
+    "scope": "all",
+    "photoRequired": false,
+    "active": true,
+    "order": 17
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed1e",
+    "key": "o19",
+    "phase": "opening",
+    "section": "LIS & pre-analytical readiness",
+    "text": "Check that the sample collection area is ready for patients",
+    "scheduledTime": "07:45",
+    "scope": "all",
+    "photoRequired": true,
+    "active": true,
+    "order": 18
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed1f",
+    "key": "o20",
+    "phase": "opening",
+    "section": "Internal quality control",
+    "text": "Run IQC and confirm the results meet the acceptance criteria",
+    "scheduledTime": "07:50",
+    "scope": "all",
+    "photoRequired": true,
+    "active": true,
+    "order": 19
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed20",
+    "key": "o21",
+    "phase": "opening",
+    "section": "Internal quality control",
+    "text": "Confirm that the analyzers are ready for patient testing",
+    "scheduledTime": "08:10",
+    "scope": "all",
+    "photoRequired": false,
+    "active": true,
+    "order": 20
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed21",
+    "key": "o22",
+    "phase": "opening",
+    "section": "LIS & pre-analytical readiness",
+    "text": "Check that the LIS/HIS, analyzer interfaces, printers and scanners are working",
+    "scheduledTime": "08:15",
+    "scope": "all",
+    "photoRequired": false,
+    "active": true,
+    "order": 21
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed22",
+    "key": "o23",
+    "phase": "opening",
+    "section": "Information systems & stock",
+    "text": "Review QTQMS for open NCs, CAPAs, document reviews and training due",
+    "scheduledTime": "08:20",
+    "scope": "all",
+    "photoRequired": false,
+    "active": true,
+    "order": 22
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed23",
+    "key": "o24",
+    "phase": "opening",
+    "section": "Manpower & declaration",
+    "text": "Check staff attendance and authorized signatory availability, and conduct the team briefing",
+    "scheduledTime": "08:25",
+    "scope": "all",
+    "photoRequired": false,
+    "active": true,
+    "order": 23
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed24",
+    "key": "o25",
+    "phase": "opening",
+    "section": "Facility, safety & housekeeping",
+    "text": "Check that the washrooms are clean and usable",
+    "scheduledTime": "08:25",
+    "scope": "all",
+    "photoRequired": false,
+    "active": true,
+    "order": 24
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed25",
+    "key": "o26",
+    "phase": "opening",
+    "section": "Facility, safety & housekeeping",
+    "text": "Check that the eyewash station and first-aid kit are complete and ready for use",
+    "scheduledTime": "08:30",
+    "scope": "all",
+    "photoRequired": false,
+    "active": true,
+    "order": 25
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed26",
+    "key": "o27",
+    "phase": "opening",
+    "section": "Manpower & declaration",
+    "text": "Confirm the laboratory is ready to start testing patient samples for the day",
+    "scheduledTime": "08:30",
+    "scope": "all",
+    "photoRequired": false,
+    "active": true,
+    "order": 26
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed27",
+    "key": "c01",
+    "phase": "closing",
+    "section": "Workload reconciliation",
+    "text": "Confirm that all samples received during the day have been logged and processed",
+    "scheduledTime": "20:30",
+    "scope": "all",
+    "photoRequired": false,
+    "active": true,
+    "order": 27
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed28",
+    "key": "c02",
+    "phase": "closing",
+    "section": "Workload reconciliation",
+    "text": "Review pending patient samples and their release timelines",
+    "scheduledTime": "20:35",
+    "scope": "all",
+    "photoRequired": false,
+    "active": true,
+    "order": 28
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed29",
+    "key": "c03",
+    "phase": "closing",
+    "section": "Workload reconciliation",
+    "text": "Review abnormal, critical and pending results",
+    "scheduledTime": "20:40",
+    "scope": "all",
+    "photoRequired": true,
+    "active": true,
+    "order": 29
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed2a",
+    "key": "c04",
+    "phase": "closing",
+    "section": "Equipment shutdown",
+    "text": "Shut down the analyzers as per the shutdown procedure",
+    "scheduledTime": "20:45",
+    "scope": "all",
+    "photoRequired": false,
+    "active": true,
+    "order": 30
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed2b",
+    "key": "c05",
+    "phase": "closing",
+    "section": "Equipment shutdown",
+    "text": "Carry out end-of-day cleaning and maintenance of the instruments",
+    "scheduledTime": "20:50",
+    "scope": "all",
+    "photoRequired": true,
+    "active": true,
+    "order": 31
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed2c",
+    "key": "c06",
+    "phase": "closing",
+    "section": "Sample storage & retention",
+    "text": "Check the condition of reagents in storage",
+    "scheduledTime": "20:55",
+    "scope": "all",
+    "photoRequired": false,
+    "active": true,
+    "order": 32
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed2d",
+    "key": "c07",
+    "phase": "closing",
+    "section": "Sample storage & retention",
+    "text": "Store reagents at the required temperatures (room temperature or refrigerator)",
+    "scheduledTime": "20:55",
+    "scope": "all",
+    "photoRequired": true,
+    "active": true,
+    "order": 33
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed2e",
+    "key": "c08",
+    "phase": "closing",
+    "section": "Sample storage & retention",
+    "text": "Record the closing refrigerator and freezer temperatures",
+    "scheduledTime": "21:00",
+    "scope": "all",
+    "photoRequired": true,
+    "active": true,
+    "order": 34
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed2f",
+    "key": "c09",
+    "phase": "closing",
+    "section": "Waste, stock & data",
+    "text": "Segregate and dispose of biomedical waste as per procedure",
+    "scheduledTime": "21:00",
+    "scope": "all",
+    "photoRequired": true,
+    "active": true,
+    "order": 35
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed30",
+    "key": "c10",
+    "phase": "closing",
+    "section": "Waste, stock & data",
+    "text": "Clean the work benches",
+    "scheduledTime": "21:05",
+    "scope": "all",
+    "photoRequired": true,
+    "active": true,
+    "order": 36
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed31",
+    "key": "c11",
+    "phase": "closing",
+    "section": "Waste, stock & data",
+    "text": "Clean the sample processing area",
+    "scheduledTime": "21:05",
+    "scope": "all",
+    "photoRequired": true,
+    "active": true,
+    "order": 37
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed32",
+    "key": "c12",
+    "phase": "closing",
+    "section": "Equipment shutdown",
+    "text": "Inspect the centrifuges, mixers, incubators and other equipment",
+    "scheduledTime": "21:10",
+    "scope": "all",
+    "photoRequired": false,
+    "active": true,
+    "order": 38
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed33",
+    "key": "c13",
+    "phase": "closing",
+    "section": "Equipment shutdown",
+    "text": "Switch off equipment that is not required overnight",
+    "scheduledTime": "21:10",
+    "scope": "all",
+    "photoRequired": false,
+    "active": true,
+    "order": 39
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed34",
+    "key": "c14",
+    "phase": "closing",
+    "section": "Commercial, security & declaration",
+    "text": "Check that water and gas supplies are turned off or secured",
+    "scheduledTime": "21:15",
+    "scope": "all",
+    "photoRequired": false,
+    "active": true,
+    "order": 40
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed35",
+    "key": "c15",
+    "phase": "closing",
+    "section": "Commercial, security & declaration",
+    "text": "Check that all doors and windows are locked",
+    "scheduledTime": "21:15",
+    "scope": "all",
+    "photoRequired": false,
+    "active": true,
+    "order": 41
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed36",
+    "key": "c16",
+    "phase": "closing",
+    "section": "Commercial, security & declaration",
+    "text": "Check that emergency equipment is in place and ready for use",
+    "scheduledTime": "21:20",
+    "scope": "all",
+    "photoRequired": false,
+    "active": true,
+    "order": 42
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed37",
+    "key": "c17",
+    "phase": "closing",
+    "section": "Commercial, security & declaration",
+    "text": "Secure patient records and controlled documents",
+    "scheduledTime": "21:20",
+    "scope": "all",
+    "photoRequired": false,
+    "active": true,
+    "order": 43
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed38",
+    "key": "c18",
+    "phase": "closing",
+    "section": "Waste, stock & data",
+    "text": "Check that all waste is secured",
+    "scheduledTime": "21:25",
+    "scope": "all",
+    "photoRequired": true,
+    "active": true,
+    "order": 44
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed39",
+    "key": "c19",
+    "phase": "closing",
+    "section": "Commercial, security & declaration",
+    "text": "Switch off lights and air conditioning where applicable",
+    "scheduledTime": "21:25",
+    "scope": "all",
+    "photoRequired": false,
+    "active": true,
+    "order": 45
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed3a",
+    "key": "c20",
+    "phase": "closing",
+    "section": "Workload reconciliation",
+    "text": "Confirm that all authorized reports have been released",
+    "scheduledTime": "21:30",
+    "scope": "all",
+    "photoRequired": false,
+    "active": true,
+    "order": 46
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed3b",
+    "key": "c21",
+    "phase": "closing",
+    "section": "Information systems & stock",
+    "text": "Run the LIS/server backup and confirm it has completed",
+    "scheduledTime": "21:30",
+    "scope": "all",
+    "photoRequired": true,
+    "active": true,
+    "order": 47
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed3c",
+    "key": "c22",
+    "phase": "closing",
+    "section": "Information systems & stock",
+    "text": "Update QTQMS with the day's deviations, NCs and CAPAs",
+    "scheduledTime": "21:35",
+    "scope": "all",
+    "photoRequired": false,
+    "active": true,
+    "order": 48
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed3d",
+    "key": "c23",
+    "phase": "closing",
+    "section": "Information systems & stock",
+    "text": "Update the day's consumption in AIMS",
+    "scheduledTime": "21:35",
+    "scope": "all",
+    "photoRequired": false,
+    "active": true,
+    "order": 49
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed3e",
+    "key": "c24",
+    "phase": "closing",
+    "section": "Information systems & stock",
+    "text": "Review the stock position and raise indents for low inventory",
+    "scheduledTime": "21:40",
+    "scope": "all",
+    "photoRequired": false,
+    "active": true,
+    "order": 50
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed3f",
+    "key": "c25",
+    "phase": "closing",
+    "section": "Commercial, security & declaration",
+    "text": "Secure the laboratory premises, activate the security systems and confirm CCTV is recording",
+    "scheduledTime": "21:45",
+    "scope": "all",
+    "photoRequired": true,
+    "active": true,
+    "order": 51
+   },
+   {
+    "id": "6b057f4d1eed9b66a740ed40",
+    "key": "c26",
+    "phase": "closing",
+    "section": "Commercial, security & declaration",
+    "text": "Carry out a final walk-through inspection of the laboratory",
+    "scheduledTime": "21:50",
+    "scope": "all",
+    "photoRequired": false,
+    "active": true,
+    "order": 52
+   }
+  ]
+ },
+ "unit": {
+  "key": "nrl-biochemistry",
+  "name": "Clinical Biochemistry",
+  "kind": "nrl"
+ },
+ "date": "2026-11-24",
+ "phase": "opening",
+ "declaration": "I confirm that all activities above have been completed and recorded, and that the laboratory is fit to accept and examine patient samples.",
+ "activities": [
+  {
+   "key": "o02",
+   "section": "Facility, safety & housekeeping",
+   "text": "Check that the laboratory is secure and that CCTV and access control are working",
+   "scheduledTime": "07:00",
+   "photoRequired": false
+  },
+  {
+   "key": "o03",
+   "section": "Facility, safety & housekeeping",
+   "text": "Check that mains power supply is available",
+   "scheduledTime": "07:05",
+   "photoRequired": false
+  },
+  {
+   "key": "o04",
+   "section": "Facility, safety & housekeeping",
+   "text": "Check that the UPS and backup power are available and charged",
+   "scheduledTime": "07:05",
+   "photoRequired": false
+  },
+  {
+   "key": "o05",
+   "section": "Environmental monitoring",
+   "text": "Record the ambient temperature and humidity",
+   "scheduledTime": "07:10",
+   "photoRequired": true
+  },
+  {
+   "key": "o06",
+   "section": "Facility, safety & housekeeping",
+   "text": "Check that the laboratory is clean and tidy",
+   "scheduledTime": "07:10",
+   "photoRequired": true
+  },
+  {
+   "key": "o07",
+   "section": "Facility, safety & housekeeping",
+   "text": "Check that water supply is available",
+   "scheduledTime": "07:10",
+   "photoRequired": false
+  },
+  {
+   "key": "o08",
+   "section": "Environmental monitoring",
+   "text": "Record refrigerator and freezer temperatures",
+   "scheduledTime": "07:15",
+   "photoRequired": true
+  },
+  {
+   "key": "o09",
+   "section": "Reagents & consumables",
+   "text": "Check that reagents, controls and calibrators are stored under the required conditions",
+   "scheduledTime": "07:20",
+   "photoRequired": false
+  },
+  {
+   "key": "o10",
+   "section": "Reagents & consumables",
+   "text": "Check reagent expiry dates and the open-vial validity of reagents in use",
+   "scheduledTime": "07:20",
+   "photoRequired": false
+  },
+  {
+   "key": "o11",
+   "section": "Equipment start-up",
+   "text": "Check that all analyzers and instruments are in good working condition",
+   "scheduledTime": "07:25",
+   "photoRequired": false
+  },
+  {
+   "key": "o12",
+   "section": "Equipment start-up",
+   "text": "Switch on the instruments required for the day",
+   "scheduledTime": "07:25",
+   "photoRequired": false
+  },
+  {
+   "key": "o13",
+   "section": "Equipment start-up",
+   "text": "Check instruments for alarms or error messages and resolve them",
+   "scheduledTime": "07:30",
+   "photoRequired": false
+  },
+  {
+   "key": "o14",
+   "section": "Equipment start-up",
+   "text": "Carry out the daily maintenance activities for each instrument",
+   "scheduledTime": "07:30",
+   "photoRequired": false
+  },
+  {
+   "key": "o15",
+   "section": "Equipment start-up",
+   "text": "Check that the calibration of all equipment is current",
+   "scheduledTime": "07:35",
+   "photoRequired": false
+  },
+  {
+   "key": "o16",
+   "section": "Reagents & consumables",
+   "text": "Check reagent levels on board each analyzer",
+   "scheduledTime": "07:35",
+   "photoRequired": false
+  },
+  {
+   "key": "o17",
+   "section": "Facility, safety & housekeeping",
+   "text": "Check that waste containers are in place, labelled and empty",
+   "scheduledTime": "07:40",
+   "photoRequired": true
+  },
+  {
+   "key": "o18",
+   "section": "Facility, safety & housekeeping",
+   "text": "Check that adequate PPE is available",
+   "scheduledTime": "07:40",
+   "photoRequired": false
+  },
+  {
+   "key": "o19",
+   "section": "LIS & pre-analytical readiness",
+   "text": "Check that the sample collection area is ready for patients",
+   "scheduledTime": "07:45",
+   "photoRequired": true
+  },
+  {
+   "key": "o20",
+   "section": "Internal quality control",
+   "text": "Run IQC and confirm the results meet the acceptance criteria",
+   "scheduledTime": "07:50",
+   "photoRequired": true
+  },
+  {
+   "key": "o21",
+   "section": "Internal quality control",
+   "text": "Confirm that the analyzers are ready for patient testing",
+   "scheduledTime": "08:10",
+   "photoRequired": false
+  },
+  {
+   "key": "o22",
+   "section": "LIS & pre-analytical readiness",
+   "text": "Check that the LIS/HIS, analyzer interfaces, printers and scanners are working",
+   "scheduledTime": "08:15",
+   "photoRequired": false
+  },
+  {
+   "key": "o23",
+   "section": "Information systems & stock",
+   "text": "Review QTQMS for open NCs, CAPAs, document reviews and training due",
+   "scheduledTime": "08:20",
+   "photoRequired": false
+  },
+  {
+   "key": "o24",
+   "section": "Manpower & declaration",
+   "text": "Check staff attendance and authorized signatory availability, and conduct the team briefing",
+   "scheduledTime": "08:25",
+   "photoRequired": false
+  },
+  {
+   "key": "o25",
+   "section": "Facility, safety & housekeeping",
+   "text": "Check that the washrooms are clean and usable",
+   "scheduledTime": "08:25",
+   "photoRequired": false
+  },
+  {
+   "key": "o26",
+   "section": "Facility, safety & housekeeping",
+   "text": "Check that the eyewash station and first-aid kit are complete and ready for use",
+   "scheduledTime": "08:30",
+   "photoRequired": false
+  },
+  {
+   "key": "o27",
+   "section": "Manpower & declaration",
+   "text": "Confirm the laboratory is ready to start testing patient samples for the day",
+   "scheduledTime": "08:30",
+   "photoRequired": false
+  }
+ ],
+ "run": {
+  "id": "6b057f781eed9b66a740ee83",
+  "departmentId": "6b057f4c1eed9b66a740ea17",
+  "unitKey": "nrl-biochemistry",
+  "unitName": "Clinical Biochemistry",
+  "unitKind": "nrl",
+  "date": "2026-11-24",
+  "phase": "opening",
+  "startedAt": "2026-11-24T12:13:44.819Z",
+  "startedBy": "Venkata Cherukuri",
+  "items": [
+   {
+    "taskKey": "o02",
+    "status": "done",
+    "remark": "",
+    "text": "Check that the laboratory is secure and that CCTV and access control are working",
+    "section": "Facility, safety & housekeeping",
+    "scheduledTime": "07:00",
+    "actionedAt": "2026-11-24T12:13:44.824Z",
+    "actionedBy": "Venkata Cherukuri"
+   },
+   {
+    "taskKey": "o03",
+    "status": "deviation",
+    "remark": "QC on channel 2 failed; engineer called at 07:40.",
+    "text": "Check that mains power supply is available",
+    "section": "Facility, safety & housekeeping",
+    "scheduledTime": "07:05",
+    "actionedAt": "2026-11-24T12:13:44.879Z",
+    "actionedBy": "Venkata Cherukuri"
+   },
+   {
+    "taskKey": "o04",
+    "status": "na",
+    "remark": "Analyser is off for service today.",
+    "text": "Check that the UPS and backup power are available and charged",
+    "section": "Facility, safety & housekeeping",
+    "scheduledTime": "07:05",
+    "actionedAt": "2026-11-24T12:13:44.936Z",
+    "actionedBy": "Venkata Cherukuri"
+   },
+   {
+    "taskKey": "o05",
+    "status": "done",
+    "remark": "",
+    "text": "Record the ambient temperature and humidity",
+    "section": "Environmental monitoring",
+    "scheduledTime": "07:10",
+    "actionedAt": "2026-11-24T12:13:45.055Z",
+    "actionedBy": "Venkata Cherukuri"
+   },
+   {
+    "taskKey": "o06",
+    "status": "na",
+    "remark": "Equipment not in use today; the standby analyser is running.",
+    "text": "Check that the laboratory is clean and tidy",
+    "section": "Facility, safety & housekeeping",
+    "scheduledTime": "07:10",
+    "actionedAt": "2026-11-24T12:14:00.098Z",
+    "actionedBy": "Venkata Cherukuri"
+   },
+   {
+    "taskKey": "o07",
+    "status": "done",
+    "remark": "",
+    "text": "Check that water supply is available",
+    "section": "Facility, safety & housekeeping",
+    "scheduledTime": "07:10",
+    "actionedAt": "2026-11-24T12:13:45.149Z",
+    "actionedBy": "Venkata Cherukuri"
+   },
+   {
+    "taskKey": "o08",
+    "status": "na",
+    "remark": "Equipment not in use today; the standby analyser is running.",
+    "text": "Record refrigerator and freezer temperatures",
+    "section": "Environmental monitoring",
+    "scheduledTime": "07:15",
+    "actionedAt": "2026-11-24T12:14:00.140Z",
+    "actionedBy": "Venkata Cherukuri"
+   },
+   {
+    "taskKey": "o09",
+    "status": "done",
+    "remark": "",
+    "text": "Check that reagents, controls and calibrators are stored under the required conditions",
+    "section": "Reagents & consumables",
+    "scheduledTime": "07:20",
+    "actionedAt": "2026-11-24T12:13:45.265Z",
+    "actionedBy": "Venkata Cherukuri"
+   },
+   {
+    "taskKey": "o10",
+    "status": "done",
+    "remark": "",
+    "text": "Check reagent expiry dates and the open-vial validity of reagents in use",
+    "section": "Reagents & consumables",
+    "scheduledTime": "07:20",
+    "actionedAt": "2026-11-24T12:13:45.304Z",
+    "actionedBy": "Venkata Cherukuri"
+   },
+   {
+    "taskKey": "o11",
+    "status": "done",
+    "remark": "",
+    "text": "Check that all analyzers and instruments are in good working condition",
+    "section": "Equipment start-up",
+    "scheduledTime": "07:25",
+    "actionedAt": "2026-11-24T12:13:45.343Z",
+    "actionedBy": "Venkata Cherukuri"
+   },
+   {
+    "taskKey": "o12",
+    "status": "done",
+    "remark": "",
+    "text": "Switch on the instruments required for the day",
+    "section": "Equipment start-up",
+    "scheduledTime": "07:25",
+    "actionedAt": "2026-11-24T12:13:45.402Z",
+    "actionedBy": "Venkata Cherukuri"
+   },
+   {
+    "taskKey": "o13",
+    "status": "done",
+    "remark": "",
+    "text": "Check instruments for alarms or error messages and resolve them",
+    "section": "Equipment start-up",
+    "scheduledTime": "07:30",
+    "actionedAt": "2026-11-24T12:13:45.448Z",
+    "actionedBy": "Venkata Cherukuri"
+   },
+   {
+    "taskKey": "o14",
+    "status": "done",
+    "remark": "",
+    "text": "Carry out the daily maintenance activities for each instrument",
+    "section": "Equipment start-up",
+    "scheduledTime": "07:30",
+    "actionedAt": "2026-11-24T12:13:45.495Z",
+    "actionedBy": "Venkata Cherukuri"
+   },
+   {
+    "taskKey": "o15",
+    "status": "done",
+    "remark": "",
+    "text": "Check that the calibration of all equipment is current",
+    "section": "Equipment start-up",
+    "scheduledTime": "07:35",
+    "actionedAt": "2026-11-24T12:13:45.535Z",
+    "actionedBy": "Venkata Cherukuri"
+   },
+   {
+    "taskKey": "o16",
+    "status": "done",
+    "remark": "",
+    "text": "Check reagent levels on board each analyzer",
+    "section": "Reagents & consumables",
+    "scheduledTime": "07:35",
+    "actionedAt": "2026-11-24T12:13:45.574Z",
+    "actionedBy": "Venkata Cherukuri"
+   },
+   {
+    "taskKey": "o17",
+    "status": "na",
+    "remark": "Equipment not in use today; the standby analyser is running.",
+    "text": "Check that waste containers are in place, labelled and empty",
+    "section": "Facility, safety & housekeeping",
+    "scheduledTime": "07:40",
+    "actionedAt": "2026-11-24T12:14:00.181Z",
+    "actionedBy": "Venkata Cherukuri"
+   },
+   {
+    "taskKey": "o18",
+    "status": "done",
+    "remark": "",
+    "text": "Check that adequate PPE is available",
+    "section": "Facility, safety & housekeeping",
+    "scheduledTime": "07:40",
+    "actionedAt": "2026-11-24T12:13:45.694Z",
+    "actionedBy": "Venkata Cherukuri"
+   },
+   {
+    "taskKey": "o19",
+    "status": "na",
+    "remark": "Equipment not in use today; the standby analyser is running.",
+    "text": "Check that the sample collection area is ready for patients",
+    "section": "LIS & pre-analytical readiness",
+    "scheduledTime": "07:45",
+    "actionedAt": "2026-11-24T12:14:00.219Z",
+    "actionedBy": "Venkata Cherukuri"
+   },
+   {
+    "taskKey": "o20",
+    "status": "na",
+    "remark": "Equipment not in use today; the standby analyser is running.",
+    "text": "Run IQC and confirm the results meet the acceptance criteria",
+    "section": "Internal quality control",
+    "scheduledTime": "07:50",
+    "actionedAt": "2026-11-24T12:14:00.265Z",
+    "actionedBy": "Venkata Cherukuri"
+   },
+   {
+    "taskKey": "o21",
+    "status": "done",
+    "remark": "",
+    "text": "Confirm that the analyzers are ready for patient testing",
+    "section": "Internal quality control",
+    "scheduledTime": "08:10",
+    "actionedAt": "2026-11-24T12:13:45.875Z",
+    "actionedBy": "Venkata Cherukuri"
+   },
+   {
+    "taskKey": "o22",
+    "status": "done",
+    "remark": "",
+    "text": "Check that the LIS/HIS, analyzer interfaces, printers and scanners are working",
+    "section": "LIS & pre-analytical readiness",
+    "scheduledTime": "08:15",
+    "actionedAt": "2026-11-24T12:13:45.942Z",
+    "actionedBy": "Venkata Cherukuri"
+   },
+   {
+    "taskKey": "o23",
+    "status": "done",
+    "remark": "",
+    "text": "Review QTQMS for open NCs, CAPAs, document reviews and training due",
+    "section": "Information systems & stock",
+    "scheduledTime": "08:20",
+    "actionedAt": "2026-11-24T12:13:46.001Z",
+    "actionedBy": "Venkata Cherukuri"
+   },
+   {
+    "taskKey": "o24",
+    "status": "done",
+    "remark": "",
+    "text": "Check staff attendance and authorized signatory availability, and conduct the team briefing",
+    "section": "Manpower & declaration",
+    "scheduledTime": "08:25",
+    "actionedAt": "2026-11-24T12:13:46.050Z",
+    "actionedBy": "Venkata Cherukuri"
+   },
+   {
+    "taskKey": "o25",
+    "status": "done",
+    "remark": "",
+    "text": "Check that the washrooms are clean and usable",
+    "section": "Facility, safety & housekeeping",
+    "scheduledTime": "08:25",
+    "actionedAt": "2026-11-24T12:13:46.112Z",
+    "actionedBy": "Venkata Cherukuri"
+   },
+   {
+    "taskKey": "o26",
+    "status": "done",
+    "remark": "",
+    "text": "Check that the eyewash station and first-aid kit are complete and ready for use",
+    "section": "Facility, safety & housekeeping",
+    "scheduledTime": "08:30",
+    "actionedAt": "2026-11-24T12:13:46.170Z",
+    "actionedBy": "Venkata Cherukuri"
+   },
+   {
+    "taskKey": "o27",
+    "status": "done",
+    "remark": "",
+    "text": "Confirm the laboratory is ready to start testing patient samples for the day",
+    "section": "Manpower & declaration",
+    "scheduledTime": "08:30",
+    "actionedAt": "2026-11-24T12:13:46.212Z",
+    "actionedBy": "Venkata Cherukuri"
+   }
+  ],
+  "photos": [
+   {
+    "id": "6b057f791eed9b66a740efc8",
+    "taskKey": "o05",
+    "name": "fridge.jpg",
+    "mimeType": "image/jpeg",
+    "sizeBytes": 154,
+    "uploadedAt": "2026-11-24T12:13:45.009Z",
+    "uploadedBy": "Venkata Cherukuri"
+   }
+  ],
+  "signedAt": "2026-11-24T12:14:00.343Z",
+  "signedBy": {
+   "name": "Venkata Cherukuri",
+   "role": "Quality Manager"
+  },
+  "declaration": "I confirm that all activities above have been completed and recorded, and that the laboratory is fit to accept and examine patient samples.",
+  "hasSelfie": true,
+  "late": true,
+  "reopenLog": []
+ },
+ "progress": {
+  "total": 26,
+  "done": 26,
+  "completed": 19,
+  "deviations": 1,
+  "na": 6,
+  "pending": 0,
+  "missing": [],
+  "complete": true
+ }
+}

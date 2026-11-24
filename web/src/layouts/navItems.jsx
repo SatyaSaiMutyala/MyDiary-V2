@@ -3,6 +3,7 @@ import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined';
 import GavelOutlinedIcon from '@mui/icons-material/GavelOutlined';
 import ListAltOutlinedIcon from '@mui/icons-material/ListAltOutlined';
 import EditNoteOutlinedIcon from '@mui/icons-material/EditNoteOutlined';
+import BiotechOutlinedIcon from '@mui/icons-material/BiotechOutlined';
 import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined';
 import AlarmOutlinedIcon from '@mui/icons-material/AlarmOutlined';
 import ForumOutlinedIcon from '@mui/icons-material/ForumOutlined';
@@ -16,7 +17,7 @@ import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 /** Menu colours per item (AIMS gives every menu its own icon colour). */
 export const C = {
   dashboard: '#7FB3FF', meetings: '#FF8C1A', decisions: '#FFC400', templates: '#5FD3F3',
-  activity: '#12C48B', diary: '#976BFF', logs: '#FF7FB6', todo: '#33CC55', visits: '#F5A300',
+  activity: '#12C48B', labReadiness: '#00A9A5', diary: '#976BFF', logs: '#FF7FB6', todo: '#33CC55', visits: '#F5A300',
   reminders: '#FF6B6B',
   projects: '#2288EE', departments: '#0EA5A5', integrations: '#93A8B8', settings: '#93A8B8',
 };
@@ -31,6 +32,7 @@ export const NAV_GROUPS = [
   ]],
   ['Personal', [
     { to: '/my-activity', icon: <EditNoteOutlinedIcon />, label: 'My Activity', color: C.activity, module: 'activity' },
+    { to: '/lab-readiness', icon: <BiotechOutlinedIcon />, label: 'Lab Readiness', color: C.labReadiness, module: 'labReadiness' },
     { to: '/diary', icon: <CalendarMonthOutlinedIcon />, label: 'My Diary', color: C.diary, module: 'diary' },
     { to: '/logs', icon: <ForumOutlinedIcon />, label: 'My Discussion Logs', color: C.logs, module: 'logs' },
     { to: '/reminders', icon: <AlarmOutlinedIcon />, label: 'Reminders', color: C.reminders, module: 'reminders' },
@@ -49,7 +51,7 @@ export const NAV_GROUPS = [
 export const CRUMBS = {
   '/': ['Home', 'Dashboard'], '/meetings/new': ['My Meetings', 'Schedule New'], '/meetings': ['Meetings', 'My Meetings'],
   '/decisions': ['Meetings', 'Decisions Registry'], '/templates': ['Meetings', 'Templates'],
-  '/my-activity': ['Personal', 'My Activity'], '/diary': ['Personal', 'My Diary'], '/logs': ['Personal', 'My Discussion Logs'], '/reminders': ['Personal', 'Reminders'],
+  '/my-activity': ['Personal', 'My Activity'], '/lab-readiness': ['Personal', 'Lab Readiness'], '/diary': ['Personal', 'My Diary'], '/logs': ['Personal', 'My Discussion Logs'], '/reminders': ['Personal', 'Reminders'],
   '/todo': ['Personal', 'My To-Do'], '/visits': ['Personal', 'My Visit Observations'],
   '/projects': ['Project Management', 'My Projects'], '/departments': ['Administration', 'Department Master'],
   '/integrations': ['Settings', 'Integrations'], '/settings': ['Settings', 'Settings'],

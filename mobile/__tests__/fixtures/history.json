@@ -1,0 +1,19 @@
+{
+ "records": [
+  {
+   "id": "6b057f781eed9b66a740ee83",
+   "date": "2026-11-24",
+   "phase": "opening",
+   "unitKey": "nrl-biochemistry",
+   "unitName": "Clinical Biochemistry",
+   "done": 26,
+   "total": 26,
+   "deviations": 1,
+   "photos": 1,
+   "signedAt": "2026-11-24T12:14:00.343Z",
+   "signedBy": "Venkata Cherukuri",
+   "late": true,
+   "reopened": 0
+  }
+ ]
+}

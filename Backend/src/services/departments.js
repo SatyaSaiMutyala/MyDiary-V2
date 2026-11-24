@@ -7,6 +7,7 @@ import mongoose from 'mongoose';
 import { ActivityTick, toActivityLog } from '../models/ActivityTick.js';
 import { CADENCE_AGENDA_FIELD, Department, TASK_LIST_FIELD, serializeDepartment } from '../models/Department.js';
 import { buildInitialDepartments, EMPLOYEE_ASSIGNMENTS } from '../data/departments.js';
+import { LAB_ACTIVITIES, LAB_READINESS_DEPARTMENT_CODE, LAB_UNITS } from '../data/labReadiness.js';
 import { badRequest, conflict, notFound } from '../utils/errors.js';
 import { runList } from '../utils/paginate.js';
 import { escapeRegex } from '../utils/listQuery.js';
@@ -523,5 +524,38 @@ export async function seedDepartments(opts = {}) {
     await doc.save();
     people += list.length;
   }
-  return { created, kept, people };
+
+  const lab = await seedLabReadiness(opts);
+  return { created, kept, people, lab };
+}
+
+/**
+ * Switches Lab Readiness on for the clinical laboratory and fills in its master checklist — the 14 units
+ * and 52 activities of TDPL-LAB-SOP-014 (data/labReadiness.js).
+ *
+ * Safe to run again: a department that already carries a checklist is left exactly as it is, because the
+ * units and activities are editable in Department Master and a re-run must never undo somebody's edits.
+ * @param {{ quiet?: boolean }} [opts]
+ */
+export async function seedLabReadiness(opts = {}) {
+  const doc = await Department.findOne({ code: LAB_READINESS_DEPARTMENT_CODE });
+  if (!doc) {
+    if (!opts.quiet) console.log(`[seed] lab readiness skipped — no department with code ${LAB_READINESS_DEPARTMENT_CODE}`);
+    return { department: null, units: 0, activities: 0, kept: false };
+  }
+  const lr = doc.labReadiness ?? {};
+  if ((lr.units?.length ?? 0) > 0 || (lr.activities?.length ?? 0) > 0) {
+    if (!opts.quiet) console.log(`[seed] lab readiness kept    ${doc.name} · ${lr.units?.length ?? 0} units · ${lr.activities?.length ?? 0} activities`);
+    return { department: doc.name, units: lr.units?.length ?? 0, activities: lr.activities?.length ?? 0, kept: true };
+  }
+  doc.labReadiness = {
+    enabled: true,
+    openingCutoff: '09:30',
+    closingCutoff: '22:30',
+    units: LAB_UNITS.map((u) => ({ ...u })),
+    activities: LAB_ACTIVITIES.map((a) => ({ ...a })),
+  };
+  await doc.save();
+  if (!opts.quiet) console.log(`[seed] lab readiness created ${doc.name} · ${LAB_UNITS.length} units · ${LAB_ACTIVITIES.length} activities`);
+  return { department: doc.name, units: LAB_UNITS.length, activities: LAB_ACTIVITIES.length, kept: false };
 }

@@ -5,8 +5,22 @@ import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 // the person refusing it.
 
 // Same budgets as the website: evidence 1280 px, selfie 800 px, JPEG quality 80.
-const EVIDENCE = { maxWidth: 1280, maxHeight: 1280, quality: 0.8 };
-const SELFIE = { maxWidth: 800, maxHeight: 800, quality: 0.8 };
+//
+// `includeBase64` is what lets a photograph be uploaded at all: React Native cannot put a file in
+// a request body except through a form, and the API takes the image as base64 in JSON. At these
+// sizes a photograph is a few hundred KB, well inside the 8 MB the API allows.
+const EVIDENCE = {
+  maxWidth: 1280,
+  maxHeight: 1280,
+  quality: 0.8,
+  includeBase64: true,
+};
+const SELFIE = {
+  maxWidth: 800,
+  maxHeight: 800,
+  quality: 0.8,
+  includeBase64: true,
+};
 
 const messages = {
   camera_unavailable: 'The camera is not available on this device.',
@@ -15,20 +29,29 @@ const messages = {
   others: 'The photograph could not be added. Please try again.',
 };
 
+// Each photograph comes back as { uri, base64, mimeType, name }: the uri to show it on screen,
+// the base64 to send it to the API.
 function read(response) {
   if (response.didCancel) {
-    return { uris: [] };
+    return { photos: [], uris: [] };
   }
   if (response.errorCode) {
     return {
+      photos: [],
       uris: [],
       error: messages[response.errorCode] ?? messages.others,
       noCamera: response.errorCode === 'camera_unavailable',
     };
   }
-  return {
-    uris: (response.assets ?? []).map(a => a.uri).filter(u => !!u),
-  };
+  const photos = (response.assets ?? [])
+    .filter(a => !!a.uri)
+    .map((a, i) => ({
+      uri: a.uri,
+      base64: a.base64 ?? '',
+      mimeType: a.type ?? 'image/jpeg',
+      name: a.fileName || `photo-${i + 1}.jpg`,
+    }));
+  return { photos, uris: photos.map(p => p.uri) };
 }
 
 // The manifest declares CAMERA, so Android refuses to open the camera until

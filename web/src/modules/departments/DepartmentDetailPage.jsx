@@ -11,12 +11,17 @@ import {
   useRemoveDepartmentMutation, useRemovePositionMutation, useRemoveTaskMutation, useUpdateAgendaPointMutation,
   useUpdateAgendaSectionMutation, useUpdateDepartmentMutation, useUpdatePositionMutation, useUpdateTaskMutation,
 } from '../../store/api/departmentsApi';
+import {
+  useAddLabActivityMutation, useAddLabUnitMutation, usePutLabConfigMutation, useRemoveLabActivityMutation,
+  useRemoveLabUnitMutation, useRestoreLabChecklistMutation, useUpdateLabActivityMutation, useUpdateLabUnitMutation,
+} from '../../store/api/labReadinessApi';
 import { errorCode } from '../../store/api/baseApi';
 import { ApiError, Fetching, useToast } from '../settings/components/listUi';
 import { makeDebouncer } from './utils';
 import DeptSection, { SectionNote, ColHeader, EmptyLine } from './components/DeptSection';
 import { TaskRow, WeeklyRow, MonthlyRow, PositionRow, DAILY_HEADER_COLS, WM_COLS } from './components/TaskRows';
 import ReviewCadenceSection from './components/ReviewCadenceSection';
+import LabReadinessSection from './components/LabReadinessSection';
 import { useDialog } from '../../components/Dialogs';
 import DepartmentModal from './modals/DepartmentModal';
 
@@ -67,6 +72,14 @@ export default function DepartmentDetailPage() {
   const [addPointCall] = useAddAgendaPointMutation();
   const [updatePointCall] = useUpdateAgendaPointMutation();
   const [removePointCall] = useRemoveAgendaPointMutation();
+  const [putLabConfigCall] = usePutLabConfigMutation();
+  const [restoreLabCall] = useRestoreLabChecklistMutation();
+  const [addLabUnitCall] = useAddLabUnitMutation();
+  const [updateLabUnitCall] = useUpdateLabUnitMutation();
+  const [removeLabUnitCall] = useRemoveLabUnitMutation();
+  const [addLabActivityCall] = useAddLabActivityMutation();
+  const [updateLabActivityCall] = useUpdateLabActivityMutation();
+  const [removeLabActivityCall] = useRemoveLabActivityMutation();
 
   useCrumbs([{ label: 'Admin', to: '/' }, { label: 'Department Master', to: '/departments' }, { label: d ? d.code : '' }]);
 
@@ -216,6 +229,79 @@ export default function DepartmentDetailPage() {
     addTaskCall, updateTaskCall, removeTaskCall, putCadenceCall, addSectionCall, updateSectionCall, removeSectionCall,
     addPointCall, updatePointCall, removePointCall]);
 
+  /**
+   * Lab Readiness — the clinical department's daily board, configured here.
+   *
+   * The two deletes answer with a message rather than a bare ok: a unit or activity that already
+   * appears on a completed record is switched off instead of removed, and that message is what says
+   * so, in the API's own words.
+   */
+  const lab = useMemo(() => {
+    const run = async (promise) => { try { return await promise.unwrap(); } catch (err) { show(err); return null; } };
+    const later = (key, promise) => debounce(key, () => { void run(promise()); });
+    const lr = () => d?.labReadiness ?? { units: [], activities: [] };
+    const headings = (phase) => Array.from(new Set(lr().activities.filter((a) => a.phase === phase).map((a) => a.section).filter(Boolean)));
+
+    return {
+      setEnabled(on) {
+        void run(putLabConfigCall({ id, enabled: on }));
+      },
+      setCutoff(phase, value) {
+        if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(value || '')) return; // a half-picked time is not a change
+        later('lab:cutoff:' + phase, () => putLabConfigCall({ id, [phase === 'opening' ? 'openingCutoff' : 'closingCutoff']: value }));
+      },
+      async restore() {
+        if (!await dlg.confirm('Put back anything missing from the standard sheet (TDPL-LAB-SOP-014)?\n\nNothing already here is changed — reworded activities keep their wording, and deleted ones come back.')) return;
+        const r = await run(restoreLabCall(id));
+        if (r?.message) show(r.message);
+      },
+      async addUnit() {
+        const name = await dlg.prompt('Unit name (e.g. "Clinical Biochemistry" or "Collection Centre — KPHB"):');
+        if (name === null || !name.trim()) return;
+        void run(addLabUnitCall({ id, name: name.trim() }));
+      },
+      updateUnit(unitId, field, value) {
+        if (field === 'name') later(`lab:unit:${unitId}:name`, () => updateLabUnitCall({ id, unitId, name: value }));
+        else void run(updateLabUnitCall({ id, unitId, [field]: value }));
+      },
+      async removeUnit(unit) {
+        if (!await dlg.confirm(`Remove "${unit.name}" from the board?\n\nIf it already has completed records it will be switched off instead, and those records stay.`)) return;
+        const r = await run(removeLabUnitCall({ id, unitId: unit.id }));
+        if (r?.message) show(r.message);
+      },
+      async addActivity(phase) {
+        const text = await dlg.prompt(`What has to be done in the ${phase} round?`);
+        if (text === null || !text.trim()) return;
+        const existing = headings(phase);
+        const section = await dlg.prompt(
+          'Which section does it belong under?' + (existing.length ? '\n\nSections already in this round:\n· ' + existing.join('\n· ') : ''),
+          existing[existing.length - 1] || '',
+        );
+        if (section === null) return;
+        const scheduledTime = await dlg.prompt('When in the round? (HH:MM, or leave blank)', '');
+        if (scheduledTime === null) return;
+        const photo = await dlg.confirm('Does this activity need a photograph before the round can be signed off?');
+        void run(addLabActivityCall({
+          id, phase, text: text.trim(), section: section.trim(),
+          scheduledTime: /^([01]\d|2[0-3]):[0-5]\d$/.test(scheduledTime.trim()) ? scheduledTime.trim() : '',
+          photoRequired: photo,
+        }));
+      },
+      updateActivity(activityId, field, value) {
+        const typed = field === 'text' || field === 'section';
+        const body = { id, activityId, [field]: value };
+        if (typed) later(`lab:act:${activityId}:${field}`, () => updateLabActivityCall(body));
+        else void run(updateLabActivityCall(body));
+      },
+      async removeActivity(activity) {
+        if (!await dlg.confirm(`Remove "${activity.text}" from the checklist?\n\nIf it already appears on completed records it will be switched off instead.`)) return;
+        const r = await run(removeLabActivityCall({ id, activityId: activity.id }));
+        if (r?.message) show(r.message);
+      },
+    };
+  }, [d, id, dlg, debounce, show, putLabConfigCall, restoreLabCall, addLabUnitCall, updateLabUnitCall, removeLabUnitCall,
+    addLabActivityCall, updateLabActivityCall, removeLabActivityCall]);
+
   if (isLoading) {
     return <Box sx={{ p: 4, color: tokens.slate, fontFamily: fonts.mono, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Loading department…</Box>;
   }
@@ -326,6 +412,8 @@ export default function DepartmentDetailPage() {
           {monthlySorted.length ? monthlySorted.map(t => <MonthlyRow key={t.id} dept={d} task={t} api={api} />) : <EmptyLine>No monthly tasks yet.</EmptyLine>}
         </Scroller>
       </DeptSection>
+
+      <LabReadinessSection dept={d} lab={lab} />
 
       <ReviewCadenceSection dept={d} tab={RC_AGENDA_TAB} onTab={setRCAgendaTab} api={api} />
 

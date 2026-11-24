@@ -18,6 +18,7 @@ export const MODULE_LABELS = {
   visits: 'Visit Observations',
   projects: 'Projects',
   departments: 'Department Master',
+  'lab-readiness': 'Lab Readiness',
   integrations: 'Integrations',
   settings: 'Settings',
 };

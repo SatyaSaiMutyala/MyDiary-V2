@@ -7,8 +7,13 @@ import { AppText } from './AppText';
 import { IconButton } from './IconButton';
 
 // Full-screen view of one photograph.
+//
+// `photo` is either a picture on this phone ({ uri }) or one the API holds
+// ({ source: { uri, headers } }) — a stored photograph is fetched with the
+// session's own header, so it cannot be read by a bare link.
 export function PhotoViewer({ photo, caption, onClose }) {
   const insets = useSafeAreaInsets();
+  const source = photo?.source ?? (photo?.uri ? { uri: photo.uri } : null);
   return (
     <Modal
       visible={!!photo}
@@ -18,12 +23,8 @@ export function PhotoViewer({ photo, caption, onClose }) {
       onRequestClose={onClose}
     >
       <View style={styles.backdrop}>
-        {photo?.uri ? (
-          <Image
-            source={{ uri: photo.uri }}
-            resizeMode="contain"
-            style={styles.image}
-          />
+        {source ? (
+          <Image source={source} resizeMode="contain" style={styles.image} />
         ) : (
           <View style={styles.sample}>
             <ImageIcon

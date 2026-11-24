@@ -13,6 +13,7 @@ export const MODULES = [
   { key: 'decisions', label: 'Decisions Registry', group: 'Meetings' },
   { key: 'templates', label: 'Templates', group: 'Meetings' },
   { key: 'activity', label: 'My Activity', group: 'Personal' },
+  { key: 'labReadiness', label: 'Lab Readiness', group: 'Personal' },
   { key: 'diary', label: 'My Diary', group: 'Personal' },
   { key: 'logs', label: 'My Discussion Logs', group: 'Personal' },
   { key: 'reminders', label: 'Reminders', group: 'Personal' },

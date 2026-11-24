@@ -10,6 +10,7 @@ import { auditRouter } from './routes/audit.js';
 import { decisionsRouter } from './routes/decisions.js';
 import { devicesRouter } from './routes/devices.js';
 import { diaryRouter } from './routes/diary.js';
+import { labReadinessRouter } from './routes/labReadiness.js';
 import { logsRouter } from './routes/logs.js';
 import { projectsRouter } from './routes/projects.js';
 import { remindersRouter } from './routes/reminders.js';
@@ -39,7 +40,12 @@ export function createApp() {
     }),
   );
   if (!config.isTest) app.use(morgan(config.isProd ? 'combined' : 'dev'));
-  app.use(express.json({ limit: '1mb' }));
+  // Every JSON body is capped at 1 MB — except the two routes a photograph can arrive on, which
+  // carry their own parsers with an 8 MB ceiling (routes/labReadiness.js). The cap is applied by
+  // whichever parser runs first, so those paths have to skip this one.
+  const json = express.json({ limit: '1mb' });
+  const PHOTO_PATHS = /^\/api\/lab-readiness\/[^/]+\/[^/]+\/[^/]+\/(items\/[^/]+\/photos|signoff)$/;
+  app.use((req, res, next) => (PHOTO_PATHS.test(req.path) ? next() : json(req, res, next)));
 
   // Activity Log for every successful mutating request (see middleware/audit.js).
   app.use('/api', auditRequests);
@@ -57,6 +63,7 @@ export function createApp() {
   app.use('/api/reminders', remindersRouter);
   app.use('/api/devices', devicesRouter);
   app.use('/api/departments', departmentsRouter);
+  app.use('/api/lab-readiness', labReadinessRouter);
   app.use('/api/templates', templatesRouter);
   app.use('/api/integrations', integrationsRouter);
   app.use('/api/visits', visitsRouter);

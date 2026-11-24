@@ -48,13 +48,10 @@ export function ReopenLog({ log }) {
       {log.map((r, i) => (
         <View key={i} style={styles.entry}>
           <AppText variant="metaStrong" color={colors.inkSoft}>
-            {r.by ?? 'Unknown'} · {when(r.ts)}
+            {r.by || 'Unknown'} · {when(r.at)}
           </AppText>
           <AppText variant="meta" color={colors.inkSoft}>
             {r.reason}
-          </AppText>
-          <AppText variant="meta" color={colors.inkMuted}>
-            Was signed by {r.signedBy ?? 'unknown'} at {when(r.signedAt)}
           </AppText>
         </View>
       ))}

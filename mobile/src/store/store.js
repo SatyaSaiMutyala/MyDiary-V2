@@ -4,11 +4,13 @@ import { setupListeners } from '@reduxjs/toolkit/query';
 import { useDispatch, useSelector } from 'react-redux';
 import { baseApi } from './api/baseApi';
 import { saveSession } from './persist';
+import labReducer from './slices/labSlice';
 import sessionReducer from './slices/sessionSlice';
 
 export const store = configureStore({
   reducer: {
     session: sessionReducer,
+    lab: labReducer,
     [baseApi.reducerPath]: baseApi.reducer,
   },
   middleware: getDefault => getDefault().concat(baseApi.middleware),
