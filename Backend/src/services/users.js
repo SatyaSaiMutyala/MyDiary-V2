@@ -54,6 +54,7 @@ export async function createUser(input) {
       role: input.role,
       title: input.title ?? '',
       department: input.department ?? '',
+      position: input.position ?? '',
       status: input.status ?? 'active',
       modules: modulesFor(input.modules, input.role),
     });
@@ -70,7 +71,7 @@ export async function createUser(input) {
  *   modules: string[] }>} patch
  */
 export async function updateUser(user, patch) {
-  const before = { name: user.name, email: user.email, title: user.title, department: user.department, role: user.role, status: user.status, modules: [...user.modules] };
+  const before = { name: user.name, email: user.email, title: user.title, department: user.department, position: user.position, role: user.role, status: user.status, modules: [...user.modules] };
   if (patch.name !== undefined) user.name = patch.name;
   if (patch.email !== undefined) {
     const email = patch.email.toLowerCase();
@@ -79,6 +80,7 @@ export async function updateUser(user, patch) {
   }
   if (patch.title !== undefined) user.title = patch.title;
   if (patch.department !== undefined) user.department = patch.department;
+  if (patch.position !== undefined) user.position = patch.position;
   if (patch.status !== undefined) user.status = patch.status;
   const roleChanged = patch.role !== undefined && patch.role !== user.role;
   if (patch.role !== undefined) user.role = patch.role;

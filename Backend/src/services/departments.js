@@ -11,6 +11,7 @@ import { badRequest, conflict, notFound } from '../utils/errors.js';
 import { runList } from '../utils/paginate.js';
 import { escapeRegex } from '../utils/listQuery.js';
 import { cleanName, nameClause } from './people.js';
+import { User } from '../models/User.js';
 
 // ---------------------------------------------------------------- lookups
 
@@ -365,13 +366,35 @@ export async function putAssignments(d, list) {
  * `{ 'Dr. Anusha Singh': { departmentId, positionId, role } }` (web: EMPLOYEE_ASSIGNMENTS).
  */
 export async function assignmentMap() {
-  const docs = await Department.find({}, { assignments: 1 }).sort({ order: 1 });
+  const docs = await Department.find({}, { name: 1, positions: 1, assignments: 1 }).sort({ order: 1 });
   /** @type {Record<string, { departmentId: string, positionId: string | null, role: string }>} */
   const map = {};
+
+  // 1. The list each department keeps of its people. This covers names from the original roster that
+  //    have no login of their own.
   for (const d of docs) {
     for (const a of d.assignments ?? []) {
       map[a.name] = { departmentId: d._id.toString(), positionId: a.positionId ? a.positionId.toString() : null, role: a.role ?? 'member' };
     }
+  }
+
+  // 2. Real accounts win. Whoever has a department chosen on their user record belongs to it — that
+  //    single choice in Settings is what gives them their shift checklist in My Activity, so there is
+  //    no second place to keep in step. A department that no longer exists changes nothing, and the
+  //    roster entry (if any) still stands.
+  const byName = new Map(docs.map((d) => [cleanName(d.name).toLowerCase(), d]));
+  const users = await User.find({ status: 'active', department: { $nin: ['', null] } }, { name: 1, department: 1, position: 1, role: 1 });
+  for (const u of users) {
+    const d = byName.get(cleanName(u.department).toLowerCase());
+    if (!d) continue;
+    const wanted = cleanName(u.position ?? '').toLowerCase();
+    const pos = wanted ? (d.positions ?? []).find((p) => cleanName(p.name).toLowerCase() === wanted) : null;
+    map[u.name] = {
+      departmentId: d._id.toString(),
+      positionId: pos ? pos._id.toString() : null,
+      // No position chosen and they run things: show them everything their department does.
+      role: !pos && (u.role === 'admin' || u.role === 'manager') ? 'head' : 'member',
+    };
   }
   return map;
 }

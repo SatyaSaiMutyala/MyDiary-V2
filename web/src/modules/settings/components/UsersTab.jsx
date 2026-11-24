@@ -9,6 +9,7 @@ import { tokens, fonts } from '../../../theme/tokens';
 import { MODULES, ROLES, ROLE_LABEL } from '../../../data/users';
 import { useDebounced } from '../../../utils/useDebounced';
 import { useGetUserQuery, useListUsersQuery, useRemoveUserMutation, useResetPasswordMutation, useUpdateUserMutation, useUserModulesQuery } from '../../../store/api/usersApi';
+import { useListDepartmentsQuery } from '../../../store/api/departmentsApi';
 import UserDialog from './UserDialog';
 import { ApiError, Fetching, PAGE_SIZE, Pager, SortCell, useToast } from './listUi';
 import { useDialog } from '../../../components/Dialogs';
@@ -43,9 +44,20 @@ export default function UsersTab() {
   const { data: admins } = useListUsersQuery({ role: 'admin', limit: 1 });
   const { data: inactive } = useListUsersQuery({ status: 'inactive', limit: 1 });
   const { data: deptPage } = useListUsersQuery({ limit: 200, fields: 'department', sort: 'department' });
+  // The real Department Master list — so a new person is filed under a department that exists, which is
+  // what My Activity reads to decide whose shift checklist they get.
+  const { data: deptMaster } = useListDepartmentsQuery({ limit: 200, sort: 'order', fields: 'name,positions' });
   const { data: registry } = useUserModulesQuery();
   const modules = registry?.modules?.length ? registry.modules : MODULES;
-  const depts = useMemo(() => [...new Set((deptPage?.items || []).map(u => u.department).filter(Boolean))].sort(), [deptPage]);
+  /** The real departments, each with its positions — the dialog needs both. */
+  const deptRecords = useMemo(() => deptMaster?.items || [], [deptMaster]);
+  /** Department Master first, then any older free-text department still sitting on a user record. */
+  const depts = useMemo(() => {
+    const master = (deptMaster?.items || []).map(d => d.name);
+    const inUse = (deptPage?.items || []).map(u => u.department).filter(Boolean);
+    const extra = [...new Set(inUse.filter(n => !master.includes(n)))].sort();
+    return [...master, ...extra];
+  }, [deptMaster, deptPage]);
 
   // `/settings?user=<id>` (from the ⌘K server search) opens that person's editor.
   const linkedId = params.get('user');
@@ -168,7 +180,7 @@ export default function UsersTab() {
       )}
       <Typography sx={{ fontSize: 12, color: tokens.faint, mt: 1.5 }}>Permissions apply immediately: a user without a module does not see it in the menu and cannot open its pages. Use the “View as” switch in the top bar to check what someone sees.</Typography>
 
-      {editing && <UserDialog user={editing === 'new' ? null : editing} departments={depts} onClose={() => setEditing(null)} onSaved={(msg) => show(msg)} />}
+      {editing && <UserDialog user={editing === 'new' ? null : editing} departments={depts} deptRecords={deptRecords} onClose={() => setEditing(null)} onSaved={(msg) => show(msg)} />}
       {toast}
     </>
   );

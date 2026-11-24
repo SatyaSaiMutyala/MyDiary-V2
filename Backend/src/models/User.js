@@ -14,6 +14,12 @@ const userSchema = new Schema(
     title: { type: String, default: '' },
     /** Department / group, e.g. "Operations". */
     department: { type: String, default: '' },
+    /**
+     * The person's position inside that department, by name ("Lab Technician"), matching one of the
+     * department's positions. Blank means "no particular position", which in My Activity shows only
+     * the tasks the whole department shares.
+     */
+    position: { type: String, default: '' },
     status: { type: String, enum: USER_STATUSES, required: true, default: 'active' },
     /** Modules this person can open (services/modules.js). Ignored for admins (always all). */
     modules: { type: [String], default: [] },
@@ -34,6 +40,7 @@ export const User = model('User', userSchema);
  * @property {string} role
  * @property {string} title
  * @property {string} department
+ * @property {string} position
  * @property {string[]} modules
  * @property {UserStatus} status
  * @property {string} createdAt
@@ -49,6 +56,7 @@ export function serializeUser(u) {
     role: u.role,
     title: u.title ?? '',
     department: u.department ?? '',
+    position: u.position ?? '',
     modules: effectiveModules(u),
     status: u.status ?? 'active',
     createdAt: (u.createdAt ?? new Date()).toISOString(),

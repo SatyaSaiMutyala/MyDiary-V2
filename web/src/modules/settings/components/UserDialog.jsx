@@ -8,10 +8,10 @@ import { tdplEmail } from '../../../utils/people';
 import { useCreateUserMutation, useUpdateUserMutation, useUserModulesQuery } from '../../../store/api/usersApi';
 import { ApiError } from './listUi';
 
-const EDITABLE = ['name', 'email', 'title', 'department', 'role', 'status', 'modules'];
+const EDITABLE = ['name', 'email', 'title', 'department', 'position', 'role', 'status', 'modules'];
 
 /** Add / edit a user through POST / PATCH /api/users; modules checklist from GET /api/users/modules. */
-export default function UserDialog({ user, departments = [], onClose, onSaved }) {
+export default function UserDialog({ user, departments = [], deptRecords = [], onClose, onSaved }) {
   const { data: registry, error: registryError } = useUserModulesQuery();
   const modules = registry?.modules?.length ? registry.modules : MODULES;
   const roles = registry?.roles?.length ? registry.roles : ROLES.map(r => r.key);
@@ -19,8 +19,12 @@ export default function UserDialog({ user, departments = [], onClose, onSaved })
   const [update, { isLoading: updating }] = useUpdateUserMutation();
   const [error, setError] = useState(null);
   const [d, setD] = useState(() => user
-    ? { name: user.name, email: user.email, title: user.title || '', department: user.department || '', role: user.role, status: user.status, modules: [...(user.modules || [])] }
-    : { name: '', email: '', title: '', department: '', role: 'employee', status: 'active', modules: defaultModulesFor('employee', modules), password: '' });
+    ? { name: user.name, email: user.email, title: user.title || '', department: user.department || '', position: user.position || '', role: user.role, status: user.status, modules: [...(user.modules || [])] }
+    : { name: '', email: '', title: '', department: '', position: '', role: 'employee', status: 'active', modules: defaultModulesFor('employee', modules), password: '' });
+  // The positions of the department currently picked — the one the person holds decides which of
+  // that department's shift tasks land on their My Activity.
+  const positions = (deptRecords.find(x => x.name === d.department)?.positions) || [];
+
   const set = (k, v) => setD(x => ({ ...x, [k]: v }));
   const toggle = (k) => setD(x => ({ ...x, modules: x.modules.includes(k) ? x.modules.filter(m => m !== k) : [...x.modules, k] }));
   const setRole = (r) => setD(x => ({ ...x, role: r, modules: defaultModulesFor(r, modules) }));
@@ -34,7 +38,7 @@ export default function UserDialog({ user, departments = [], onClose, onSaved })
     const email = d.email.trim() || (d.name.trim() ? tdplEmail(d.name.trim()) : '');
     try {
       if (!user) {
-        const body = { name: d.name.trim(), email, role: d.role, title: d.title.trim(), department: d.department.trim(), status: d.status };
+        const body = { name: d.name.trim(), email, role: d.role, title: d.title.trim(), department: d.department.trim(), position: d.position.trim(), status: d.status };
         if (d.role !== 'admin') body.modules = d.modules;
         if (d.password) body.password = d.password;
         const u = await create(body).unwrap();
@@ -64,7 +68,26 @@ export default function UserDialog({ user, departments = [], onClose, onSaved })
         <Grid size={{ xs: 12, sm: 6 }}><Field label="Full name" req><TextInput value={d.name} onChange={e => set('name', e.target.value)} placeholder="e.g. Dr. Anusha Singh" autoFocus={!user} /></Field></Grid>
         <Grid size={{ xs: 12, sm: 6 }}><Field label="Email" req hint="used to sign in"><TextInput type="email" value={d.email} onChange={e => set('email', e.target.value)} placeholder={d.name ? tdplEmail(d.name) : 'name@trustlab.co.in'} /></Field></Grid>
         <Grid size={{ xs: 12, sm: 6 }}><Field label="Title / position"><TextInput value={d.title} onChange={e => set('title', e.target.value)} placeholder="e.g. Lab Head" /></Field></Grid>
-        <Grid size={{ xs: 12, sm: 6 }}><Field label="Department"><TextInput value={d.department} onChange={e => set('department', e.target.value)} placeholder="e.g. Operations" slotProps={{ input: { list: 'md-dept-list' } }} /><datalist id="md-dept-list">{departments.map(x => <option key={x} value={x} />)}</datalist></Field></Grid>
+        <Grid size={{ xs: 12, sm: 6 }}>
+          {/* Straight from Department Master — the department decides whose daily shift checklist this
+              person gets in My Activity, so it has to be one that actually exists. */}
+          <Field label="Department" hint="from Department Master">
+            <SelectInput value={d.department} onChange={e => set('department', e.target.value)}>
+              <option value="">— No department —</option>
+              {departments.map(x => <option key={x} value={x}>{x}</option>)}
+              {d.department && !departments.includes(d.department) && <option value={d.department}>{d.department} (not in Department Master)</option>}
+            </SelectInput>
+          </Field>
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <Field label="Position in department" hint={d.department ? 'decides which shift tasks they get' : 'pick a department first'}>
+            <SelectInput value={d.position} onChange={e => set('position', e.target.value)} disabled={!d.department}>
+              <option value="">{d.role === 'admin' || d.role === 'manager' ? '— All positions (sees every task) —' : '— Shared tasks only —'}</option>
+              {positions.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+              {d.position && !positions.some(p => p.name === d.position) && <option value={d.position}>{d.position} (not a position here)</option>}
+            </SelectInput>
+          </Field>
+        </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
           <Field label="Role"><SelectInput value={d.role} onChange={e => setRole(e.target.value)}>{roles.map(r => <option key={r} value={r}>{ROLE_LABEL[r] || r}</option>)}</SelectInput></Field>
           <Typography sx={{ fontSize: 11.5, color: tokens.faint, mt: 0.5 }}>{ROLES.find(r => r.key === d.role)?.desc}. Changing the role resets the module grid to that role’s defaults.</Typography>
