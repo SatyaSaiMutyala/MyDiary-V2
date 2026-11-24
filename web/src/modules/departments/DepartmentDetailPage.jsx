@@ -18,6 +18,7 @@ import DeptSection, { SectionNote, ColHeader, EmptyLine } from './components/Dep
 import { TaskRow, WeeklyRow, MonthlyRow, PositionRow, DAILY_HEADER_COLS, WM_COLS } from './components/TaskRows';
 import ReviewCadenceSection from './components/ReviewCadenceSection';
 import { useDialog } from '../../components/Dialogs';
+import DepartmentModal from './modals/DepartmentModal';
 
 const DAILY_HEADER = [
   { label: '#', sx: { textAlign: 'center' } }, { label: 'TASK' }, { label: 'TIME' }, { label: 'ASSIGNED TO', sx: { textAlign: 'left', pl: '8px' } }, { label: '' },
@@ -45,6 +46,8 @@ export default function DepartmentDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [RC_AGENDA_TAB, setRCAgendaTab] = useState('weekly');
+  // The name / code / icon / description form, opened from the footer.
+  const [editingMeta, setEditingMeta] = useState(false);
   const { data: d, error, isLoading, isFetching, refetch } = useGetDepartmentQuery(id);
   const { toast, show } = useToast();
   const debounce = useRef(makeDebouncer()).current;
@@ -117,12 +120,10 @@ export default function DepartmentDetailPage() {
       },
 
       // ===== DEPARTMENT CRUD =====
-      async editDepartmentMeta() {
-        if (!d) return;
-        const name = await dlg.prompt('Department name:', d.name); if (name === null) return;
-        const iconIn = await dlg.prompt('Icon (one emoji):', d.icon); if (iconIn === null) return;
-        const description = await dlg.prompt('Short description:', d.description || ''); if (description === null) return;
-        void run(updateDepartment({ id, name: name.trim() || d.name, icon: iconIn.trim() || d.icon, description }));
+      // Name, code, icon and description are edited in one form (modals/DepartmentModal), the same
+      // one the Department Master list uses.
+      editDepartmentMeta() {
+        if (d) setEditingMeta(true);
       },
       async deleteDepartment() {
         if (!d) return;
@@ -332,10 +333,12 @@ export default function DepartmentDetailPage() {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: '14px 18px', bgcolor: tokens.creamWarm, border: `1px solid ${tokens.line}`, borderRadius: '8px', mt: '20px', gap: 1, flexWrap: 'wrap' }}>
         <Btn onClick={() => navigate('/departments')}>← Back to Department Master</Btn>
         <Box sx={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          <Btn onClick={api.editDepartmentMeta}>✎ Edit Name / Icon / Description</Btn>
+          <Btn onClick={api.editDepartmentMeta}>✎ Edit department</Btn>
           <Btn variant="danger" onClick={api.deleteDepartment}>🗑 Delete Department</Btn>
         </Box>
       </Box>
+
+      <DepartmentModal open={editingMeta} department={d} onClose={() => setEditingMeta(false)} />
       {toast}
     </Box>
   );

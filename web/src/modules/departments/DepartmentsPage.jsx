@@ -1,13 +1,15 @@
+import { useState } from 'react';
 import { Box, Typography } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader, Btn, SummaryCard, EmptyState } from '../../components';
 import { tokens, fonts } from '../../theme/tokens';
 import { DEPT_TEMPLATES } from '../../data/departments';
-import { useCreateDepartmentMutation, useListDepartmentsQuery } from '../../store/api/departmentsApi';
+import { useListDepartmentsQuery, useRemoveDepartmentMutation } from '../../store/api/departmentsApi';
 import { ApiError, Fetching, useToast } from '../settings/components/listUi';
-import { buildDepartmentFromTemplate, buildBlankDepartment } from './utils';
 import { useDialog } from '../../components/Dialogs';
+import DepartmentModal from './modals/DepartmentModal';
+import TemplatePickerModal from './modals/TemplatePickerModal';
 
 const statL = { fontFamily: fonts.mono, fontSize: 9, color: tokens.slate, letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700, mt: '3px' };
 const statV = (color = tokens.ink) => ({ fontFamily: fonts.serif, fontSize: 18, fontWeight: 700, color, lineHeight: 1 });
@@ -16,9 +18,15 @@ const statV = (color = tokens.ink) => ({ fontFamily: fonts.serif, fontSize: 18, 
 export default function DepartmentsPage() {
   const navigate = useNavigate();
   const { data, error, isLoading, isFetching, refetch } = useListDepartmentsQuery({ limit: 200, sort: 'order' });
-  const [createDepartment] = useCreateDepartmentMutation();
+  const [removeDepartment] = useRemoveDepartmentMutation();
   const { toast, show } = useToast();
   const dlg = useDialog();
+
+  // `editing` is a department to change, 'new' to add one, or null for closed. `template` is the
+  // kit a new department starts from.
+  const [editing, setEditing] = useState(null);
+  const [template, setTemplate] = useState(null);
+  const [picking, setPicking] = useState(false);
 
   const DEPARTMENTS = data?.items || [];
   const totalPositions = DEPARTMENTS.reduce((s, d) => s + d.positions.length, 0);
@@ -26,17 +34,21 @@ export default function DepartmentsPage() {
   const totalWeekly = DEPARTMENTS.reduce((s, d) => s + (d.weeklyTasks || []).length, 0);
   const totalMonthly = DEPARTMENTS.reduce((s, d) => s + (d.monthlyTasks || []).length, 0);
 
-  const createAndOpen = async (body) => {
-    if (!body) return;
+  const newDepartment = () => { setTemplate(null); setEditing('new'); };
+  const pickTemplate = (t) => { setPicking(false); setTemplate(t); setEditing('new'); };
+
+  /** A new department opens straight away so its positions and tasks can be filled in. */
+  const afterSave = (saved, created) => { if (created && saved?.id) navigate('/departments/' + saved.id); };
+
+  const askDelete = async (d) => {
+    if (!await dlg.confirm(`Delete "${d.name}"? This removes its ${d.positions.length} position${d.positions.length === 1 ? '' : 's'} and every shift task it owns. This cannot be undone.`)) return;
     try {
-      const created = await createDepartment(body).unwrap();
-      navigate('/departments/' + created.id);
+      await removeDepartment(d.id).unwrap();
+      show(`✓ ${d.name} deleted.`);
     } catch (err) {
       show(err);
     }
   };
-  const pickDepartmentTemplate = async () => createAndOpen(await buildDepartmentFromTemplate(DEPT_TEMPLATES, dlg));
-  const openDepartmentEditor = async () => createAndOpen(await buildBlankDepartment(dlg));
 
   return (
     <Box>
@@ -47,8 +59,8 @@ export default function DepartmentsPage() {
         title="Department Master"
         sub="The organisational backbone — every TDPL department, division, and position, with the opening and closing tasks each one owns. Everything the shift-level My Activity module fires every day is configured here."
         actions={<>
-          <Btn size="lg" onClick={pickDepartmentTemplate}>📋 Use Template</Btn>
-          <Btn variant="primary" size="lg" onClick={openDepartmentEditor}>+ New Department</Btn>
+          <Btn size="lg" onClick={() => setPicking(true)}>📋 Use Template</Btn>
+          <Btn variant="primary" size="lg" onClick={newDepartment}>+ New Department</Btn>
         </>}
       />
 
@@ -77,7 +89,8 @@ export default function DepartmentsPage() {
           const monthCt = (d.monthlyTasks || []).length;
           return (
             <Grid key={d.id} size={{ xs: 12, sm: 6, lg: 4 }}>
-              <Box onClick={() => navigate('/departments/' + d.id)} sx={{ bgcolor: tokens.card, border: `1px solid ${tokens.line}`, borderRadius: '10px', p: '16px 18px', cursor: 'pointer', transition: 'all 0.15s', borderTop: `4px solid ${tokens.teal}`, boxShadow: tokens.shadowSm, display: 'flex', flexDirection: 'column', height: '100%', '&:hover': { boxShadow: tokens.shadowLg, transform: 'translateY(-2px)', borderColor: tokens.slateSoft, borderTopColor: tokens.teal } }}>
+              <Box sx={{ bgcolor: tokens.card, border: `1px solid ${tokens.line}`, borderRadius: '10px', p: '16px 18px', cursor: 'pointer', transition: 'all 0.15s', borderTop: `4px solid ${tokens.teal}`, boxShadow: tokens.shadowSm, display: 'flex', flexDirection: 'column', height: '100%', '&:hover': { boxShadow: tokens.shadowLg, transform: 'translateY(-2px)', borderColor: tokens.slateSoft, borderTopColor: tokens.teal } }}>
+                <Box onClick={() => navigate('/departments/' + d.id)} sx={{ cursor: 'pointer' }}>
                 <Box sx={{ fontSize: 28, mb: '8px' }}>{d.icon}</Box>
                 <Typography sx={{ fontFamily: fonts.serif, fontSize: 18, fontWeight: 700, color: tokens.ink, lineHeight: 1.2, mb: '4px' }}>{d.name}</Typography>
                 <Box sx={{ fontFamily: fonts.mono, fontSize: 10, color: tokens.slate, letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700, mb: '10px' }}>{d.code}</Box>
@@ -88,16 +101,31 @@ export default function DepartmentsPage() {
                   <Box sx={{ textAlign: 'center', color: '#7C3AED' }}><Box sx={statV('#7C3AED')}>{weekCt}</Box><Box sx={statL}>Weekly</Box></Box>
                   <Box sx={{ textAlign: 'center', color: '#2563EB' }}><Box sx={statV('#2563EB')}>{monthCt}</Box><Box sx={statL}>Monthly</Box></Box>
                 </Box>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '4px', mt: 'auto' }}>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                   {d.positions.length
                     ? d.positions.map(p => <Box key={p.id} component="span" sx={{ p: '3px 8px', bgcolor: tokens.tealSofter, color: tokens.tealDark, borderRadius: '10px', fontSize: 10, fontWeight: 700, fontFamily: fonts.mono, letterSpacing: '0.04em' }}>{p.name}</Box>)
                     : <Box component="span" sx={{ p: '3px 8px', bgcolor: tokens.cream, color: tokens.slate, border: `1px dashed ${tokens.slateSoft}`, borderRadius: '10px', fontSize: 10, fontWeight: 700, fontFamily: fonts.mono, letterSpacing: '0.04em' }}>All employees do same tasks</Box>}
+                </Box>
+                </Box>
+                {/* Add / edit / delete all live on the card, so the whole master can be managed from one screen. */}
+                <Box sx={{ display: 'flex', gap: '6px', mt: 'auto', pt: '12px', borderTop: `1px dashed ${tokens.line}` }}>
+                  <Btn size="sm" onClick={() => navigate('/departments/' + d.id)} sx={{ flex: 1 }}>Open →</Btn>
+                  <Btn size="sm" onClick={() => { setTemplate(null); setEditing(d); }} title={`Edit ${d.name}`}>✎ Edit</Btn>
+                  <Btn size="sm" variant="danger" onClick={() => askDelete(d)} title={`Delete ${d.name}`}>🗑</Btn>
                 </Box>
               </Box>
             </Grid>
           );
         })}
       </Grid>
+      <TemplatePickerModal open={picking} templates={DEPT_TEMPLATES} onClose={() => setPicking(false)} onPick={pickTemplate} />
+      <DepartmentModal
+        open={Boolean(editing)}
+        department={editing === 'new' ? null : editing}
+        template={editing === 'new' ? template : null}
+        onClose={() => { setEditing(null); setTemplate(null); }}
+        onSaved={afterSave}
+      />
       {toast}
     </Box>
   );
