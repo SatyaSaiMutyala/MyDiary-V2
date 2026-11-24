@@ -3,7 +3,8 @@
 // and a refused request shows the server's own message word for word.
 //
 // The dialogs are MyDiary's own (components/Dialogs), never the browser's — so every one of these is
-// async, and each answer is awaited before the next question is asked.
+// async, and each answer is awaited before the next question is asked. Cancel on ANY question abandons
+// the whole chain: it returns null (a blank answer is ''), so nothing further is asked and nothing is saved.
 import { useAppStore } from '../../store/AppStore';
 import { errorMessage } from '../../store/api/baseApi';
 import { useDialog } from '../../components/Dialogs';
@@ -80,8 +81,9 @@ export default function useProjectActions(project) {
       if (!name) return;
       const due = await dlg.prompt('Due date (YYYY-MM-DD):', new Date(TODAY.getTime() + 30 * 86400000).toISOString().slice(0, 10));
       if (!due) return;
-      const owner = (await dlg.prompt('Owner:', me)) || me;
-      return run(addMilestone, { id: pid, name, dueDate: due, owner });
+      const owner = await dlg.prompt('Owner:', me);
+      if (owner === null) return;
+      return run(addMilestone, { id: pid, name, dueDate: due, owner: owner.trim() || me });
     },
     updateTaskStatus(pid, tid, s) {
       return run(updateTask, { id: pid, taskId: tid, status: s });
@@ -89,9 +91,14 @@ export default function useProjectActions(project) {
     async addProjectTask(pid, presetMilestoneId) {
       const title = await dlg.prompt('Task title:');
       if (!title) return;
-      const assignee = (await dlg.prompt('Assignee:', me)) || me;
+      const assigneeIn = await dlg.prompt('Assignee:', me);
+      if (assigneeIn === null) return;
+      const assignee = assigneeIn.trim() || me;
       const due = await dlg.prompt('Due date (YYYY-MM-DD):', new Date(TODAY.getTime() + 14 * 86400000).toISOString().slice(0, 10));
-      const priority = ((await dlg.prompt('Priority (low / medium / high / critical):', 'medium')) || 'medium').toLowerCase();
+      if (due === null) return;
+      const priorityIn = await dlg.prompt('Priority (low / medium / high / critical):', 'medium');
+      if (priorityIn === null) return;
+      const priority = (priorityIn.trim() || 'medium').toLowerCase();
 
       let milestoneId = presetMilestoneId !== undefined ? presetMilestoneId : null;
       if (presetMilestoneId === undefined && (project?.milestones || []).length > 0) {
@@ -109,9 +116,14 @@ export default function useProjectActions(project) {
     async addProjectRisk(pid) {
       const title = await dlg.prompt('Risk title (what could go wrong?):');
       if (!title) return;
-      const severity = ((await dlg.prompt('Severity (low / medium / high / critical):', 'medium')) || 'medium').toLowerCase();
-      const mitigation = (await dlg.prompt('Mitigation plan:', '')) || '';
-      const owner = (await dlg.prompt('Risk owner:', me)) || me;
+      const severityIn = await dlg.prompt('Severity (low / medium / high / critical):', 'medium');
+      if (severityIn === null) return;
+      const severity = (severityIn.trim() || 'medium').toLowerCase();
+      const mitigation = await dlg.prompt('Mitigation plan:', '');
+      if (mitigation === null) return;
+      const ownerIn = await dlg.prompt('Risk owner:', me);
+      if (ownerIn === null) return;
+      const owner = ownerIn.trim() || me;
 
       let milestoneId = null;
       if ((project?.milestones || []).length > 0) {
@@ -119,7 +131,7 @@ export default function useProjectActions(project) {
         if (picked === undefined) return;
         milestoneId = picked;
       }
-      return run(addRisk, { id: pid, title, severity, mitigation, owner, milestoneId });
+      return run(addRisk, { id: pid, title, severity, mitigation: mitigation.trim(), owner, milestoneId });
     },
     async linkRiskToMilestone(pid, rid) {
       const r = riskOf(rid);
@@ -155,27 +167,35 @@ export default function useProjectActions(project) {
     async addKpi(pid) {
       const name = await dlg.prompt('KPI name (e.g. SOPs reviewed):');
       if (!name || !name.trim()) return;
-      const current = Number.parseFloat((await dlg.prompt('Current value:', '0')) || '0');
-      const target = Number.parseFloat((await dlg.prompt('Target value:', '100')) || '100');
-      const unit = (await dlg.prompt('Unit (%, days, blank for none):', '')) || '';
+      const currentIn = await dlg.prompt('Current value:', '0');
+      if (currentIn === null) return;
+      const targetIn = await dlg.prompt('Target value:', '100');
+      if (targetIn === null) return;
+      const unit = await dlg.prompt('Unit (%, days, blank for none):', '');
+      if (unit === null) return;
+      const current = Number.parseFloat(currentIn.trim() || '0');
+      const target = Number.parseFloat(targetIn.trim() || '100');
       if (Number.isNaN(current) || Number.isNaN(target)) {
         await dlg.alert('Current and target must be numbers.');
         return;
       }
-      return run(addKpi, { id: pid, name: name.trim(), current, target, unit });
+      return run(addKpi, { id: pid, name: name.trim(), current, target, unit: unit.trim() });
     },
     /** Team pane — same idea for the two "+ Invite" links. */
     async inviteMember(pid) {
       const name = await dlg.prompt('TDPL member name:');
       if (!name || !name.trim()) return;
-      const role = (await dlg.prompt('Role on this project (e.g. Project Lead, Analyst):', '')) || '';
+      const role = await dlg.prompt('Role on this project (e.g. Project Lead, Analyst):', '');
+      if (role === null) return;
       return run(addMember, { id: pid, name: name.trim(), role });
     },
     async inviteExternal(pid) {
       const name = await dlg.prompt('External collaborator name:');
       if (!name || !name.trim()) return;
-      const email = (await dlg.prompt('Email:', '')) || '';
-      const role = (await dlg.prompt('Role / organisation:', '')) || '';
+      const email = await dlg.prompt('Email:', '');
+      if (email === null) return;
+      const role = await dlg.prompt('Role / organisation:', '');
+      if (role === null) return;
       return run(addExternal, { id: pid, name: name.trim(), email, role });
     },
     async duplicateProject(p) {

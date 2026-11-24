@@ -107,7 +107,10 @@ export default function ScheduleMeetingPage() {
       let name = v;
       if (emailMatch) { name = emailMatch[1].trim(); email = emailMatch[2].trim(); }
       if (!email) {
-        email = (await dlg.prompt('Email address for ' + name + ' (so minutes reach them):', '') || '').trim();
+        // Cancel abandons adding them; a blank answer is what triggers the question below.
+        const typed = await dlg.prompt('Email address for ' + name + ' (so minutes reach them):', '');
+        if (typed === null) return;
+        email = typed.trim();
         if (!email) {
           if (!await dlg.confirm('Add ' + name + ' without an email? They won\'t receive circulated minutes until an email is added.')) return;
         }

@@ -29,8 +29,10 @@ export async function buildDepartmentFromTemplate(DEPT_TEMPLATES, dlg) {
   const tpl = DEPT_TEMPLATES[idx];
   const name = await dlg.prompt('Department name:', tpl.id === 'dt-blank' ? '' : '');
   if (!name || !name.trim()) return null;
-  const icon = (await dlg.prompt('Icon (one emoji):', tpl.emoji)) || tpl.emoji;
-  const description = (await dlg.prompt('Short description:', tpl.description.split('.')[0])) || '';
+  const icon = await dlg.prompt('Icon (one emoji):', tpl.emoji);
+  if (icon === null) return null;
+  const description = await dlg.prompt('Short description:', tpl.description.split('.')[0]);
+  if (description === null) return null;
 
   const lane = (list) => (list || []).map((t, i) => ({
     order: i + 1,
@@ -41,7 +43,7 @@ export async function buildDepartmentFromTemplate(DEPT_TEMPLATES, dlg) {
 
   return {
     name: name.trim(),
-    icon,
+    icon: icon.trim() || tpl.emoji,
     description,
     positions: (tpl.preset.positions || []).map(p => ({ name: p.name, description: p.description || '' })),
     openingTasks: lane(tpl.preset.openingTasks),
@@ -53,7 +55,9 @@ export async function buildDepartmentFromTemplate(DEPT_TEMPLATES, dlg) {
 export async function buildBlankDepartment(dlg) {
   const name = await dlg.prompt('Department name (e.g. "Clinical Laboratory"):');
   if (!name || !name.trim()) return null;
-  const icon = (await dlg.prompt('Icon (one emoji):', '🏢')) || '🏢';
-  const description = (await dlg.prompt('Short description:', '')) || '';
-  return { name: name.trim(), icon, description };
+  const icon = await dlg.prompt('Icon (one emoji):', '🏢');
+  if (icon === null) return null;
+  const description = await dlg.prompt('Short description:', '');
+  if (description === null) return null;
+  return { name: name.trim(), icon: icon.trim() || '🏢', description };
 }

@@ -22,7 +22,9 @@ export function useRequestActions({ onDone } = {}) {
 
   const accept = async (r) => {
     if (!r) return;
-    const note = (await dlg.prompt('Add a short note for ' + r.from + '? (Optional — e.g. "Can we move to 11:30?")')) || '';
+    // Cancel means "do not accept after all" — it used to accept the request with an empty note.
+    const note = await dlg.prompt('Add a short note for ' + r.from + '? (Optional — e.g. "Can we move to 11:30?")');
+    if (note === null) return;
     try {
       const res = await acceptReq({ id: r.id, note }).unwrap();
       onDone?.({ action: 'accepted', request: res.request, meeting: res.meeting });
@@ -47,7 +49,8 @@ export function useRequestActions({ onDone } = {}) {
     if (!altDate) return;
     const altTime = await dlg.prompt('Propose alternative time (HH:MM):', r.proposedTime);
     if (!altTime) return;
-    const note = (await dlg.prompt('Short note to ' + r.from + ':', 'Can we move to the above time instead?')) || '';
+    const note = await dlg.prompt('Short note to ' + r.from + ':', 'Can we move to the above time instead?');
+    if (note === null) return;
     const origFrom = r.from;
     try {
       await counterReq({ id: r.id, proposedDate: altDate, proposedTime: altTime, note }).unwrap();

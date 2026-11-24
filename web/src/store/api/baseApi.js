@@ -14,6 +14,39 @@ export function writeAuth(session) {
 }
 export const getToken = () => readAuth()?.token || null;
 
+/**
+ * Spectator mode — the person an admin is currently looking at, or '' for themselves.
+ *
+ * Kept in localStorage rather than React state because every request has to carry it, including the
+ * ones fired before any component renders; it also means the view survives a refresh, so an admin
+ * does not silently drop back into their own data.
+ */
+export const VIEW_AS_KEY = 'md.viewAs';
+/** The watched person's record `{ name, role, title, department, modules, status }`, or null. */
+export function readViewAs() {
+  try {
+    const raw = localStorage.getItem(VIEW_AS_KEY);
+    const who = raw ? JSON.parse(raw) : null;
+    return who && who.name ? who : null;
+  } catch { return null; }
+}
+/** Just the name — this is what rides on the header. */
+export const getViewAs = () => readViewAs()?.name || '';
+/** @param {object | null} who the person to watch, or null to go back to yourself */
+export function setViewAs(who) {
+  try {
+    if (who && who.name) localStorage.setItem(VIEW_AS_KEY, JSON.stringify(who));
+    else localStorage.removeItem(VIEW_AS_KEY);
+  } catch { /* storage blocked */ }
+}
+
+/**
+ * Endpoints that always answer as the signed-in admin, never as the person being watched: who I am,
+ * my password, the people list the switcher itself reads, and the activity log. Everything else —
+ * meetings, to-do, diary, logs, visits, projects, notifications, search — follows the viewer.
+ */
+const ALWAYS_ME = /^\/?(auth|users|audit)(\/|$|\?)/;
+
 export const NO_CONNECTION = 'No connection to the server. Check your network and try again.';
 
 /** True when the request never reached our API (network down, proxy target down, non-JSON reply). */
@@ -62,7 +95,15 @@ const rawBaseQuery = fetchBaseQuery({
 });
 
 const baseQuery = async (args, api, extra) => {
-  const result = await rawBaseQuery(args, api, extra);
+  // One header turns the whole app into someone else's: the API swaps the user behind every read.
+  // It rides on writes too — on purpose, so the server refuses them out loud instead of quietly
+  // saving the admin's name onto another person's record.
+  const viewAs = getViewAs();
+  const request = typeof args === 'string' ? { url: args } : { ...args };
+  if (viewAs && !ALWAYS_ME.test(request.url || '')) {
+    request.headers = { ...(request.headers || {}), 'x-view-as': viewAs };
+  }
+  const result = await rawBaseQuery(request, api, extra);
   if (result.error?.status === 401 && !KEEP_SESSION_ON_401.has(api.endpoint) && getToken()) onUnauthorized.handler?.(errorMessage(result.error));
   return result;
 };

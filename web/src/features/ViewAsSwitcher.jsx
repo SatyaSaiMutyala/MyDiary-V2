@@ -26,7 +26,10 @@ function Opt({ name, label, role, current, onClick }) {
 }
 
 /**
- * .view-as-chip + .view-as-dropdown — look at My To-Do through another person's eyes.
+ * .view-as-chip + .view-as-dropdown — look at the whole app through another person's eyes.
+ *
+ * Picking someone switches every screen to their data (the API swaps the user behind each read —
+ * see features/spectate.js), and it is read-only: the server refuses any write made while watching.
  *
  * Admins only: the list comes from GET /api/users, which the API itself restricts to admins, so for
  * anyone else this renders nothing rather than showing a control that would only ever 403. The people
@@ -41,7 +44,7 @@ export default function ViewAsSwitcher() {
 
   // Only ask the server once the panel is actually opened.
   const { data, isLoading, error } = useListUsersQuery(
-    { limit: 200, sort: 'name', status: 'active', fields: 'name,title,department,role' },
+    { limit: 200, sort: 'name', status: 'active', fields: 'name,title,department,role,modules,status' },
     { skip: !open || !isAdmin },
   );
 
@@ -64,12 +67,12 @@ export default function ViewAsSwitcher() {
 
   if (!isAdmin) return null;
 
-  const pick = (name, role) => { setViewer(name, role); setOpen(false); };
+  const pick = (name, role, record) => { setViewer(name, role, record); setOpen(false); };
 
   return (
     <ClickAwayListener onClickAway={() => setOpen(false)}>
       <Box sx={{ position: 'relative' }}>
-        <Box component="button" type="button" id="view-as-chip" onClick={() => setOpen((o) => !o)} title={isMe ? 'View My To-Do as another user' : `Viewing as ${viewer.name} — click to switch`} aria-label="View as"
+        <Box component="button" type="button" id="view-as-chip" onClick={() => setOpen((o) => !o)} title={isMe ? 'See MyDiary as another user' : `Seeing MyDiary as ${viewer.name} — click to switch back`} aria-label="View as"
           sx={{ width: 34, height: 34, borderRadius: '6px', bgcolor: isMe ? tokens.card : tokens.gold, border: `1px solid ${isMe ? tokens.line : tokens.gold}`, color: tokens.ink, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontFamily: 'inherit', position: 'relative', '&:hover': { bgcolor: isMe ? tokens.tealSoft : tokens.gold } }}>
           <VisibilityOutlinedIcon sx={{ fontSize: 19 }} />
         </Box>
@@ -77,9 +80,9 @@ export default function ViewAsSwitcher() {
         {open && (
           <Box onClick={(e) => e.stopPropagation()}
             sx={{ position: 'absolute', top: 'calc(100% + 6px)', right: 0, width: 320, maxWidth: 'calc(100vw - 32px)', maxHeight: 420, bgcolor: tokens.card, border: `1px solid ${tokens.line}`, borderRadius: '10px', boxShadow: tokens.shadowLg, zIndex: 200, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            <Box sx={vadHead}>View My To-Do as another TrustLab user</Box>
+            <Box sx={vadHead}>See MyDiary as another TrustLab user · read-only</Box>
             <Box sx={{ overflowY: 'auto', maxHeight: 360, p: '4px 0' }}>
-              <Opt name={ME.name} label={`Myself (${ME.name})`} role={ME.short} current={isMe} onClick={() => pick(ME.name, ME.role)} />
+              <Opt name={ME.name} label={`Myself (${ME.name})`} role={ME.short} current={isMe} onClick={() => pick(ME.name, ME.role, null)} />
 
               {error ? (
                 <Box sx={{ ...noteRow, color: tokens.bad }}>{errorMessage(error)}</Box>
@@ -92,7 +95,7 @@ export default function ViewAsSwitcher() {
                   <Box key={dept}>
                     <Box sx={groupHead}>{dept}</Box>
                     {people.map((p) => (
-                      <Opt key={p.id} name={p.name} role={p.title || p.role} current={viewer.name === p.name} onClick={() => pick(p.name, p.title || p.role)} />
+                      <Opt key={p.id} name={p.name} role={p.title || p.role} current={viewer.name === p.name} onClick={() => pick(p.name, p.title || p.role, p)} />
                     ))}
                   </Box>
                 ))

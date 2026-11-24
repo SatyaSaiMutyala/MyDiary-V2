@@ -46,7 +46,10 @@ export default function DiscussionLogsPage() {
   const peopleQuery = useLogPeopleQuery({ ...MINE, limit: GRID_LIMIT });
   const followUpsQuery = useLogFollowUpsQuery({ ...MINE, limit: GRID_LIMIT });
   const detailQuery = useGetLogQuery(detailId, { skip: !detailId });
-  const detailLog = detailQuery.data || detailSeed;
+  // Whether the detail modal is open is decided here, not by the query: a skipped query still hands
+  // back the log it last fetched, so closing used to leave `detailLog` truthy and the modal simply
+  // stayed on screen — Close and × looked broken.
+  const detailLog = detailId || detailSeed ? (detailQuery.data || detailSeed) : null;
 
   const [createLog] = useCreateLogMutation();
   const [updateLog] = useUpdateLogMutation();

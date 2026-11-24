@@ -56,8 +56,9 @@ export default function LogModal({ open, draft, setDraft, viewer, onClose, onSav
     } else {
       const name = (await dlg.prompt('External person name (e.g. "Priya Menon (Adani HR)"):') || '').trim();
       if (!name) return;
-      const email = (await dlg.prompt('Email (optional):') || '').trim();
-      upd(c => c.with.push({ name, type: 'external', email }));
+      const email = await dlg.prompt('Email (optional):');
+      if (email === null) return;   // Cancel abandons adding the person, rather than adding them blank.
+      upd(c => c.with.push({ name, type: 'external', email: email.trim() }));
     }
   };
 

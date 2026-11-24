@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, Tooltip } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Avatar, Btn, EmptyState, FilterSelect, Pill, SearchBox, SummaryCard } from '../../../components';
 import { useAuth } from '../../../auth/AuthContext';
+import { useAppStore } from '../../../store/AppStore';
 import { tokens, fonts } from '../../../theme/tokens';
 import { MODULES, ROLES, ROLE_LABEL } from '../../../data/users';
 import { useDebounced } from '../../../utils/useDebounced';
@@ -19,6 +20,8 @@ const fmtDate = (iso) => (iso ? new Date(iso).toLocaleDateString('en-IN', { day:
 export default function UsersTab() {
   const dlg = useDialog();
   const { user: me } = useAuth();
+  const { setViewer } = useAppStore();
+  const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const { toast, show } = useToast();
   const [q, setQ] = useState('');
@@ -47,7 +50,7 @@ export default function UsersTab() {
   // `/settings?user=<id>` (from the ⌘K server search) opens that person's editor.
   const linkedId = params.get('user');
   const { data: linked } = useGetUserQuery(linkedId, { skip: !linkedId });
-  useEffect(() => { if (linked) { setEditing(linked); const next = new URLSearchParams(params); next.delete('user'); setParams(next, { replace: true }); } }, [linked]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (linkedId && linked) { setEditing(linked); const next = new URLSearchParams(params); next.delete('user'); setParams(next, { replace: true }); } }, [linked, linkedId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [update, { isLoading: updating }] = useUpdateUserMutation();
   const [remove, { isLoading: removing }] = useRemoveUserMutation();
@@ -68,6 +71,9 @@ export default function UsersTab() {
     if (password === null) return;
     try { await resetPassword({ id: u.id, password }).unwrap(); show(`✓ Password reset for ${u.name}. Tell them the new password.`); } catch (err) { show(err, 'error'); }
   };
+
+  /** Click a person → the whole app switches to their view, starting at the dashboard. */
+  const viewAs = (u) => { setViewer(u.name, u.title || u.role, u); navigate('/'); };
 
   const rows = data?.items || [];
   const hasFilters = !!(search || role || status || dept);
@@ -119,7 +125,14 @@ export default function UsersTab() {
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
                         <Avatar name={u.name} size={32} />
                         <Box sx={{ minWidth: 0 }}>
-                          <Typography sx={{ fontSize: 13, fontWeight: 600 }} noWrap>{u.name}{self ? <Box component="span" sx={{ ml: 0.75, fontFamily: fonts.mono, fontSize: 10, color: tokens.teal }}>YOU</Box> : null}</Typography>
+                          {self || u.status !== 'active' ? (
+                            <Typography sx={{ fontSize: 13, fontWeight: 600 }} noWrap>{u.name}{self ? <Box component="span" sx={{ ml: 0.75, fontFamily: fonts.mono, fontSize: 10, color: tokens.teal }}>YOU</Box> : null}</Typography>
+                          ) : (
+                            <Typography component="button" type="button" onClick={() => viewAs(u)} title={`See MyDiary as ${u.name}`}
+                              sx={{ fontSize: 13, fontWeight: 600, p: 0, border: 'none', bgcolor: 'transparent', fontFamily: 'inherit', color: tokens.ink, cursor: 'pointer', textAlign: 'left', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', '&:hover': { color: tokens.teal, textDecoration: 'underline' } }}>
+                              {u.name}
+                            </Typography>
+                          )}
                           <Typography sx={{ fontSize: 11.5, color: tokens.faint, fontFamily: fonts.mono }} noWrap>{[u.title, u.email].filter(Boolean).join(' · ')}</Typography>
                         </Box>
                       </Box>
@@ -138,6 +151,7 @@ export default function UsersTab() {
                     <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' }, fontFamily: fonts.mono, fontSize: 12, color: tokens.muted, whiteSpace: 'nowrap' }}>{fmtDate(u.createdAt)}</TableCell>
                     <TableCell align="right">
                       <Box sx={{ display: 'inline-flex', gap: 0.5 }}>
+                        {!self && u.status === 'active' && <Btn size="sm" onClick={() => viewAs(u)} title={`See MyDiary as ${u.name}`}>👁 View as</Btn>}
                         <Btn size="sm" onClick={() => setEditing(u)}>✎ Edit</Btn>
                         <Btn size="sm" onClick={() => reset(u)} disabled={busy} title="Reset password">🔑</Btn>
                         {!self && <Btn size="sm" onClick={() => toggleStatus(u)} disabled={busy} title={u.status === 'active' ? 'Deactivate' : 'Activate'}>{u.status === 'active' ? '⏸' : '▶'}</Btn>}

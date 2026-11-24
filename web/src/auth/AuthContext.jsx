@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { baseApi, onUnauthorized, readAuth, toError, writeAuth } from '../store/api/baseApi';
+import { spectate } from '../features/spectate';
 import { authApi, useLoginMutation, useLogoutMutation } from '../store/api/authApi';
 
 const AuthContext = createContext(null);
@@ -32,6 +33,9 @@ export function AuthProvider({ children }) {
 
   const clear = useCallback(() => {
     clearTimeout(retryRef.current);
+    // Leaving spectator mode on would follow the next person into their session — and for anyone who
+    // is not an admin every request would then be refused.
+    spectate(null);
     save(null);
     setStatus('signedOut');
     setConnectionError(null);
@@ -42,6 +46,7 @@ export function AuthProvider({ children }) {
     if (!email.trim() || !password) throw new Error('Enter your email and password.');
     let data;
     try { data = await loginCall({ email: email.trim(), password }).unwrap(); } catch (err) { throw toError(err); }
+    spectate(null);   // a fresh sign-in always starts in your own view
     dispatch(baseApi.util.resetApiState());
     save({ token: data.token, user: data.user });
     setStatus('signedIn');

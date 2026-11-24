@@ -12,6 +12,7 @@ import { buildInitialDepartments } from '../data/departments';
 import { PROJECTS, PROJ_TEMPLATES } from '../data/projects';
 import { TODAY } from '../utils/dates';
 import { buildInitialUsers, viewerRole } from '../data/users';
+import { blockIfSpectating, spectate, spectatedUser } from '../features/spectate';
 import { useAuth } from '../auth/AuthContext';
 import { diffCollections } from './audit';
 
@@ -28,11 +29,16 @@ function seedActivityLog() {
 }
 
 const viewerOf = (u) => (u ? { name: u.name, role: viewerRole(u) } : { name: 'Venkata Cherukuri', role: 'CMD · Admin' });
+/** After a refresh the admin is still watching whoever they were watching — the API agrees, so the UI must too. */
+const watchedOf = (u) => {
+  const who = spectatedUser();
+  return who ? { name: who.name, role: who.role || who.title || '', user: who } : viewerOf(u);
+};
 
 function initialState(authUser) {
   return {
     // The signed-in person (from the API); "View as" swaps this for a roster person (demo).
-    viewer: viewerOf(authUser),
+    viewer: watchedOf(authUser),
     // Meetings module 2 reads the API; these stay only for the screens that are still on demo data
     // (My Diary's calendar, the ⌘K palette fallback and the dashboard counters).
     meetings: buildInitialMeetings(),
@@ -84,6 +90,8 @@ export function AppStoreProvider({ children }) {
     const prev = prevUserRef.current; prevUserRef.current = authUser;
     if (!authUser) return;
     setState(s => {
+      // While spectating, the viewer is deliberately not the signed-in person — leave it alone.
+      if (spectatedUser()) return s;
       const viewingSelf = !prev || s.viewer.name === prev.name || s.viewer.name === authUser.name;
       const next = viewerOf(authUser);
       if (!viewingSelf || (s.viewer.name === next.name && s.viewer.role === next.role)) return s;
@@ -95,7 +103,10 @@ export function AppStoreProvider({ children }) {
   const withAudit = (s, entries) => entries.length ? { ...s, auditLog: [...entries, ...s.auditLog].slice(0, 500) } : s;
   const entry = (s, e) => ({ id: 'al' + Date.now() + Math.random().toString(36).slice(2, 6), at: new Date().toISOString(), user: s.viewer.name, ...e });
 
+  // Watching someone else is read-only everywhere, not only on the server: the screens still holding
+  // sample data in memory would otherwise let an admin "complete" another person's task.
   const set = useCallback((key, value) => {
+    if (blockIfSpectating()) return;
     setState(s => {
       const next = typeof value === 'function' ? value(s[key]) : value;
       const n = { ...s, [key]: next };
@@ -104,6 +115,7 @@ export function AppStoreProvider({ children }) {
   }, []);
 
   const mutate = useCallback((key, fn) => {
+    if (blockIfSpectating()) return;
     setState(s => {
       const copy = clone(s[key]); const r = fn(copy); const next = r === undefined ? copy : r;
       const n = { ...s, [key]: next };
@@ -112,6 +124,7 @@ export function AppStoreProvider({ children }) {
   }, []);
 
   const update = useCallback((fn) => {
+    if (blockIfSpectating()) return;
     setState(s => {
       const d = clone(s); const r = fn(d); const next = r === undefined ? d : r;
       return withAudit(next, diffCollections(s, next).map(e => entry(s, e)));
@@ -119,15 +132,20 @@ export function AppStoreProvider({ children }) {
   }, []);
 
   const notify = useCallback(({ type = 'action', text, icon = '🔔', time = 'Just now' }) => {
+    if (blockIfSpectating()) return;
     setState(s => withAudit({ ...s, notifications: [{ id: 'n' + Date.now() + Math.random().toString(36).slice(2, 5), type, unread: true, text, time, icon }, ...s.notifications] },
       [entry(s, { action: 'notify', module: 'Notifications', entity: 'Notification', details: String(text).replace(/<[^>]+>/g, '') })]));
   }, []);
 
   // Looking at someone else's work is an admin thing. The switcher is hidden for everyone else, and this
   // refuses the change too, so the only reachable viewer for a non-admin is themselves.
-  const setViewer = useCallback((name, role) => {
+  const setViewer = useCallback((name, role, record) => {
     if (authUser && authUser.role !== 'admin' && name !== authUser.name) return;
-    setState(s => withAudit({ ...s, viewer: { name, role } }, [entry(s, { action: 'auth', module: 'Session', entity: 'View as', details: `Switched view to ${name} (${role})` })]));
+    // Spectator mode: tell the API layer too, so every screen reloads with that person's own data.
+    const self = !authUser || name === authUser.name;
+    spectate(self ? null : { name, role, ...(record || {}) });
+    setState(s => withAudit({ ...s, viewer: { name, role, user: self ? null : record ?? null } },
+      [entry(s, { action: 'auth', module: 'Session', entity: 'View as', details: `Switched view to ${name} (${role})` })]));
   }, [authUser]);
 
   /** Explicit audit entry: audit('auth', { module: 'Session', entity: 'Sign in', details: '…' }) */

@@ -4,8 +4,8 @@ import { tokens, fonts } from '../theme/tokens';
 /**
  * The app's tab strip.
  *
- * A raised segmented bar rather than a bare underline: the row sits in its own sunk trough, and the
- * chosen tab is a white card lifted off it in teal. The old version was a flat line of grey labels
+ * A raised segmented bar rather than a bare underline: the row sits on its own white card, and the
+ * chosen tab is filled with the app's teal→deep-green and carries the gold rule of a panel header. The old version was a flat line of grey labels
  * with a 2px underline, which on a busy page (a meeting's Agenda · Live · Minutes · AI · Actions ·
  * Decisions) read as six loose words with no sign of which one you were on.
  *
@@ -26,12 +26,12 @@ export default function TabBar({ tabs, value, onChange, sx }) {
           gap: '2px',
           p: '4px',
           maxWidth: '100%',
-          // A touch deeper than the page canvas, with an inset edge, so the trough reads as
-          // recessed and the chosen tab clearly sits on top of it.
-          bgcolor: '#E8EDF1',
+          // A clean white bar that lifts off the page — no grey trough. The teal tab is the only
+          // colour in it, so the eye goes straight to where you are.
+          bgcolor: tokens.card,
           border: `1px solid ${tokens.line}`,
           borderRadius: '10px',
-          boxShadow: 'inset 0 1px 2px rgba(16,21,28,.05)',
+          boxShadow: '0 1px 2px rgba(16,21,28,.05), 0 6px 18px rgba(16,21,28,.07)',
           overflowX: { xs: 'visible', sm: 'auto' },
           scrollbarWidth: 'none',
           '&::-webkit-scrollbar': { display: 'none' },
@@ -57,21 +57,28 @@ export default function TabBar({ tabs, value, onChange, sx }) {
                 fontSize: 13,
                 fontWeight: active ? 600 : 500,
                 letterSpacing: active ? '-0.005em' : 0,
-                color: active ? tokens.teal : tokens.grey,
-                bgcolor: active ? tokens.card : 'transparent',
-                boxShadow: active ? '0 1px 2px rgba(16,21,28,.10), 0 2px 8px rgba(16,21,28,.06)' : 'none',
-                transition: 'color .15s ease, background-color .15s ease, box-shadow .15s ease',
-                '&:hover': active ? {} : { color: tokens.ink, bgcolor: 'rgba(255,255,255,.62)' },
-                '&.Mui-focusVisible': { boxShadow: `0 0 0 2px rgba(15,118,110,.35)` },
+                position: 'relative',
+                // The chosen tab wears the house colours: the teal→deep-green fill of the panel title
+                // bars, with the same gold rule under it, so a tab reads like the headers it opens.
+                color: active ? '#fff' : tokens.muted,
+                background: active ? `linear-gradient(135deg, ${tokens.teal}, ${tokens.greenDeep})` : 'transparent',
+                boxShadow: active ? '0 1px 2px rgba(16,21,28,.18), 0 3px 10px rgba(15,118,110,.22)' : 'none',
+                transition: 'color .15s ease, background .15s ease, box-shadow .15s ease',
+                '&::after': active ? {
+                  content: '""', position: 'absolute', left: 10, right: 10, bottom: 4,
+                  height: 2, borderRadius: 2, bgcolor: tokens.headRule,
+                } : {},
+                '&:hover': active ? {} : { color: tokens.tealDark, bgcolor: tokens.tealSofter },
+                '&.Mui-focusVisible': { boxShadow: `0 0 0 2px rgba(15,118,110,.45)` },
               }}
             >
               {t.icon && (
                 // Colour only on the tab you are on; the rest sit back in grey.
-                <Box component="span" sx={{ fontSize: 13.5, lineHeight: 1, display: 'inline-flex', filter: active ? 'none' : 'grayscale(30%)', opacity: active ? 1 : 0.82 }}>
+                <Box component="span" sx={{ fontSize: 13.5, lineHeight: 1, display: 'inline-flex', filter: active ? 'none' : 'grayscale(30%)', opacity: active ? 1 : 0.82, mb: active ? '2px' : 0 }}>
                   {t.icon}
                 </Box>
               )}
-              <Box component="span" sx={{ whiteSpace: 'nowrap' }}>{t.label}</Box>
+              <Box component="span" sx={{ whiteSpace: 'nowrap', mb: active ? '2px' : 0 }}>{t.label}</Box>
               {t.count !== undefined && (
                 <Box
                   component="span"
@@ -79,8 +86,8 @@ export default function TabBar({ tabs, value, onChange, sx }) {
                     fontFamily: fonts.mono, fontSize: 10.5, fontWeight: 700, letterSpacing: '0.02em',
                     px: '6px', minWidth: 18, height: 18,
                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                    bgcolor: active ? tokens.tealSoft : 'rgba(16,21,28,.07)',
-                    color: active ? tokens.teal : tokens.grey,
+                    bgcolor: active ? 'rgba(255,255,255,.24)' : tokens.tealSoft,
+                    color: active ? '#fff' : tokens.tealDark,
                     borderRadius: '20px',
                     ...t.countSx,
                   }}

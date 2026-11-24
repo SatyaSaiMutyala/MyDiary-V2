@@ -1,8 +1,9 @@
-import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Box, Typography } from '@mui/material';
 import ModalShell from './ModalShell';
 import Btn from './Btn';
 import { tokens, fonts } from '../theme/tokens';
+import { onBlockedWhileSpectating } from '../features/spectate';
 
 /**
  * In-app replacements for the browser's alert / confirm / prompt, in the MyDiary style.
@@ -109,6 +110,12 @@ export function DialogProvider({ children }) {
       setTimeout(() => setToasts((list) => list.filter((t) => t.id !== id)), 3600);
     },
   }), [open]);
+
+  // Spectator mode says "read-only" through a toast; it has no other way to reach the dialogs.
+  useEffect(() => {
+    onBlockedWhileSpectating.handler = (message) => api.toast(message, 'warn');
+    return () => { onBlockedWhileSpectating.handler = null; };
+  }, [api]);
 
   const kind = dialog?.kind;
   const tone = dialog ? (dialog.tone ?? (kind === 'alert' ? toneOf(dialog.message) : 'info')) : 'info';

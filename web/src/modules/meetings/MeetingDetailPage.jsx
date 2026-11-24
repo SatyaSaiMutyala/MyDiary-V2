@@ -274,8 +274,9 @@ function MeetingDetail({ id }) {
   const linkDecision = async (agendaIdx) => {
     const decText = await dlg.prompt('Enter the decision text to log in the Decisions Registry:');
     if (!decText || !decText.trim()) return;
-    const dept = await dlg.prompt('Department (e.g. Accounts, Operations, Board):', 'Operations') || 'General';
-    const d = await run(createDecision({ id: m.id, agendaIdx, text: decText.trim(), department: dept }));
+    const dept = await dlg.prompt('Department (e.g. Accounts, Operations, Board):', 'Operations');
+    if (dept === null) return;
+    const d = await run(createDecision({ id: m.id, agendaIdx, text: decText.trim(), department: dept.trim() || 'General' }));
     if (d) await dlg.alert('✓ Decision logged to the registry.');
   };
   const finaliseMinutes = async () => {

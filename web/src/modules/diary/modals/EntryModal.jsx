@@ -44,7 +44,10 @@ export default function EntryModal({ open, onClose, owner, viewer, date, preset,
       let name = raw, email = '';
       if (em) { name = em[1].trim(); email = em[2].trim(); }
       if (!email) {
-        email = (await dlg.prompt('Email for ' + name + ' (so they get the calendar invite):') || '').trim();
+        // Cancel abandons adding them; leaving it blank and pressing Save is what asks the question.
+        const typed = await dlg.prompt('Email for ' + name + ' (so they get the calendar invite):');
+        if (typed === null) return;
+        email = typed.trim();
         if (!email && !await dlg.confirm('Add without email? They will not receive the invite.')) return;
       }
       patch({ external: [...d.external, { name, email }] });

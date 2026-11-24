@@ -120,9 +120,9 @@ export default function DepartmentDetailPage() {
       async editDepartmentMeta() {
         if (!d) return;
         const name = await dlg.prompt('Department name:', d.name); if (name === null) return;
-        const icon = await dlg.prompt('Icon (one emoji):', d.icon) || d.icon;
-        const description = await dlg.prompt('Short description:', d.description || '');
-        void run(updateDepartment({ id, name: name.trim() || d.name, icon, ...(description !== null ? { description } : {}) }));
+        const iconIn = await dlg.prompt('Icon (one emoji):', d.icon); if (iconIn === null) return;
+        const description = await dlg.prompt('Short description:', d.description || ''); if (description === null) return;
+        void run(updateDepartment({ id, name: name.trim() || d.name, icon: iconIn.trim() || d.icon, description }));
       },
       async deleteDepartment() {
         if (!d) return;
@@ -133,7 +133,7 @@ export default function DepartmentDetailPage() {
       async addPosition() {
         const name = await dlg.prompt('Position name (e.g. "Lab Technician"):');
         if (!name || !name.trim()) return;
-        const description = await dlg.prompt('What does this position do?', '') || '';
+        const description = await dlg.prompt('What does this position do?', ''); if (description === null) return;
         void run(addPositionCall({ id, name: name.trim(), description }));
       },
       updatePosition(pid, field, value) {
@@ -170,7 +170,8 @@ export default function DepartmentDetailPage() {
         const labels = { opening: 'Opening shift task', closing: 'Closing shift task', weekly: 'Weekly task (for managers)', monthly: 'Monthly task (for heads)' };
         const text = await dlg.prompt(labels[kind] + ' description:');
         if (!text || !text.trim()) return;
-        const defaultTime = await dlg.prompt('Default time (HH:MM):', kind === 'opening' ? '09:00' : kind === 'closing' ? '18:00' : '10:00') || '';
+        const defaultTime = await dlg.prompt('Default time (HH:MM):', kind === 'opening' ? '09:00' : kind === 'closing' ? '18:00' : '10:00');
+        if (defaultTime === null) return;
 
         const extra = {};
         if (kind === 'weekly') {
