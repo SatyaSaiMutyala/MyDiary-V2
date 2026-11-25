@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Check, ChevronRight, FlaskConical } from 'lucide-react-native';
+import { Check, ChevronRight } from 'lucide-react-native';
 import { AppText } from '../components/AppText';
 import { Card } from '../components/Card';
 import { EmptyState } from '../components/EmptyState';
@@ -30,11 +30,6 @@ import {
 import { useLabMineQuery } from '../store/api/labReadinessApi';
 import { longDate, realToday } from '../utils/dates';
 import { colors, hairline, radius, s, vs } from '../theme';
-
-const LAB_ROUNDS = [
-  { key: 'opening', label: 'Opening round' },
-  { key: 'closing', label: 'Closing round' },
-];
 
 const LANES = [
   { key: 'opening', label: 'Opening' },
@@ -116,7 +111,11 @@ export function ActivityScreen() {
   const log = useMemo(() => activityQ.data?.log ?? {}, [activityQ.data]);
   const person = activityQ.data?.person ?? me?.name;
 
-  const { lists, total, done, pct } = useMemo(
+  const {
+    lists,
+    total: shiftTotal,
+    done: shiftDone,
+  } = useMemo(
     () =>
       shiftStats(
         log,
@@ -128,6 +127,15 @@ export function ActivityScreen() {
       ),
     [log, person, dept, assignment.positionId, assignment.role, facts],
   );
+
+  // Where a readiness board replaces the shift tasks, the day's count is this person's own lines
+  // of it — otherwise the page would say "nothing due" with a round still to do.
+  const labLines = lab
+    ? ['opening', 'closing'].flatMap(k => lab.phases?.[k]?.lines ?? [])
+    : [];
+  const total = shiftTotal + labLines.length;
+  const done = shiftDone + labLines.filter(l => l.complete).length;
+  const pct = total ? Math.round((done / total) * 100) : 0;
 
   const loading =
     assignmentsQ.isLoading || deptQ.isLoading || activityQ.isLoading;
@@ -209,6 +217,17 @@ export function ActivityScreen() {
       );
     }
     if (!total && !lab?.total) {
+      // A lab person with no unit has a board waiting for them but no lines of their own, which
+      // "nothing due" would hide. Say what is missing and who fixes it.
+      if (labQ.data && !labQ.data.unit) {
+        return (
+          <EmptyState
+            text={`Your unit has not been set yet, so none of ${
+              labQ.data.department?.name ?? 'the laboratory'
+            }'s readiness lines are yours. Ask an admin to set it in Department Master · Who works where.`}
+          />
+        );
+      }
       return <EmptyState text="Nothing due today. Enjoy the quiet one." />;
     }
 
@@ -248,59 +267,86 @@ export function ActivityScreen() {
           />
         </Card>
 
-        {lab?.unit ? (
-          <View>
-            <Eyebrow
-              label={`Lab readiness · ${lab.unit.name} · ${lab.done}/${lab.total}`}
-            />
-            <Card style={styles.lane}>
-              {LAB_ROUNDS.map(round => {
-                const lines = lab.phases?.[round.key]?.lines ?? [];
-                if (!lines.length) {
-                  return null;
-                }
-                const signed = !!lab.phases[round.key].signedAt;
-                return (
-                  <Pressable
-                    key={round.key}
-                    onPress={() =>
-                      nav.navigate('LabReadiness', {
-                        phase: round.key,
-                        unit: lab.unit.key,
-                        date: today,
-                      })
-                    }
-                    style={({ pressed }) => [
-                      styles.labRound,
-                      pressed && styles.pressed,
-                    ]}
-                  >
-                    <FlaskConical
-                      size={s(20)}
-                      color={colors.tealDeep}
-                      strokeWidth={1.7}
-                    />
-                    <View style={styles.rowText}>
-                      <AppText variant="body">{round.label}</AppText>
-                      <AppText variant="meta" color={colors.inkMuted}>
-                        {lines.filter(l => l.complete).length} of {lines.length}{' '}
-                        of your lines done
-                      </AppText>
-                    </View>
-                    {signed ? <Pill label="Signed" tone="signed" /> : null}
-                    <ChevronRight
-                      size={s(19)}
-                      color={colors.inkFaint}
-                      strokeWidth={2}
-                    />
-                  </Pressable>
-                );
-              })}
-            </Card>
-          </View>
-        ) : null}
-
         {LANES.map(lane => {
+          // A department that runs a readiness board has no shift tasks: its rounds ARE its
+          // opening and closing tasks, so they are drawn here, under the same headings.
+          const round =
+            lab && (lane.key === 'opening' || lane.key === 'closing')
+              ? lab.phases?.[lane.key]
+              : null;
+          if (round) {
+            const lines = round.lines ?? [];
+            if (!lines.length) {
+              return null;
+            }
+            const doneCt = lines.filter(l => l.complete).length;
+            return (
+              <View key={lane.key}>
+                <Eyebrow label={`${lane.label} · ${doneCt}/${lines.length}`} />
+                <Card style={styles.lane}>
+                  {lines.map((l, i) => (
+                    <Pressable
+                      key={l.key}
+                      onPress={() =>
+                        nav.navigate('LabReadiness', {
+                          phase: lane.key,
+                          unit: lab.unit.key,
+                          date: today,
+                        })
+                      }
+                      style={({ pressed }) => [
+                        styles.row,
+                        i === lines.length - 1 && styles.lastRow,
+                        pressed && styles.pressed,
+                      ]}
+                    >
+                      <View style={[styles.box, l.complete && styles.boxOn]}>
+                        {l.complete ? (
+                          <Check
+                            size={s(13)}
+                            color={colors.white}
+                            strokeWidth={3}
+                          />
+                        ) : null}
+                      </View>
+                      <View style={styles.rowText}>
+                        <AppText
+                          variant={l.complete ? 'bodyRegular' : 'body'}
+                          color={l.complete ? colors.inkMuted : colors.ink}
+                        >
+                          {l.text}
+                        </AppText>
+                        <View style={styles.lineMeta}>
+                          {l.scheduledTime ? (
+                            <AppText variant="meta" color={colors.inkFaint}>
+                              {l.scheduledTime}
+                            </AppText>
+                          ) : null}
+                          {l.photoRequired ? (
+                            <Pill
+                              label={
+                                l.photos ? `${l.photos} photo` : 'Photo needed'
+                              }
+                              tone={l.photos ? 'signed' : 'low'}
+                            />
+                          ) : null}
+                          {l.status ? (
+                            <Pill label={l.status} tone="low" />
+                          ) : null}
+                        </View>
+                      </View>
+                      <ChevronRight
+                        size={s(18)}
+                        color={colors.inkFaint}
+                        strokeWidth={2}
+                      />
+                    </Pressable>
+                  ))}
+                </Card>
+              </View>
+            );
+          }
+
           const tasks = lists[lane.key];
           if (!tasks.length) {
             return null;
@@ -381,12 +427,12 @@ const styles = StyleSheet.create({
   },
   lastRow: { borderBottomWidth: 0 },
   rowText: { flex: 1, gap: vs(1) },
-  labRound: {
+  lineMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: s(12),
-    paddingHorizontal: s(14),
-    paddingVertical: vs(12),
+    flexWrap: 'wrap',
+    gap: s(8),
+    marginTop: vs(4),
   },
   pressed: { opacity: 0.7 },
   box: {

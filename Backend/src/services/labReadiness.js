@@ -336,8 +336,9 @@ export async function myLines(dept, user, date) {
   const who = standingOf(dept, user);
   const units = dept.labReadiness?.units ?? [];
   const unit = who.unitKey ? units.find((u) => u.key === who.unitKey && u.active !== false) : null;
+  const department = { id: dept._id.toString(), name: dept.name, code: dept.code };
   if (!unit) {
-    return { me: who, unit: null, date, phases: {}, total: 0, done: 0 };
+    return { department, me: who, unit: null, date, phases: {}, total: 0, done: 0 };
   }
 
   const runs = await LabRun.find({ department: dept._id, unitKey: unit.key, date });
@@ -370,7 +371,7 @@ export async function myLines(dept, user, date) {
     phases[phase] = { lines, signedAt: run?.signedAt ? run.signedAt.toISOString() : null };
   }
 
-  return { me: who, unit: { key: unit.key, name: unit.name, kind: unit.kind }, date, phases, total, done };
+  return { department, me: who, unit: { key: unit.key, name: unit.name, kind: unit.kind }, date, phases, total, done };
 }
 
 const LAB_PHASES_ORDER = ['opening', 'closing'];

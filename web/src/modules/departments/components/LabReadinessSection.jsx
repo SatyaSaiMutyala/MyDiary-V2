@@ -56,7 +56,7 @@ function Flag({ on, onClick, title, children, colour = tokens.teal, soft = token
  */
 export default function LabReadinessSection({ dept, lab }) {
   const lr = dept.labReadiness ?? { enabled: false, units: [], activities: [], openingCutoff: '09:30', closingCutoff: '22:30' };
-  const [open, setOpen] = useState({ opening: false, closing: false, units: true, people: false });
+  const [open, setOpen] = useState({ units: true, people: false });
   const units = lr.units ?? [];
   const activities = lr.activities ?? [];
 
@@ -94,9 +94,9 @@ export default function LabReadinessSection({ dept, lab }) {
       action={head}
     >
       <SectionNote>
-        The opening and closing rounds this department's staff record every day, under <strong>Lab Readiness</strong>
-        {' '}in the menu. Every activity has to be answered before a round can be signed off; a deviation needs a
-        remark, and an activity marked <strong>photo</strong> cannot be signed off without a photograph.
+        The board behind this department's opening and closing tasks, which are edited in the two sections
+        above. Here are the things the rounds themselves need: which units run a board, who works in which
+        unit, and the time after which a sign-off counts as late.
       </SectionNote>
 
       {!lr.enabled ? (
@@ -198,77 +198,6 @@ export default function LabReadinessSection({ dept, lab }) {
             ))}
           </Lane>
 
-          {/* ACTIVITIES, one lane per round */}
-          {PHASES.map((p) => (
-            <Lane
-              key={p.key}
-              label={p.label}
-              count={`${byPhase[p.key].length} activities`}
-              colour={p.colour}
-              open={open[p.key]}
-              onToggle={() => toggle(p.key)}
-              action={<Btn size="sm" variant="primary" sx={{ bgcolor: p.colour, borderColor: p.colour, '&:hover': { bgcolor: p.colour } }} onClick={() => lab.addActivity(p.key)}>+ Add activity</Btn>}
-            >
-              {byPhase[p.key].length === 0 ? <EmptyLine>No activities in this round yet.</EmptyLine> : (
-                <Box sx={{ overflowX: 'auto' }}>
-                  <Box sx={{ minWidth: 1060 }}>
-                    {groupBySection(byPhase[p.key]).map((g) => (
-                      <Box key={g.heading} sx={{ mb: '10px' }}>
-                        <Typography sx={{ fontFamily: fonts.mono, fontSize: 9.5, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, color: tokens.slateSoft, p: '8px 4px 4px' }}>
-                          {g.heading} · {g.items.length}
-                        </Typography>
-                        {g.items.map((a) => (
-                          <Box key={a.id} sx={{ p: '8px 10px', m: '3px 0', bgcolor: a.active === false ? tokens.creamWarm : tokens.card, border: `1px solid ${tokens.line}`, borderRadius: '7px', opacity: a.active === false ? 0.65 : 1 }}>
-                            <Box sx={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                              <Box sx={{ fontFamily: fonts.mono, fontSize: 9.5, fontWeight: 700, color: tokens.slateSoft, width: 34, flexShrink: 0 }}>{a.key.toUpperCase()}</Box>
-                              <Box sx={{ flex: 1, minWidth: 0 }}>
-                                <LiveInput value={a.text} onCommit={(v) => lab.updateActivity(a.id, 'text', v)} sx={taskTextSx} />
-                              </Box>
-                              <Box sx={{ width: 116, flexShrink: 0 }}>
-                                <TimeInput value={a.scheduledTime} onCommit={(v) => lab.updateActivity(a.id, 'scheduledTime', v)} sx={{ width: '100%' }} />
-                              </Box>
-                              <Box sx={{ width: 130, flexShrink: 0 }}>
-                                <SelectInput value={a.scope} sx={selectSx} onChange={(e) => lab.updateActivity(a.id, 'scope', e.target.value)}>
-                                  {SCOPES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-                                </SelectInput>
-                              </Box>
-                              {/* Scope says which branches the line appears on; this says whose
-                                  line it is once it is there. Both are applied. */}
-                              <PosChips
-                                positions={dept.positions ?? []}
-                                positionIds={a.positionIds ?? []}
-                                onToggle={(pid) => lab.toggleActivityPosition(a, pid)}
-                                onClear={() => lab.updateActivity(a.id, 'positionIds', [])}
-                              />
-                              <Flag
-                                on={a.photoRequired}
-                                colour={tokens.amber}
-                                soft={tokens.yellowSoft}
-                                onClick={() => lab.updateActivity(a.id, 'photoRequired', !a.photoRequired)}
-                                title={a.photoRequired ? 'A photograph is required before sign-off' : 'No photograph required'}
-                              >
-                                📷 {a.photoRequired ? 'REQUIRED' : 'NO'}
-                              </Flag>
-                              <Flag on={a.active !== false} onClick={() => lab.updateActivity(a.id, 'active', a.active === false)} title={a.active === false ? 'Switched off — it does not appear on the board' : 'On the board'}>
-                                {a.active === false ? 'OFF' : 'ON'}
-                              </Flag>
-                              <DelBtn onClick={() => lab.removeActivity(a)} title="Remove this activity" />
-                            </Box>
-                            <Box sx={{ display: 'flex', gap: '8px', alignItems: 'center', mt: '5px', pl: '42px' }}>
-                              <Typography sx={{ fontFamily: fonts.mono, fontSize: 9, color: tokens.slateSofter, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Section</Typography>
-                              <Box sx={{ flex: 1, maxWidth: 360 }}>
-                                <LiveInput value={a.section} onCommit={(v) => lab.updateActivity(a.id, 'section', v)} sx={{ ...taskTextSx, fontSize: 11.5 }} placeholder="Group heading on the board" />
-                              </Box>
-                            </Box>
-                          </Box>
-                        ))}
-                      </Box>
-                    ))}
-                  </Box>
-                </Box>
-              )}
-            </Lane>
-          ))}
         </>
       )}
     </DeptSection>
@@ -301,4 +230,93 @@ function groupBySection(list) {
     groups.get(heading).items.push(a);
   }
   return [...groups.values()];
+}
+
+/**
+ * The laboratory's opening and closing rounds, drawn where a department's shift tasks would be.
+ *
+ * A department that runs a readiness board has no separate tick list: these ARE its opening and
+ * closing tasks (DepartmentDetailPage decides which of the two a department gets). Everything a
+ * shift task has is here — the time, who it belongs to — plus what the sheet adds: which branches
+ * it applies to, and whether it needs a photograph.
+ */
+export function LabRounds({ dept, lab }) {
+  const activities = dept.labReadiness?.activities ?? [];
+  return PHASES.map((p) => {
+    const items = activities.filter((a) => a.phase === p.key);
+    return (
+      <DeptSection
+        key={p.key}
+        title={<>{p.key === 'opening' ? '🌅 Opening Shift Tasks' : '🌙 Closing Shift Tasks'}</>}
+        titleColor={p.colour}
+        count={`${items.length} activities`}
+        action={<Btn size="sm" variant="primary" sx={{ bgcolor: p.colour, borderColor: p.colour, '&:hover': { bgcolor: p.colour } }} onClick={() => lab.addActivity(p.key)}>+ Add activity</Btn>}
+      >
+        <SectionNote>
+          This department records its {p.key} round on the <strong>Lab Readiness</strong> board — every line
+          answered, a remark where it deviates, a photograph where one is asked for, then a signature.
+          Tag a line to a position and it becomes that person's on My Activity; leave it untagged and it
+          belongs to everyone in the department.
+        </SectionNote>
+              {items.length === 0 ? <EmptyLine>No activities in this round yet.</EmptyLine> : (
+        <Box sx={{ overflowX: 'auto' }}>
+          <Box sx={{ minWidth: 1060 }}>
+    {groupBySection(items).map((g) => (
+      <Box key={g.heading} sx={{ mb: '10px' }}>
+        <Typography sx={{ fontFamily: fonts.mono, fontSize: 9.5, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, color: tokens.slateSoft, p: '8px 4px 4px' }}>
+          {g.heading} · {g.items.length}
+        </Typography>
+        {g.items.map((a) => (
+          <Box key={a.id} sx={{ p: '8px 10px', m: '3px 0', bgcolor: a.active === false ? tokens.creamWarm : tokens.card, border: `1px solid ${tokens.line}`, borderRadius: '7px', opacity: a.active === false ? 0.65 : 1 }}>
+            <Box sx={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <Box sx={{ fontFamily: fonts.mono, fontSize: 9.5, fontWeight: 700, color: tokens.slateSoft, width: 34, flexShrink: 0 }}>{a.key.toUpperCase()}</Box>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <LiveInput value={a.text} onCommit={(v) => lab.updateActivity(a.id, 'text', v)} sx={taskTextSx} />
+              </Box>
+              <Box sx={{ width: 116, flexShrink: 0 }}>
+                <TimeInput value={a.scheduledTime} onCommit={(v) => lab.updateActivity(a.id, 'scheduledTime', v)} sx={{ width: '100%' }} />
+              </Box>
+              <Box sx={{ width: 130, flexShrink: 0 }}>
+                <SelectInput value={a.scope} sx={selectSx} onChange={(e) => lab.updateActivity(a.id, 'scope', e.target.value)}>
+                  {SCOPES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+                </SelectInput>
+              </Box>
+              {/* Scope says which branches the line appears on; this says whose
+                  line it is once it is there. Both are applied. */}
+              <PosChips
+                positions={dept.positions ?? []}
+                positionIds={a.positionIds ?? []}
+                onToggle={(pid) => lab.toggleActivityPosition(a, pid)}
+                onClear={() => lab.updateActivity(a.id, 'positionIds', [])}
+              />
+              <Flag
+                on={a.photoRequired}
+                colour={tokens.amber}
+                soft={tokens.yellowSoft}
+                onClick={() => lab.updateActivity(a.id, 'photoRequired', !a.photoRequired)}
+                title={a.photoRequired ? 'A photograph is required before sign-off' : 'No photograph required'}
+              >
+                📷 {a.photoRequired ? 'REQUIRED' : 'NO'}
+              </Flag>
+              <Flag on={a.active !== false} onClick={() => lab.updateActivity(a.id, 'active', a.active === false)} title={a.active === false ? 'Switched off — it does not appear on the board' : 'On the board'}>
+                {a.active === false ? 'OFF' : 'ON'}
+              </Flag>
+              <DelBtn onClick={() => lab.removeActivity(a)} title="Remove this activity" />
+            </Box>
+            <Box sx={{ display: 'flex', gap: '8px', alignItems: 'center', mt: '5px', pl: '42px' }}>
+              <Typography sx={{ fontFamily: fonts.mono, fontSize: 9, color: tokens.slateSofter, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Section</Typography>
+              <Box sx={{ flex: 1, maxWidth: 360 }}>
+                <LiveInput value={a.section} onCommit={(v) => lab.updateActivity(a.id, 'section', v)} sx={{ ...taskTextSx, fontSize: 11.5 }} placeholder="Group heading on the board" />
+              </Box>
+            </Box>
+          </Box>
+        ))}
+      </Box>
+    ))}
+          </Box>
+        </Box>
+      )}
+      </DeptSection>
+    );
+  });
 }

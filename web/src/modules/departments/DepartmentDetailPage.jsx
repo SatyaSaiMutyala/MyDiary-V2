@@ -21,7 +21,7 @@ import { makeDebouncer } from './utils';
 import DeptSection, { SectionNote, ColHeader, EmptyLine } from './components/DeptSection';
 import { TaskRow, WeeklyRow, MonthlyRow, PositionRow, DAILY_HEADER_COLS, WM_COLS } from './components/TaskRows';
 import ReviewCadenceSection from './components/ReviewCadenceSection';
-import LabReadinessSection from './components/LabReadinessSection';
+import LabReadinessSection, { LabRounds } from './components/LabReadinessSection';
 import { useDialog } from '../../components/Dialogs';
 import DepartmentModal from './modals/DepartmentModal';
 
@@ -343,6 +343,9 @@ export default function DepartmentDetailPage() {
     );
   }
 
+  // A readiness board replaces this department's daily tick list, so the two are never both shown.
+  const labOn = Boolean(d.labReadiness?.enabled);
+
   const weeklySorted = (d.weeklyTasks || []).slice().sort((a, b) => {
     const aFirst = (a.daysOfWeek || [7])[0] ?? 7;
     const bFirst = (b.daysOfWeek || [7])[0] ?? 7;
@@ -399,23 +402,34 @@ export default function DepartmentDetailPage() {
         )}
       </DeptSection>
 
-      {/* OPENING TASKS */}
-      <DeptSection title={<>🌅 Opening Shift Tasks</>} count={d.openingTasks.length} action={<Btn variant="primary" size="sm" onClick={() => api.addDeptTask('opening')}>+ Add Task</Btn>}>
-        <SectionNote>Fired at the start of every shift for this department. Order controls the sequence shown in My Activity.</SectionNote>
-        <Scroller minWidth={640}>
-          <ColHeader columns={DAILY_HEADER} cols={DAILY_HEADER_COLS} />
-          {d.openingTasks.length ? d.openingTasks.slice().sort((a, b) => a.order - b.order).map(t => <TaskRow key={t.id} dept={d} task={t} kind="opening" api={api} />) : <EmptyLine>No opening tasks yet.</EmptyLine>}
-        </Scroller>
-      </DeptSection>
+      {/*
+        OPENING AND CLOSING.
 
-      {/* CLOSING TASKS */}
-      <DeptSection title={<>🌙 Closing Shift Tasks</>} count={d.closingTasks.length} action={<Btn variant="primary" size="sm" onClick={() => api.addDeptTask('closing')}>+ Add Task</Btn>}>
-        <SectionNote>Fired at the end of every shift. Last-mile hygiene — close logs, lock up, hand over.</SectionNote>
-        <Scroller minWidth={640}>
-          <ColHeader columns={DAILY_HEADER} cols={DAILY_HEADER_COLS} />
-          {d.closingTasks.length ? d.closingTasks.slice().sort((a, b) => a.order - b.order).map(t => <TaskRow key={t.id} dept={d} task={t} kind="closing" api={api} />) : <EmptyLine>No closing tasks yet.</EmptyLine>}
-        </Scroller>
-      </DeptSection>
+        A department whose daily round is run as a readiness board has no second list of shift
+        tasks: the board's opening and closing rounds ARE its opening and closing tasks, so they
+        are edited here, under those headings. Every other department keeps the plain tick list.
+      */}
+      {labOn ? (
+        <LabRounds dept={d} lab={lab} />
+      ) : (
+        <>
+          <DeptSection title={<>🌅 Opening Shift Tasks</>} count={d.openingTasks.length} action={<Btn variant="primary" size="sm" onClick={() => api.addDeptTask('opening')}>+ Add Task</Btn>}>
+            <SectionNote>Fired at the start of every shift for this department. Order controls the sequence shown in My Activity.</SectionNote>
+            <Scroller minWidth={640}>
+              <ColHeader columns={DAILY_HEADER} cols={DAILY_HEADER_COLS} />
+              {d.openingTasks.length ? d.openingTasks.slice().sort((a, b) => a.order - b.order).map(t => <TaskRow key={t.id} dept={d} task={t} kind="opening" api={api} />) : <EmptyLine>No opening tasks yet.</EmptyLine>}
+            </Scroller>
+          </DeptSection>
+
+          <DeptSection title={<>🌙 Closing Shift Tasks</>} count={d.closingTasks.length} action={<Btn variant="primary" size="sm" onClick={() => api.addDeptTask('closing')}>+ Add Task</Btn>}>
+            <SectionNote>Fired at the end of every shift. Last-mile hygiene — close logs, lock up, hand over.</SectionNote>
+            <Scroller minWidth={640}>
+              <ColHeader columns={DAILY_HEADER} cols={DAILY_HEADER_COLS} />
+              {d.closingTasks.length ? d.closingTasks.slice().sort((a, b) => a.order - b.order).map(t => <TaskRow key={t.id} dept={d} task={t} kind="closing" api={api} />) : <EmptyLine>No closing tasks yet.</EmptyLine>}
+            </Scroller>
+          </DeptSection>
+        </>
+      )}
 
       {/* WEEKLY TASKS */}
       <DeptSection title={<>📅 Weekly Tasks</>} titleColor="#5B21B6" count={(d.weeklyTasks || []).length} action={<Btn variant="primary" size="sm" onClick={() => api.addDeptTask('weekly')} sx={{ bgcolor: '#7C3AED', '&:hover': { bgcolor: '#7C3AED' } }}>+ Add Weekly Task</Btn>}>
