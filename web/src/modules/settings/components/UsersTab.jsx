@@ -46,7 +46,9 @@ export default function UsersTab() {
   const { data: deptPage } = useListUsersQuery({ limit: 200, fields: 'department', sort: 'department' });
   // The real Department Master list — so a new person is filed under a department that exists, which is
   // what My Activity reads to decide whose shift checklist they get.
-  const { data: deptMaster } = useListDepartmentsQuery({ limit: 200, sort: 'order', fields: 'name,positions' });
+  // `labReadiness` comes too: a department that runs a readiness board has units, and the one a
+  // person works in is chosen here beside their department and position.
+  const { data: deptMaster } = useListDepartmentsQuery({ limit: 200, sort: 'order', fields: 'name,positions,labReadiness' });
   const { data: registry } = useUserModulesQuery();
   const modules = registry?.modules?.length ? registry.modules : MODULES;
   /** The real departments, each with its positions — the dialog needs both. */

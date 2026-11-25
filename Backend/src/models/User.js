@@ -20,6 +20,12 @@ const userSchema = new Schema(
      * the tasks the whole department shares.
      */
     position: { type: String, default: '' },
+    /**
+     * Which unit of that department they work in — the key of one of its Lab Readiness units
+     * ("nrl-biochemistry"). Only a department that runs a readiness board has units, so this is
+     * blank for everybody else. It is what My Activity reads to know whose board is whose.
+     */
+    labUnit: { type: String, default: '' },
     status: { type: String, enum: USER_STATUSES, required: true, default: 'active' },
     /** Modules this person can open (services/modules.js). Ignored for admins (always all). */
     modules: { type: [String], default: [] },
@@ -41,6 +47,7 @@ export const User = model('User', userSchema);
  * @property {string} title
  * @property {string} department
  * @property {string} position
+ * @property {string} labUnit
  * @property {string[]} modules
  * @property {UserStatus} status
  * @property {string} createdAt
@@ -57,6 +64,7 @@ export function serializeUser(u) {
     title: u.title ?? '',
     department: u.department ?? '',
     position: u.position ?? '',
+    labUnit: u.labUnit ?? '',
     modules: effectiveModules(u),
     status: u.status ?? 'active',
     createdAt: (u.createdAt ?? new Date()).toISOString(),

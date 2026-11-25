@@ -430,6 +430,19 @@ describe('people and the assignment map', () => {
     expect((await put(`/api/departments/${d.id}/assignments`, { assignments: [{ name: 'X', positionId: '6b02dd827da25d9a175e14e8' }] })).status).toBe(404);
   });
 
+  it('can be asked for just the fields a screen needs, units included', async () => {
+    await makeDept();
+    // Settings · Users asks for these three: the name for the dropdown, the positions for the
+    // position field, and the units so a lab person can be given one while they are created.
+    const r = await get('/api/departments?limit=200&sort=order&fields=name,positions,labReadiness');
+    expect(r.status).toBe(200);
+    const [d] = r.body.items;
+    expect(d.name).toBeTruthy();
+    expect(Array.isArray(d.positions)).toBe(true);
+    expect(d.labReadiness).toBeDefined();
+    expect(d.openingTasks).toBeUndefined();
+  });
+
   it('answers the org-wide person → department / position map', async () => {
     const lab = await makeDept();
     await makeDept({ name: 'IT', positions: [{ name: 'IT Head' }], openingTasks: [], closingTasks: [], weeklyTasks: [], monthlyTasks: [], reviewCadence: undefined, assignments: [{ name: 'Pavan', position: 0 }] });

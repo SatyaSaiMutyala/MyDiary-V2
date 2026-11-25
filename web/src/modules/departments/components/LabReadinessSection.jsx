@@ -5,7 +5,6 @@ import { Btn, SelectInput, DelBtn } from '../../../components';
 import { tokens, fonts } from '../../../theme/tokens';
 import DeptSection, { SectionNote, EmptyLine } from './DeptSection';
 import { PosChips } from './Chips';
-import { useListAssignmentsQuery } from '../../../store/api/departmentsApi';
 import LabActivityModal from '../modals/LabActivityModal';
 import LiveInput, { TimeInput } from './LiveInput';
 import { taskTextSx } from './styles';
@@ -58,7 +57,7 @@ function Flag({ on, onClick, title, children, colour = tokens.teal, soft = token
  */
 export default function LabReadinessSection({ dept, lab }) {
   const lr = dept.labReadiness ?? { enabled: false, units: [], activities: [], openingCutoff: '09:30', closingCutoff: '22:30' };
-  const [open, setOpen] = useState({ units: true, people: false });
+  const [open, setOpen] = useState({ units: true });
   const units = lr.units ?? [];
   const activities = lr.activities ?? [];
 
@@ -67,34 +66,6 @@ export default function LabReadinessSection({ dept, lab }) {
     closing: activities.filter((a) => a.phase === 'closing'),
   };
   const photoCount = activities.filter((a) => a.photoRequired && a.active !== false).length;
-
-  const positionName = (id) => (dept.positions ?? []).find((p) => p.id === id)?.name ?? '';
-
-  /**
-   * Everyone in this department, from both places a person can belong to one: the department's own
-   * people list, and the department chosen on their account in Settings. Listing only the first
-   * left anyone who belongs by their account alone with no row here — and so no way to be given a
-   * unit, which is the one thing this block exists to do.
-   */
-  const { data: orgMap } = useListAssignmentsQuery();
-  const stored = new Map((dept.assignments ?? []).map((a) => [a.name, a]));
-  const names = new Set(stored.keys());
-  Object.entries(orgMap ?? {}).forEach(([name, a]) => { if (a.departmentId === dept.id) names.add(name); });
-  const people = [...names]
-    .map((name) => {
-      const own = stored.get(name);
-      const acct = orgMap?.[name];
-      const positionId = own?.positionId ?? acct?.positionId ?? null;
-      return {
-        name,
-        positionId,
-        role: own?.role ?? acct?.role ?? 'member',
-        unitKey: own?.unitKey ?? acct?.unitKey ?? '',
-        positionName: positionName(positionId),
-        listed: Boolean(own),
-      };
-    })
-    .sort((a, b) => a.name.localeCompare(b.name));
 
   const toggle = (k) => setOpen((o) => ({ ...o, [k]: !o[k] }));
 
@@ -120,8 +91,8 @@ export default function LabReadinessSection({ dept, lab }) {
     >
       <SectionNote>
         The board behind this department's opening and closing tasks, which are edited in the two sections
-        above. Here are the things the rounds themselves need: which units run a board, who works in which
-        unit, and the time after which a sign-off counts as late.
+        above. Here are the units that run a board and the time after which a sign-off counts as late. Who
+        works in which unit is set on the person, in <strong>Settings · Users</strong>, beside their department.
       </SectionNote>
 
       {!lr.enabled ? (
@@ -189,35 +160,6 @@ export default function LabReadinessSection({ dept, lab }) {
                     {u.active === false ? 'OFF' : 'ON'}
                   </Flag>
                   <DelBtn onClick={() => lab.removeUnit(u)} title={`Remove ${u.name}`} />
-                </Box>
-              </Box>
-            ))}
-          </Lane>
-
-          {/* WHO WORKS WHERE — the other half of "whose line is this" */}
-          <Lane
-            label="👥 Who works where"
-            count={`${people.filter((p) => p.unitKey).length} of ${people.length} placed`}
-            colour={tokens.purple}
-            open={open.people}
-            onToggle={() => toggle('people')}
-          >
-            <SectionNote sx={{ mb: '8px' }}>
-              The unit a person works in is how <strong>My Activity</strong> knows which board is theirs. Their
-              position comes from Settings · Users; set the unit here. Somebody with no unit still sees the
-              board — they just get no lines of their own on My Activity, and the app tells them to ask you.
-            </SectionNote>
-            {people.length === 0 ? <EmptyLine>Nobody is in this department yet.</EmptyLine> : people.map((p) => (
-              <Box key={p.name} sx={{ p: '8px 10px', m: '4px 0', bgcolor: tokens.card, border: `1px solid ${tokens.line}`, borderRadius: '7px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-                <Typography sx={{ fontSize: 12.5, fontWeight: 600, color: tokens.ink, flex: 1, minWidth: 160 }}>{p.name}</Typography>
-                <Box sx={{ fontFamily: fonts.mono, fontSize: 9.5, p: '3px 9px', borderRadius: '10px', bgcolor: p.positionName ? tokens.tealSoft : tokens.creamWarm, color: p.positionName ? tokens.tealDark : tokens.slateSoft, fontWeight: 700, letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
-                  {p.positionName || (p.role === 'head' ? 'DEPARTMENT HEAD' : 'NO POSITION')}
-                </Box>
-                <Box sx={{ width: 210 }}>
-                  <SelectInput value={p.unitKey} sx={selectSx} onChange={(e) => lab.setPeople(people.map((x) => (x.name === p.name ? { ...x, unitKey: e.target.value } : x)))}>
-                    <option value="">— no unit —</option>
-                    {units.filter((u) => u.active !== false).map((u) => <option key={u.key} value={u.key}>{u.name}</option>)}
-                  </SelectInput>
                 </Box>
               </Box>
             ))}

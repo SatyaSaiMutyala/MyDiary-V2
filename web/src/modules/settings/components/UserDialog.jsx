@@ -8,7 +8,7 @@ import { tdplEmail } from '../../../utils/people';
 import { useCreateUserMutation, useUpdateUserMutation, useUserModulesQuery } from '../../../store/api/usersApi';
 import { ApiError } from './listUi';
 
-const EDITABLE = ['name', 'email', 'title', 'department', 'position', 'role', 'status', 'modules'];
+const EDITABLE = ['name', 'email', 'title', 'department', 'position', 'labUnit', 'role', 'status', 'modules'];
 
 /** Add / edit a user through POST / PATCH /api/users; modules checklist from GET /api/users/modules. */
 export default function UserDialog({ user, departments = [], deptRecords = [], onClose, onSaved }) {
@@ -19,11 +19,16 @@ export default function UserDialog({ user, departments = [], deptRecords = [], o
   const [update, { isLoading: updating }] = useUpdateUserMutation();
   const [error, setError] = useState(null);
   const [d, setD] = useState(() => user
-    ? { name: user.name, email: user.email, title: user.title || '', department: user.department || '', position: user.position || '', role: user.role, status: user.status, modules: [...(user.modules || [])] }
-    : { name: '', email: '', title: '', department: '', position: '', role: 'employee', status: 'active', modules: defaultModulesFor('employee', modules), password: '' });
+    ? { name: user.name, email: user.email, title: user.title || '', department: user.department || '', position: user.position || '', labUnit: user.labUnit || '', role: user.role, status: user.status, modules: [...(user.modules || [])] }
+    : { name: '', email: '', title: '', department: '', position: '', labUnit: '', role: 'employee', status: 'active', modules: defaultModulesFor('employee', modules), password: '' });
   // The positions of the department currently picked — the one the person holds decides which of
   // that department's shift tasks land on their My Activity.
-  const positions = (deptRecords.find(x => x.name === d.department)?.positions) || [];
+  const dept = deptRecords.find(x => x.name === d.department);
+  const positions = dept?.positions || [];
+  // A department that runs a readiness board has units inside it; the one a person works in is
+  // what My Activity reads to know which board is theirs. Every other department has none, so the
+  // field is simply not there.
+  const units = (dept?.labReadiness?.enabled ? dept.labReadiness.units : []).filter(u => u.active !== false);
 
   const set = (k, v) => setD(x => ({ ...x, [k]: v }));
   const toggle = (k) => setD(x => ({ ...x, modules: x.modules.includes(k) ? x.modules.filter(m => m !== k) : [...x.modules, k] }));
@@ -38,7 +43,7 @@ export default function UserDialog({ user, departments = [], deptRecords = [], o
     const email = d.email.trim() || (d.name.trim() ? tdplEmail(d.name.trim()) : '');
     try {
       if (!user) {
-        const body = { name: d.name.trim(), email, role: d.role, title: d.title.trim(), department: d.department.trim(), position: d.position.trim(), status: d.status };
+        const body = { name: d.name.trim(), email, role: d.role, title: d.title.trim(), department: d.department.trim(), position: d.position.trim(), labUnit: units.length ? d.labUnit : '', status: d.status };
         if (d.role !== 'admin') body.modules = d.modules;
         if (d.password) body.password = d.password;
         const u = await create(body).unwrap();
@@ -88,6 +93,17 @@ export default function UserDialog({ user, departments = [], deptRecords = [], o
             </SelectInput>
           </Field>
         </Grid>
+        {units.length > 0 && (
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Field label="Unit" hint="which board is theirs on My Activity">
+              <SelectInput value={d.labUnit} onChange={e => set('labUnit', e.target.value)}>
+                <option value="">— No unit (sees the board, no lines of their own) —</option>
+                {units.map(u => <option key={u.key} value={u.key}>{u.name}</option>)}
+                {d.labUnit && !units.some(u => u.key === d.labUnit) && <option value={d.labUnit}>{d.labUnit} (not a unit here)</option>}
+              </SelectInput>
+            </Field>
+          </Grid>
+        )}
         <Grid size={{ xs: 12, sm: 6 }}>
           <Field label="Role"><SelectInput value={d.role} onChange={e => setRole(e.target.value)}>{roles.map(r => <option key={r} value={r}>{ROLE_LABEL[r] || r}</option>)}</SelectInput></Field>
           <Typography sx={{ fontSize: 11.5, color: tokens.faint, mt: 0.5 }}>{ROLES.find(r => r.key === d.role)?.desc}. Changing the role resets the module grid to that role’s defaults.</Typography>

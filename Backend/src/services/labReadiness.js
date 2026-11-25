@@ -64,12 +64,20 @@ export function standingOf(dept, user) {
   const byTitle = wanted ? (dept.positions ?? []).find((p) => p.name.trim().toLowerCase() === wanted) : null;
   const positionId = listed?.positionId ? listed.positionId.toString() : byTitle ? byTitle._id.toString() : null;
   const position = (dept.positions ?? []).find((p) => p._id.toString() === positionId);
+
+  // The unit is chosen on the account, beside the department and the position — one screen sets
+  // everything about where a person works. A unit left on the department's own people list from
+  // before still counts, so nothing set earlier stops working.
+  const units = dept.labReadiness?.units ?? [];
+  const onAccount = (user?.labUnit ?? '').trim();
+  const unitKey = units.some((u) => u.key === onAccount) ? onAccount : (listed?.unitKey ?? '');
+
   return {
     name: user?.name ?? '',
     positionId,
     positionName: position?.name ?? '',
     role: listed?.role ?? (user?.role === 'admin' || user?.role === 'manager' ? 'head' : 'member'),
-    unitKey: listed?.unitKey ?? '',
+    unitKey,
   };
 }
 

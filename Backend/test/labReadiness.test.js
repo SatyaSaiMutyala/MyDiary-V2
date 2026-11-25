@@ -522,6 +522,38 @@ describe('Lab Readiness', () => {
       expect(r.status).toBe(200);
     });
 
+    it('takes the unit from the account, set when the person was created', async () => {
+      // No entry in the department's own people list at all — just an account with a department,
+      // a position and a unit, which is the one screen an admin fills in.
+      const onAccount = await createAndLogin(app, token, {
+        name: 'Imran Qureshi', email: 'imran.unit@trustlab.co.in', role: 'employee',
+        department: 'Clinical Laboratory', position: 'Phlebotomist', labUnit: UNIT,
+        modules: ['labReadiness', 'activity'],
+      });
+      expect(onAccount.user.labUnit).toBe(UNIT);
+
+      const r = await request(app).get('/api/lab-readiness/mine').set(auth(onAccount.token));
+      expect(r.status).toBe(200);
+      expect(r.body.unit).toMatchObject({ key: UNIT });
+      expect(r.body.me).toMatchObject({ positionName: 'Phlebotomist', unitKey: UNIT });
+      expect(r.body.total).toBeGreaterThan(0);
+    });
+
+    it('ignores a unit that is not one of this department\'s', async () => {
+      const wrong = await createAndLogin(app, token, {
+        name: 'Nikhil Varma', email: 'nikhil.unit@trustlab.co.in', role: 'employee',
+        department: 'Clinical Laboratory', labUnit: 'nrl-nowhere', modules: ['labReadiness'],
+      });
+      const r = await request(app).get('/api/lab-readiness/mine').set(auth(wrong.token));
+      expect(r.body.unit).toBeNull();
+      expect(r.body.total).toBe(0);
+    });
+
+    it('still honours a unit set the old way, on the department\'s people list', async () => {
+      const r = await request(app).get(`/api/lab-readiness/mine?date=${DATE}`).set(auth(staff.token));
+      expect(r.body.unit).toMatchObject({ key: UNIT });
+    });
+
     it('gives her unit and only her lines, both rounds', async () => {
       const r = await request(app).get(`/api/lab-readiness/mine?date=${DATE}`).set(auth(staff.token));
       expect(r.status).toBe(200);

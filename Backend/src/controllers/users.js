@@ -12,6 +12,8 @@ import { nameField, passwordField, titleField } from './auth.js';
 const emailField = z.string({ error: 'Enter an email.' }).trim().toLowerCase().pipe(z.email({ error: 'Enter a valid email.' }));
 const departmentField = z.string({ error: 'Department must be text.' }).trim().max(80, 'Department is too long (max 80).');
 const positionField = z.string({ error: 'Position must be text.' }).trim().max(120, 'Position is too long (max 120).');
+/** The key of a Lab Readiness unit, e.g. "nrl-biochemistry". Blank for departments without a board. */
+const labUnitField = z.string({ error: 'Unit must be text.' }).trim().max(60, 'Unit is too long (max 60).');
 const roleField = z.enum(ROLES, { error: 'Role must be admin, manager or employee.' });
 const statusField = z.enum(USER_STATUSES, { error: 'Status must be active or inactive.' });
 const modulesField = z.array(z.string({ error: 'Each module must be a key.' }), { error: 'modules must be a list of module keys.' }).max(50);
@@ -23,6 +25,7 @@ export const createSchema = z
     title: titleField.optional(),
     department: departmentField.optional(),
     position: positionField.optional(),
+    labUnit: labUnitField.optional(),
     role: roleField,
     status: statusField.optional(),
     modules: modulesField.optional(),
@@ -37,6 +40,7 @@ export const patchSchema = z
     title: titleField.optional(),
     department: departmentField.optional(),
     position: positionField.optional(),
+    labUnit: labUnitField.optional(),
     role: roleField.optional(),
     status: statusField.optional(),
     modules: modulesField.optional(),
@@ -48,17 +52,17 @@ export const resetPasswordSchema = z.object({ password: passwordField }).strict(
 /** List contract for GET /api/users (utils/listQuery.js). @type {import('../utils/listQuery.js').ListSpec} */
 export const USERS_LIST = {
   searchFields: ['name', 'email', 'title', 'department', 'position'],
-  filterFields: { role: 'enum', status: 'enum', department: 'string', position: 'string' },
+  filterFields: { role: 'enum', status: 'enum', department: 'string', position: 'string', labUnit: 'string' },
   enums: { role: ROLES, status: USER_STATUSES },
   dateFields: ['createdAt', 'updatedAt'],
   defaultDateField: 'createdAt',
   sortFields: ['name', 'email', 'title', 'department', 'role', 'status', 'createdAt', 'updatedAt'],
   defaultSort: 'name',
-  fields: ['name', 'email', 'role', 'title', 'department', 'position', 'modules', 'status', 'createdAt', 'updatedAt'],
+  fields: ['name', 'email', 'role', 'title', 'department', 'position', 'labUnit', 'modules', 'status', 'createdAt', 'updatedAt'],
 };
 
-const CHANGE_FIELDS = ['name', 'email', 'title', 'department', 'position', 'role', 'status', 'modules'];
-const snapshot = (u) => ({ name: u.name, email: u.email, title: u.title, department: u.department, position: u.position, role: u.role, status: u.status, modules: [...u.modules] });
+const CHANGE_FIELDS = ['name', 'email', 'title', 'department', 'position', 'labUnit', 'role', 'status', 'modules'];
+const snapshot = (u) => ({ name: u.name, email: u.email, title: u.title, department: u.department, position: u.position, labUnit: u.labUnit, role: u.role, status: u.status, modules: [...u.modules] });
 
 /** GET /api/users/modules — the module registry for the permissions editor. @type {import('express').RequestHandler} */
 export const modules = (_req, res) => {

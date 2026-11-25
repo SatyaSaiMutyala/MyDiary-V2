@@ -8,7 +8,7 @@ import { DAYS_OF_WEEK_FULL } from '../../data/departments';
 import {
   useAddAgendaPointMutation, useAddAgendaSectionMutation, useAddPositionMutation, useAddTaskMutation,
   useGetDepartmentQuery, usePutCadenceMutation, useRemoveAgendaPointMutation, useRemoveAgendaSectionMutation,
-  usePutAssignmentsMutation, useRemoveDepartmentMutation, useRemovePositionMutation, useRemoveTaskMutation, useUpdateAgendaPointMutation,
+  useRemoveDepartmentMutation, useRemovePositionMutation, useRemoveTaskMutation, useUpdateAgendaPointMutation,
   useUpdateAgendaSectionMutation, useUpdateDepartmentMutation, useUpdatePositionMutation, useUpdateTaskMutation,
 } from '../../store/api/departmentsApi';
 import {
@@ -79,7 +79,6 @@ export default function DepartmentDetailPage() {
   const [removeLabUnitCall] = useRemoveLabUnitMutation();
   const [updateLabActivityCall] = useUpdateLabActivityMutation();
   const [removeLabActivityCall] = useRemoveLabActivityMutation();
-  const [putAssignmentsCall] = usePutAssignmentsMutation();
 
   useCrumbs([{ label: 'Admin', to: '/' }, { label: 'Department Master', to: '/departments' }, { label: d ? d.code : '' }]);
 
@@ -281,23 +280,6 @@ export default function DepartmentDetailPage() {
         else ids.push(positionId);
         void run(updateLabActivityCall({ id, activityId: activity.id, positionIds: ids }));
       },
-      /**
-       * Save the department's people list whole, which is what the API takes.
-       *
-       * The list handed in includes everyone who belongs to the department by either route — its
-       * own list, or the department chosen on their account — so saving it also writes in anybody
-       * who was only there by their account. That is deliberate: once they have been given a unit,
-       * they are part of this department's roster in their own right.
-       */
-      setPeople(people) {
-        const assignments = people.map((p) => ({
-          name: p.name,
-          positionId: p.positionId ?? null,
-          role: p.role ?? 'member',
-          unitKey: p.unitKey ?? '',
-        }));
-        void run(putAssignmentsCall({ id, assignments }));
-      },
       async removeActivity(activity) {
         if (!await dlg.confirm(`Remove "${activity.text}" from the checklist?\n\nIf it already appears on completed records it will be switched off instead.`)) return;
         const r = await run(removeLabActivityCall({ id, activityId: activity.id }));
@@ -305,7 +287,7 @@ export default function DepartmentDetailPage() {
       },
     };
   }, [d, id, dlg, debounce, show, putLabConfigCall, restoreLabCall, addLabUnitCall, updateLabUnitCall, removeLabUnitCall,
-    updateLabActivityCall, removeLabActivityCall, putAssignmentsCall]);
+    updateLabActivityCall, removeLabActivityCall]);
 
   if (isLoading) {
     return <Box sx={{ p: 4, color: tokens.slate, fontFamily: fonts.mono, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Loading department…</Box>;

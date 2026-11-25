@@ -394,7 +394,7 @@ export async function assignmentMap() {
   //    no second place to keep in step. A department that no longer exists changes nothing, and the
   //    roster entry (if any) still stands.
   const byName = new Map(docs.map((d) => [cleanName(d.name).toLowerCase(), d]));
-  const users = await User.find({ status: 'active', department: { $nin: ['', null] } }, { name: 1, department: 1, position: 1, role: 1 });
+  const users = await User.find({ status: 'active', department: { $nin: ['', null] } }, { name: 1, department: 1, position: 1, labUnit: 1, role: 1 });
   for (const u of users) {
     const d = byName.get(cleanName(u.department).toLowerCase());
     if (!d) continue;
@@ -405,8 +405,8 @@ export async function assignmentMap() {
       positionId: pos ? pos._id.toString() : null,
       // No position chosen and they run things: show them everything their department does.
       role: !pos && (u.role === 'admin' || u.role === 'manager') ? 'head' : 'member',
-      // The account says nothing about units, so a unit already given in Department Master stands.
-      unitKey: map[u.name]?.unitKey ?? '',
+      // The unit chosen on the account wins; one left on the department's own list still counts.
+      unitKey: (u.labUnit ?? '') || (map[u.name]?.unitKey ?? ''),
     };
   }
   return map;

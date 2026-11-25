@@ -179,7 +179,7 @@ export const DEPARTMENTS_LIST = {
   defaultSort: 'order',
   fields: [
     'code', 'name', 'icon', 'description', 'order', 'positions', 'openingTasks', 'closingTasks', 'weeklyTasks',
-    'monthlyTasks', 'reviewCadence', 'assignments', 'createdBy', 'createdAt', 'updatedAt',
+    'monthlyTasks', 'reviewCadence', 'labReadiness', 'assignments', 'createdBy', 'createdAt', 'updatedAt',
   ],
 };
 
