@@ -84,10 +84,16 @@ export function groupBoard(board) {
   );
   const photos = {};
   for (const p of board.run?.photos ?? []) {
+    // A photograph still on its way to the server is shown from the phone's own copy, marked as
+    // sending, until the stored one takes its place.
     (photos[p.taskKey] ??= []).push({
       id: p.id,
       name: p.name,
-      source: photoSource(target, p.id),
+      pending: !!p.pendingUri,
+      source: p.pendingUri ? { uri: p.pendingUri } : photoSource(target, p.id),
+      // The copy on this phone, kept behind the stored one so the square is never empty while
+      // the stored one is being fetched.
+      localUri: p.pendingUri ?? p.localUri ?? '',
     });
   }
 
@@ -97,6 +103,9 @@ export function groupBoard(board) {
     text: a.text,
     time: a.scheduledTime ?? '',
     photoRequired: !!a.photoRequired,
+    // Whose line it is. None means everyone's, as an untagged shift task has always meant.
+    positions: a.positions ?? [],
+    mine: a.mine !== false,
   }));
 
   const items = {};

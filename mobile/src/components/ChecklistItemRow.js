@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import {
   Ban,
@@ -31,7 +31,9 @@ const remarkLabel = status =>
     ? 'Reason not applicable'
     : 'Note (optional)';
 
-export function ChecklistItemRow({
+const REMARK_DELAY = 700;
+
+function Row({
   activity,
   item,
   locked,
@@ -40,12 +42,45 @@ export function ChecklistItemRow({
   onAddPhotos,
   onRemovePhoto,
 }) {
-  const remarkMissing = needsRemark(item);
-  const photoMissing = needsPhoto(activity, item);
+  // The remark is typed here and sent a moment after typing stops.
+  //
+  // It used to be held by the screen, which meant every letter re-rendered all twenty-six rows of
+  // the round — the typing lag people felt. Kept here, a letter re-renders one row.
+  const [draft, setDraft] = useState(null);
+  const timer = useRef(null);
+  const saved = item.remark;
+  useEffect(() => {
+    if (draft !== null && draft === saved) {
+      setDraft(null); // what was typed is now what is stored
+    }
+  }, [draft, saved]);
+  useEffect(() => () => clearTimeout(timer.current), []);
+
+  const type = text => {
+    setDraft(text);
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => onRemark?.(text), REMARK_DELAY);
+  };
+  const flush = () => {
+    clearTimeout(timer.current);
+    if (draft !== null && draft !== saved) {
+      onRemark?.(draft);
+    }
+  };
+
+  const shown = { ...item, remark: draft ?? saved };
+  const remarkMissing = needsRemark(shown);
+  const photoMissing = needsPhoto(activity, shown);
   const touched = item.status !== null || item.photos.length > 0;
   const showPhotos =
     item.photos.length > 0 || (!locked && (activity.photoRequired || touched));
-  const showRemark = locked ? !!item.remark.trim() : touched;
+  // The box opens where something has to be written — a deviation or an N/A — or where a note
+  // already is. It used to open on every answer, so each tick of a plain "Done" grew the row by a
+  // box nobody was going to type in and pushed the rest of the round down the screen. This is also
+  // what the website does.
+  const showRemark = locked
+    ? !!shown.remark.trim()
+    : remarkMissing || !!shown.remark.trim();
 
   return (
     <View style={styles.item}>
@@ -58,6 +93,15 @@ export function ChecklistItemRow({
             {activity.photoRequired ? (
               <Pill label="Photo required" tone="low" icon={Camera} />
             ) : null}
+            {/* Whose line it is. Nothing shown means everyone's. A line that is not yours is
+                still here and still answerable — the round is signed as one sheet. */}
+            {(activity.positions ?? []).map(p => (
+              <Pill
+                key={p.id}
+                label={p.name}
+                tone={activity.mine === false ? 'low' : 'signed'}
+              />
+            ))}
           </View>
           {item.actionedBy ? (
             <AppText
@@ -109,12 +153,13 @@ export function ChecklistItemRow({
               color={colors.inkSoft}
               style={styles.remark}
             >
-              {item.remark}
+              {shown.remark}
             </AppText>
           ) : (
             <TextArea
-              value={item.remark}
-              onChangeText={onRemark}
+              value={shown.remark}
+              onChangeText={type}
+              onBlur={flush}
               maxLength={5000}
               placeholder="What happened and what did you do?"
               invalid={remarkMissing}
@@ -160,4 +205,33 @@ const styles = StyleSheet.create({
   block: { marginTop: vs(12) },
   remark: { marginTop: vs(6) },
   hint: { marginTop: vs(8) },
+});
+
+/**
+ * One line of the readiness sheet.
+ *
+ * Wrapped so that answering one activity redraws that activity, not the twenty-six of the round.
+ * Only what is drawn is compared: the callbacks are new closures on every render of the screen, but
+ * they close over nothing that changes without the board being rebuilt from scratch (the section
+ * list is keyed by unit, date and round), so their identity is deliberately ignored.
+ */
+export const ChecklistItemRow = React.memo(Row, (a, b) => {
+  if (
+    a.activity !== b.activity ||
+    a.activity.mine !== b.activity.mine ||
+    a.locked !== b.locked ||
+    a.item.status !== b.item.status ||
+    a.item.remark !== b.item.remark ||
+    a.item.actionedBy !== b.item.actionedBy ||
+    a.item.actionedAt !== b.item.actionedAt ||
+    a.item.photos.length !== b.item.photos.length
+  ) {
+    return false;
+  }
+  return a.item.photos.every((p, i) => {
+    const q = b.item.photos[i];
+    return (
+      p.id === q.id && p.pending === q.pending && p.localUri === q.localUri
+    );
+  });
 });

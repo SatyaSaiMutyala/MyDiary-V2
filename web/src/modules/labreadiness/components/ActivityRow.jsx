@@ -99,7 +99,7 @@ export default function ActivityRow({
         m: '6px 0',
         bgcolor: status ? tokens.card : tokens.cream,
         border: `1px solid ${look ? look.color : tokens.line}`,
-        borderLeft: `4px solid ${look ? look.color : tokens.lineSoft}`,
+        borderLeft: `4px solid ${look ? look.color : activity.mine ? tokens.teal : tokens.lineSoft}`,
         borderRadius: '8px',
         transition: 'border-color .12s ease, background .12s ease',
         '&:hover': { borderColor: look ? look.color : tokens.slateSofter },
@@ -124,6 +124,21 @@ export default function ActivityRow({
                 📷 {photos.length ? `${photos.length} photo${photos.length === 1 ? '' : 's'}` : 'Photo required'}
               </Box>
             )}
+            {/* Whose line this is. No chip at all means everyone's, exactly as an untagged
+                shift task behaves. */}
+            {(activity.positions ?? []).map((p) => (
+              <Box
+                key={p.id}
+                title={activity.mine ? `Your line — ${p.name}` : `${p.name}'s line`}
+                sx={{
+                  fontFamily: fonts.mono, fontSize: 9.5, p: '3px 8px', borderRadius: '10px', fontWeight: 700, letterSpacing: '0.04em',
+                  bgcolor: activity.mine ? tokens.tealDark : tokens.creamWarm,
+                  color: activity.mine ? '#fff' : tokens.slate,
+                }}
+              >
+                {p.name}
+              </Box>
+            ))}
             {item?.actionedBy && (
               <Box sx={{ fontFamily: fonts.mono, fontSize: 9.5, p: '3px 8px', borderRadius: '10px', bgcolor: tokens.tealSofter, color: tokens.tealDark, fontWeight: 700, letterSpacing: '0.04em' }}>
                 {item.actionedBy}

@@ -11,9 +11,13 @@ import { Pill } from './Pill';
 // The checklist grouped by section; each section folds and unfolds.
 //
 // Which sections start folded is decided once, when the record first loads:
-// the ones that are already complete. After that only the person folds or
-// unfolds a section. Finishing the last item of a section must NOT fold it,
-// or the page jumps and the person loses their place.
+// everything except the first one with work left in it. A round is twenty-six
+// activities, each with three buttons, a photo strip and a text box, and
+// drawing them all at once is what made the screen crawl on a real phone —
+// opening one section is both faster and how the round is actually worked.
+// After that only the person folds or unfolds a section. Finishing the last
+// item of a section must NOT fold it, or the page jumps and the person loses
+// their place.
 export function LabSections({
   sections,
   items,
@@ -24,9 +28,10 @@ export function LabSections({
 
   useEffect(() => {
     if (folded === null && sections.length) {
+      const open = sections.find(sec => sec.complete < sec.rows.length);
       setFolded(
         Object.fromEntries(
-          sections.map(sec => [sec.title, sec.complete === sec.rows.length]),
+          sections.map(sec => [sec.title, sec.title !== open?.title]),
         ),
       );
     }
@@ -45,8 +50,8 @@ export function LabSections({
           return null;
         }
         const allDone = sec.complete === sec.rows.length;
-        // Until the first load has decided, show complete sections folded.
-        const isFolded = folded ? !!folded[sec.title] : allDone;
+        // Until the first load has decided, keep everything folded but the first unfinished one.
+        const isFolded = folded ? !!folded[sec.title] : true;
         const toggle = () =>
           setFolded(f => ({ ...(f ?? {}), [sec.title]: !isFolded }));
 

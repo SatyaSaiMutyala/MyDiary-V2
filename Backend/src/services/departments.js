@@ -355,7 +355,11 @@ export async function putAssignments(d, list) {
     if (seen.has(key)) throw badRequest(`${a.name} is in this department's people list twice.`, [{ field: 'assignments', message: 'Duplicate person.' }]);
     seen.add(key);
     if (a.positionId) positionOr404(d, a.positionId);
-    next.push({ name: a.name, positionId: a.positionId ?? null, role: a.role ?? 'member' });
+    if (a.unitKey) {
+      const unit = (d.labReadiness?.units ?? []).find((u) => u.key === a.unitKey);
+      if (!unit) throw badRequest(`"${a.unitKey}" is not a unit of ${d.name}.`, [{ field: 'assignments', message: `Unknown unit for ${a.name}.` }]);
+    }
+    next.push({ name: a.name, positionId: a.positionId ?? null, role: a.role ?? 'member', unitKey: a.unitKey ?? '' });
   }
   d.assignments = next;
   await d.save();
@@ -368,14 +372,20 @@ export async function putAssignments(d, list) {
  */
 export async function assignmentMap() {
   const docs = await Department.find({}, { name: 1, positions: 1, assignments: 1 }).sort({ order: 1 });
-  /** @type {Record<string, { departmentId: string, positionId: string | null, role: string }>} */
+  /** @type {Record<string, { departmentId: string, positionId: string | null, role: string, unitKey: string }>} */
   const map = {};
 
   // 1. The list each department keeps of its people. This covers names from the original roster that
   //    have no login of their own.
   for (const d of docs) {
     for (const a of d.assignments ?? []) {
-      map[a.name] = { departmentId: d._id.toString(), positionId: a.positionId ? a.positionId.toString() : null, role: a.role ?? 'member' };
+      map[a.name] = {
+        departmentId: d._id.toString(),
+        positionId: a.positionId ? a.positionId.toString() : null,
+        role: a.role ?? 'member',
+        // Which unit of the department they work in — the laboratory uses it, nothing else does.
+        unitKey: a.unitKey ?? '',
+      };
     }
   }
 
@@ -395,6 +405,8 @@ export async function assignmentMap() {
       positionId: pos ? pos._id.toString() : null,
       // No position chosen and they run things: show them everything their department does.
       role: !pos && (u.role === 'admin' || u.role === 'manager') ? 'head' : 'member',
+      // The account says nothing about units, so a unit already given in Department Master stands.
+      unitKey: map[u.name]?.unitKey ?? '',
     };
   }
   return map;

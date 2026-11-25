@@ -61,6 +61,8 @@ export const unitSchema = z
 
 export const unitPatchSchema = unitSchema.partial().omit({ key: true }).strict();
 
+const objectId = z.string({ error: 'An id must be text.' }).regex(/^[0-9a-f]{24}$/i, 'That id is not valid. Refresh the page and try again.');
+
 export const activitySchema = z
   .object({
     key: text('Activity key', 60).optional(),
@@ -69,6 +71,8 @@ export const activitySchema = z
     text: text('Activity', 1000).min(1, 'Enter what has to be done.'),
     scheduledTime: z.union([timeOfDay, z.literal('')]).optional(),
     scope: z.enum(LAB_SCOPES, { error: `Scope must be one of: ${LAB_SCOPES.join(', ')}.` }).optional(),
+    /** Whose line it is. Empty means everyone in the department. */
+    positionIds: z.array(objectId, { error: 'Positions must be a list of ids.' }).max(50, 'Too many positions on one activity (max 50).').optional(),
     photoRequired: z.boolean().optional(),
     active: z.boolean().optional(),
     order: z.number().int().min(1).max(999).optional(),
@@ -88,11 +92,12 @@ async function target(req) {
   const date = lab.requireDate(req.params.date);
   const phase = req.params.phase;
   if (!LAB_PHASES.includes(phase)) throw notFound(`"${phase}" is not a round — it is either opening or closing.`);
-  return { dept, unit, date, phase, user };
+  return { dept, unit, date, phase, user, who: lab.standingOf(dept, user) };
 }
 
 /** Writes the board back the way the screen reads it, so one request is enough to redraw. */
-const respond = (res, dept, unit, date, phase, run) => res.json(lab.boardState(dept, unit, date, phase, run));
+const respond = (res, dept, unit, date, phase, run, who) =>
+  res.json(lab.boardState(dept, unit, date, phase, run, who));
 
 /** The Activity Log line for a board change. */
 const audit = (res, dept, unit, date, phase, details) => {
@@ -121,6 +126,21 @@ export const overview = async (req, res) => {
   });
 };
 
+/**
+ * GET /api/lab-readiness/mine — the signed-in person's own lines for a day.
+ *
+ * This is what My Activity shows the laboratory in place of its shift tasks: their unit, and the
+ * activities of both rounds that belong to their position.
+ * @type {import('express').RequestHandler}
+ */
+export const mine = async (req, res) => {
+  const dept = await lab.readinessDepartment(req.query.departmentId);
+  const user = currentUser(req);
+  lab.assertCanRecord(dept, user);
+  const date = req.query.date ? lab.requireDate(String(req.query.date)) : todayStr();
+  res.json(await lab.myLines(dept, user, date));
+};
+
 /** GET /api/lab-readiness/history */
 export const history = async (req, res) => {
   const dept = await lab.readinessDepartment(req.query.departmentId);
@@ -144,28 +164,28 @@ export const history = async (req, res) => {
 
 /** GET /api/lab-readiness/:unitKey/:date/:phase */
 export const board = async (req, res) => {
-  const { dept, unit, date, phase } = await target(req);
-  respond(res, dept, unit, date, phase, await lab.findRun(dept, unit.key, date, phase));
+  const { dept, unit, date, phase, who } = await target(req);
+  respond(res, dept, unit, date, phase, await lab.findRun(dept, unit.key, date, phase), who);
 };
 
 /** PUT /api/lab-readiness/:unitKey/:date/:phase/items/:taskKey */
 export const putItem = async (req, res) => {
-  const { dept, unit, date, phase, user } = await target(req);
+  const { dept, unit, date, phase, user, who } = await target(req);
   const { taskKey } = req.params;
   let run = await lab.setItemStatus({ dept, unit, date, phase, taskKey, status: req.body.status, by: user });
   if (req.body.remark !== undefined) {
     run = await lab.setItemRemark({ dept, unit, date, phase, taskKey, remark: req.body.remark, by: user });
   }
   audit(res, dept, unit, date, phase, `${taskKey} → ${req.body.status ?? 'cleared'}`);
-  respond(res, dept, unit, date, phase, run);
+  respond(res, dept, unit, date, phase, run, who);
 };
 
 /** PUT /api/lab-readiness/:unitKey/:date/:phase/items/:taskKey/remark */
 export const putRemark = async (req, res) => {
-  const { dept, unit, date, phase, user } = await target(req);
+  const { dept, unit, date, phase, user, who } = await target(req);
   const run = await lab.setItemRemark({ dept, unit, date, phase, taskKey: req.params.taskKey, remark: req.body.remark, by: user });
   audit(res, dept, unit, date, phase, `${req.params.taskKey} · remark noted`);
-  respond(res, dept, unit, date, phase, run);
+  respond(res, dept, unit, date, phase, run, who);
 };
 
 /**
@@ -173,7 +193,7 @@ export const putRemark = async (req, res) => {
  * The body is the image itself; `?name=` carries the original file name for the record.
  */
 export const addPhoto = async (req, res) => {
-  const { dept, unit, date, phase, user } = await target(req);
+  const { dept, unit, date, phase, user, who } = await target(req);
   const { body, contentType, name } = imageBody(req);
   const run = await lab.addPhoto({
     dept, unit, date, phase,
@@ -185,20 +205,20 @@ export const addPhoto = async (req, res) => {
   });
   audit(res, dept, unit, date, phase, `${req.params.taskKey} · photograph added (${Math.round(body.length / 1024)} KB)`);
   res.status(201);
-  respond(res, dept, unit, date, phase, run);
+  respond(res, dept, unit, date, phase, run, who);
 };
 
 /** DELETE /api/lab-readiness/:unitKey/:date/:phase/photos/:photoId */
 export const removePhoto = async (req, res) => {
-  const { dept, unit, date, phase } = await target(req);
+  const { dept, unit, date, phase, who } = await target(req);
   const run = await lab.removePhoto({ dept, unitKey: unit.key, date, phase, photoId: req.params.photoId });
   audit(res, dept, unit, date, phase, 'photograph removed');
-  respond(res, dept, unit, date, phase, run);
+  respond(res, dept, unit, date, phase, run, who);
 };
 
 /** GET /api/lab-readiness/:unitKey/:date/:phase/photos/:photoId — the image itself. */
 export const getPhoto = async (req, res) => {
-  const { dept, unit, date, phase } = await target(req);
+  const { dept, unit, date, phase, who } = await target(req);
   const run = await lab.findRun(dept, unit.key, date, phase);
   const photo = run?.photos?.id(req.params.photoId);
   if (!photo) throw notFound('That photograph is not on this record.');
@@ -210,7 +230,7 @@ export const getPhoto = async (req, res) => {
  * The body is the photograph of the person signing; `?role=` their designation (their own by default).
  */
 export const signoff = async (req, res) => {
-  const { dept, unit, date, phase, user } = await target(req);
+  const { dept, unit, date, phase, user, who } = await target(req);
   const selfie = imageBody(req);
   const role = req.query.role ?? (typeof req.body?.role === 'string' ? req.body.role : '');
   const run = await lab.signOff({
@@ -221,12 +241,12 @@ export const signoff = async (req, res) => {
     role: role ? String(role).slice(0, 120) : (user.position ?? ''),
   });
   audit(res, dept, unit, date, phase, `signed off by ${user.name}${run.late ? ' (late)' : ''}`);
-  respond(res, dept, unit, date, phase, run);
+  respond(res, dept, unit, date, phase, run, who);
 };
 
 /** GET /api/lab-readiness/:unitKey/:date/:phase/selfie — the sign-off photograph. */
 export const getSelfie = async (req, res) => {
-  const { dept, unit, date, phase } = await target(req);
+  const { dept, unit, date, phase, who } = await target(req);
   const run = await lab.findRun(dept, unit.key, date, phase);
   if (!run || !isSigned(run) || !run.selfiePath) throw notFound('This record has no sign-off photograph.');
   await sendImage(res, run.selfiePath, run.selfieDisk, 'image/jpeg', `signoff-${unit.key}-${date}-${phase}.jpg`);
@@ -234,10 +254,10 @@ export const getSelfie = async (req, res) => {
 
 /** POST /api/lab-readiness/:unitKey/:date/:phase/reopen */
 export const reopen = async (req, res) => {
-  const { dept, unit, date, phase, user } = await target(req);
+  const { dept, unit, date, phase, user, who } = await target(req);
   const run = await lab.reopen({ dept, unitKey: unit.key, date, phase, reason: req.body.reason, by: user });
   audit(res, dept, unit, date, phase, `reopened — ${req.body.reason}`);
-  respond(res, dept, unit, date, phase, run);
+  respond(res, dept, unit, date, phase, run, who);
 };
 
 /** One run on its own, for a history row. GET /api/lab-readiness/records/:id */

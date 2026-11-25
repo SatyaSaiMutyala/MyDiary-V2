@@ -92,9 +92,11 @@ describe('create & read', () => {
     expect(d.reviewCadence.monthlyAgenda).toEqual([]);
 
     // People, with the position resolved.
+    // `unitKey` is which unit of the department the person works in — blank everywhere but the
+    // laboratory, which uses it to know whose readiness board is whose.
     expect(d.assignments).toEqual([
-      { name: 'Dr. Anusha Singh', positionId: d.positions[1].id, role: 'member' },
-      { name: 'V. Subramanian', positionId: null, role: 'head' },
+      { name: 'Dr. Anusha Singh', positionId: d.positions[1].id, role: 'member', unitKey: '' },
+      { name: 'V. Subramanian', positionId: null, role: 'head', unitKey: '' },
     ]);
 
     expect((await get(`/api/departments/${d.id}`)).body.department).toEqual(d);
@@ -419,8 +421,8 @@ describe('people and the assignment map', () => {
     const r = await put(`/api/departments/${d.id}/assignments`, { assignments: [{ name: 'Dr. P. Reddy', positionId: d.positions[1].id }, { name: 'Dr. Bharath', role: 'head' }] });
     expect(r.status).toBe(200);
     expect(r.body.department.assignments).toEqual([
-      { name: 'Dr. P. Reddy', positionId: d.positions[1].id, role: 'member' },
-      { name: 'Dr. Bharath', positionId: null, role: 'head' },
+      { name: 'Dr. P. Reddy', positionId: d.positions[1].id, role: 'member', unitKey: '' },
+      { name: 'Dr. Bharath', positionId: null, role: 'head', unitKey: '' },
     ]);
     const dupe = await put(`/api/departments/${d.id}/assignments`, { assignments: [{ name: 'Dr. Bharath' }, { name: 'Dr. Bharath' }] });
     expect(dupe.status).toBe(400);
@@ -434,8 +436,8 @@ describe('people and the assignment map', () => {
     const r = await get('/api/departments/assignments');
     expect(r.status).toBe(200);
     expect(r.body.total).toBe(3);
-    expect(r.body.assignments['Dr. Anusha Singh']).toEqual({ departmentId: lab.id, positionId: lab.positions[1].id, role: 'member' });
-    expect(r.body.assignments['V. Subramanian']).toEqual({ departmentId: lab.id, positionId: null, role: 'head' });
+    expect(r.body.assignments['Dr. Anusha Singh']).toEqual({ departmentId: lab.id, positionId: lab.positions[1].id, role: 'member', unitKey: '' });
+    expect(r.body.assignments['V. Subramanian']).toEqual({ departmentId: lab.id, positionId: null, role: 'head', unitKey: '' });
     expect(r.body.assignments.Pavan.role).toBe('member');
     expect((await get('/api/departments/assignments?colour=red')).status).toBe(400);
   });

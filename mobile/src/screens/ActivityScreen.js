@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { Check } from 'lucide-react-native';
+import { useNavigation } from '@react-navigation/native';
+import { Check, ChevronRight, FlaskConical } from 'lucide-react-native';
 import { AppText } from '../components/AppText';
 import { Card } from '../components/Card';
 import { EmptyState } from '../components/EmptyState';
@@ -8,10 +9,12 @@ import { Eyebrow } from '../components/Eyebrow';
 import { Notice } from '../components/Notice';
 import { ProgressBar } from '../components/ProgressBar';
 import { ScreenHeader } from '../components/ScreenHeader';
+import { Pill } from '../components/Pill';
 import { ScreenScroll } from '../components/ScreenScroll';
 import { ShimmerRows } from '../components/Shimmer';
 import { Stat } from '../components/Stat';
 import { errorMessage, useMe } from '../store';
+import { canOpen } from '../store/api/authApi';
 import {
   useGetActivityQuery,
   useGetDepartmentQuery,
@@ -24,8 +27,14 @@ import {
   shiftStats,
   todayFacts,
 } from '../utils/departments';
+import { useLabMineQuery } from '../store/api/labReadinessApi';
 import { longDate, realToday } from '../utils/dates';
 import { colors, hairline, radius, s, vs } from '../theme';
+
+const LAB_ROUNDS = [
+  { key: 'opening', label: 'Opening round' },
+  { key: 'closing', label: 'Closing round' },
+];
 
 const LANES = [
   { key: 'opening', label: 'Opening' },
@@ -79,6 +88,7 @@ function ShiftRow({ task, on, busy, last, onToggle }) {
  * same rules the website uses (src/utils/departments.js), so both agree.
  */
 export function ActivityScreen() {
+  const nav = useNavigation();
   const me = useMe();
   const today = realToday();
   const facts = useMemo(() => todayFacts(today), [today]);
@@ -92,6 +102,13 @@ export function ActivityScreen() {
     skip: !assignment.departmentId,
   });
   const activityQ = useGetActivityQuery({ date: today, scope: 'me' });
+  // The laboratory's readiness lines for this person — nothing for anybody else, and nothing until
+  // an admin has put them in a unit.
+  const labQ = useLabMineQuery(
+    { date: today },
+    { skip: !canOpen(me, 'labReadiness') },
+  );
+  const lab = labQ.data?.unit ? labQ.data : null;
   const [tick] = useSetActivityTickMutation();
 
   const dept = deptQ.data;
@@ -143,15 +160,37 @@ export function ActivityScreen() {
         done: next,
         date: today,
       }).unwrap();
+      // The tap stays on screen until the refetched log says the same thing (see the effect
+      // below). Dropping it here instead made the box flick back to its old state for the moment
+      // between the save finishing and the new log arriving — on, off, on.
     } catch (err) {
       setProblem(errorMessage(err));
-    } finally {
       setPending(p => {
         const { [key]: _gone, ...rest } = p;
         return rest;
       });
     }
   };
+
+  // A tap is held over the server's answer only until the two agree, then it is let go of.
+  useEffect(() => {
+    setPending(p => {
+      const keys = Object.keys(p);
+      if (!keys.length) {
+        return p;
+      }
+      const waiting = {};
+      for (const key of keys) {
+        const [kind, taskId] = key.split(':');
+        const saved =
+          getTaskStatus(log, person, today, kind, taskId) === 'done';
+        if (saved !== p[key]) {
+          waiting[key] = p[key];
+        }
+      }
+      return Object.keys(waiting).length === keys.length ? p : waiting;
+    });
+  }, [log, person, today]);
 
   const body = () => {
     if (error) {
@@ -169,7 +208,7 @@ export function ActivityScreen() {
         <EmptyState text="You are not in a department yet, so there is no shift checklist. Ask an admin to add you to one." />
       );
     }
-    if (!total) {
+    if (!total && !lab?.total) {
       return <EmptyState text="Nothing due today. Enjoy the quiet one." />;
     }
 
@@ -208,6 +247,58 @@ export function ActivityScreen() {
             color={pct === 100 ? colors.green : colors.teal}
           />
         </Card>
+
+        {lab?.unit ? (
+          <View>
+            <Eyebrow
+              label={`Lab readiness · ${lab.unit.name} · ${lab.done}/${lab.total}`}
+            />
+            <Card style={styles.lane}>
+              {LAB_ROUNDS.map(round => {
+                const lines = lab.phases?.[round.key]?.lines ?? [];
+                if (!lines.length) {
+                  return null;
+                }
+                const signed = !!lab.phases[round.key].signedAt;
+                return (
+                  <Pressable
+                    key={round.key}
+                    onPress={() =>
+                      nav.navigate('LabReadiness', {
+                        phase: round.key,
+                        unit: lab.unit.key,
+                        date: today,
+                      })
+                    }
+                    style={({ pressed }) => [
+                      styles.labRound,
+                      pressed && styles.pressed,
+                    ]}
+                  >
+                    <FlaskConical
+                      size={s(20)}
+                      color={colors.tealDeep}
+                      strokeWidth={1.7}
+                    />
+                    <View style={styles.rowText}>
+                      <AppText variant="body">{round.label}</AppText>
+                      <AppText variant="meta" color={colors.inkMuted}>
+                        {lines.filter(l => l.complete).length} of {lines.length}{' '}
+                        of your lines done
+                      </AppText>
+                    </View>
+                    {signed ? <Pill label="Signed" tone="signed" /> : null}
+                    <ChevronRight
+                      size={s(19)}
+                      color={colors.inkFaint}
+                      strokeWidth={2}
+                    />
+                  </Pressable>
+                );
+              })}
+            </Card>
+          </View>
+        ) : null}
 
         {LANES.map(lane => {
           const tasks = lists[lane.key];
@@ -266,7 +357,11 @@ const styles = StyleSheet.create({
   headline: { gap: vs(2) },
   notice: { marginBottom: vs(10) },
   loading: { padding: s(14) },
-  glance: { flexDirection: 'row', borderRadius: radius.sm, marginBottom: vs(10) },
+  glance: {
+    flexDirection: 'row',
+    borderRadius: radius.sm,
+    marginBottom: vs(10),
+  },
   glanceRule: { width: hairline, backgroundColor: colors.line },
   stat: { flex: 1, paddingHorizontal: s(10), paddingVertical: vs(9) },
   progress: { padding: s(14), gap: vs(10) },
@@ -286,6 +381,13 @@ const styles = StyleSheet.create({
   },
   lastRow: { borderBottomWidth: 0 },
   rowText: { flex: 1, gap: vs(1) },
+  labRound: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: s(12),
+    paddingHorizontal: s(14),
+    paddingVertical: vs(12),
+  },
   pressed: { opacity: 0.7 },
   box: {
     width: s(20),

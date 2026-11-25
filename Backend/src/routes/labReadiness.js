@@ -36,6 +36,7 @@ const image = [
 
 // Fixed paths first, so they are not read as /:unitKey.
 labReadinessRouter.get('/', use, board.overview);
+labReadinessRouter.get('/mine', use, board.mine);
 labReadinessRouter.get('/history', use, board.history);
 labReadinessRouter.get('/records/:id', use, board.record);
 

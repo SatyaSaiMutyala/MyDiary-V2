@@ -42,6 +42,37 @@ export function activitiesFor(dept, unit, phase) {
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 }
 
+/**
+ * Is this line that person's?
+ *
+ * An activity with no positions belongs to everyone in the department, the same as an untagged
+ * shift task. A department head, with no position of their own, holds every line.
+ * @param {any} activity @param {string | null} positionId @param {string} [role]
+ */
+export function isFor(activity, positionId, role) {
+  const ids = (activity.positionIds ?? []).map(String);
+  if (ids.length === 0) return true;
+  if (!positionId) return role === 'head' || role === 'cmd';
+  return ids.includes(String(positionId));
+}
+
+/** Where a person stands in this department: their position, their unit, and what they hold. */
+export function standingOf(dept, user) {
+  const name = (user?.name ?? '').trim().toLowerCase();
+  const listed = (dept.assignments ?? []).find((a) => (a.name ?? '').trim().toLowerCase() === name);
+  const wanted = (user?.position ?? '').trim().toLowerCase();
+  const byTitle = wanted ? (dept.positions ?? []).find((p) => p.name.trim().toLowerCase() === wanted) : null;
+  const positionId = listed?.positionId ? listed.positionId.toString() : byTitle ? byTitle._id.toString() : null;
+  const position = (dept.positions ?? []).find((p) => p._id.toString() === positionId);
+  return {
+    name: user?.name ?? '',
+    positionId,
+    positionName: position?.name ?? '',
+    role: listed?.role ?? (user?.role === 'admin' || user?.role === 'manager' ? 'head' : 'member'),
+    unitKey: listed?.unitKey ?? '',
+  };
+}
+
 /** 'YYYY-MM-DD' or a clear message. @param {string} s */
 export function requireDate(s) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(s ?? '')) throw badRequest('Give the date as YYYY-MM-DD.');
@@ -265,8 +296,16 @@ export async function reopen({ dept, unitKey, date, phase, reason, by }) {
   return run;
 }
 
-/** Everything the board needs to draw one unit's day. */
-export function boardState(dept, unit, date, phase, run) {
+/**
+ * Everything the board needs to draw one unit's day.
+ *
+ * Every line of the round is here, whoever it belongs to — the sheet is signed as one record, and a
+ * line nobody can see is a line nobody does. `positions` says whose each one is and `mine` marks the
+ * reader's own, so the apps can show that without hiding anything.
+ * @param {any} [who] the person reading it, from standingOf()
+ */
+export function boardState(dept, unit, date, phase, run, who) {
+  const byId = new Map((dept.positions ?? []).map((p) => [p._id.toString(), p.name]));
   return {
     department: { id: dept._id.toString(), name: dept.name, code: dept.code },
     config: serializeLabReadiness(dept.labReadiness),
@@ -274,13 +313,74 @@ export function boardState(dept, unit, date, phase, run) {
     date,
     phase,
     declaration: DECLARATIONS[phase],
+    me: who ?? null,
     activities: activitiesFor(dept, unit, phase).map((a) => ({
       key: a.key, section: a.section ?? '', text: a.text,
       scheduledTime: a.scheduledTime ?? '', photoRequired: Boolean(a.photoRequired),
+      positions: (a.positionIds ?? []).map((id) => ({ id: id.toString(), name: byId.get(id.toString()) ?? '' })),
+      mine: who ? isFor(a, who.positionId, who.role) : true,
     })),
     run: run ? serializeRun(run) : null,
     progress: completeness(dept, unit, phase, run),
   };
+}
+
+/**
+ * One person's readiness lines for a day — what My Activity shows in place of the shift tasks.
+ *
+ * Their unit comes from Department Master (their assignment), their lines from the positions each
+ * activity is tagged to. Untagged activities belong to everyone, so a lab that has tagged nothing
+ * sees the whole round here, which is the same as today.
+ */
+export async function myLines(dept, user, date) {
+  const who = standingOf(dept, user);
+  const units = dept.labReadiness?.units ?? [];
+  const unit = who.unitKey ? units.find((u) => u.key === who.unitKey && u.active !== false) : null;
+  if (!unit) {
+    return { me: who, unit: null, date, phases: {}, total: 0, done: 0 };
+  }
+
+  const runs = await LabRun.find({ department: dept._id, unitKey: unit.key, date });
+  const phases = {};
+  let total = 0;
+  let done = 0;
+
+  for (const phase of LAB_PHASES_ORDER) {
+    const run = runs.find((r) => r.phase === phase) ?? null;
+    const recorded = new Map((run?.items ?? []).map((i) => [i.taskKey, i]));
+    const photos = new Set((run?.photos ?? []).map((p) => p.taskKey));
+    const lines = activitiesFor(dept, unit, phase)
+      .filter((a) => isFor(a, who.positionId, who.role))
+      .map((a) => {
+        const item = recorded.get(a.key);
+        return {
+          key: a.key,
+          text: a.text,
+          section: a.section ?? '',
+          scheduledTime: a.scheduledTime ?? '',
+          photoRequired: Boolean(a.photoRequired),
+          status: item?.status ?? null,
+          remark: item?.remark ?? '',
+          photos: photos.has(a.key) ? (run?.photos ?? []).filter((p) => p.taskKey === a.key).length : 0,
+          complete: Boolean(item?.status) && !missingOn(a, item, photos),
+        };
+      });
+    total += lines.length;
+    done += lines.filter((l) => l.complete).length;
+    phases[phase] = { lines, signedAt: run?.signedAt ? run.signedAt.toISOString() : null };
+  }
+
+  return { me: who, unit: { key: unit.key, name: unit.name, kind: unit.kind }, date, phases, total, done };
+}
+
+const LAB_PHASES_ORDER = ['opening', 'closing'];
+
+/** The same three rules completeness() applies, for one line. */
+function missingOn(activity, item, photos) {
+  const status = item?.status ?? null;
+  if (!status) return true;
+  if ((status === 'deviation' || status === 'na') && !(item.remark ?? '').trim()) return true;
+  return status === 'done' && activity.photoRequired && !photos.has(activity.key);
 }
 
 /** Is this person allowed to record for this department? Admins and its own people are. */
@@ -384,6 +484,7 @@ export async function addActivity(d, body) {
     text: body.text,
     scheduledTime: body.scheduledTime ?? '',
     scope: body.scope ?? 'all',
+    positionIds: body.positionIds ?? [],
     photoRequired: Boolean(body.photoRequired),
     active: body.active !== false,
     order: body.order ?? (samePhase.reduce((m, a) => Math.max(m, a.order ?? 0), 0) + 1),
@@ -394,8 +495,12 @@ export async function addActivity(d, body) {
 
 export async function patchActivity(d, activityId, patch) {
   const a = activityOr404(d, activityId);
-  const before = { text: a.text, section: a.section, scheduledTime: a.scheduledTime, scope: a.scope, photoRequired: a.photoRequired, active: a.active, order: a.order };
-  for (const f of ['section', 'text', 'scheduledTime', 'scope', 'photoRequired', 'active', 'order']) {
+  const before = {
+    text: a.text, section: a.section, scheduledTime: a.scheduledTime, scope: a.scope,
+    positionIds: (a.positionIds ?? []).map(String).join(','),
+    photoRequired: a.photoRequired, active: a.active, order: a.order,
+  };
+  for (const f of ['section', 'text', 'scheduledTime', 'scope', 'positionIds', 'photoRequired', 'active', 'order']) {
     if (patch[f] !== undefined) a[f] = patch[f];
   }
   await d.save();

@@ -8,7 +8,7 @@ import { DAYS_OF_WEEK_FULL } from '../../data/departments';
 import {
   useAddAgendaPointMutation, useAddAgendaSectionMutation, useAddPositionMutation, useAddTaskMutation,
   useGetDepartmentQuery, usePutCadenceMutation, useRemoveAgendaPointMutation, useRemoveAgendaSectionMutation,
-  useRemoveDepartmentMutation, useRemovePositionMutation, useRemoveTaskMutation, useUpdateAgendaPointMutation,
+  usePutAssignmentsMutation, useRemoveDepartmentMutation, useRemovePositionMutation, useRemoveTaskMutation, useUpdateAgendaPointMutation,
   useUpdateAgendaSectionMutation, useUpdateDepartmentMutation, useUpdatePositionMutation, useUpdateTaskMutation,
 } from '../../store/api/departmentsApi';
 import {
@@ -80,6 +80,7 @@ export default function DepartmentDetailPage() {
   const [addLabActivityCall] = useAddLabActivityMutation();
   const [updateLabActivityCall] = useUpdateLabActivityMutation();
   const [removeLabActivityCall] = useRemoveLabActivityMutation();
+  const [putAssignmentsCall] = usePutAssignmentsMutation();
 
   useCrumbs([{ label: 'Admin', to: '/' }, { label: 'Department Master', to: '/departments' }, { label: d ? d.code : '' }]);
 
@@ -293,6 +294,27 @@ export default function DepartmentDetailPage() {
         if (typed) later(`lab:act:${activityId}:${field}`, () => updateLabActivityCall(body));
         else void run(updateLabActivityCall(body));
       },
+      /** Tag or untag one position on an activity — the same chips the shift tasks use. */
+      toggleActivityPosition(activity, positionId) {
+        const ids = [...(activity.positionIds ?? [])];
+        const i = ids.indexOf(positionId);
+        if (i >= 0) ids.splice(i, 1);
+        else ids.push(positionId);
+        void run(updateLabActivityCall({ id, activityId: activity.id, positionIds: ids }));
+      },
+      /**
+       * Put somebody in a unit. The people list is sent back whole, because that is what the API
+       * takes, so everyone else's position and unit is carried over untouched.
+       */
+      setPersonUnit(name, unitKey) {
+        const next = (d?.assignments ?? []).map((a) => ({
+          name: a.name,
+          positionId: a.positionId ?? null,
+          role: a.role ?? 'member',
+          unitKey: a.name === name ? unitKey : (a.unitKey ?? ''),
+        }));
+        void run(putAssignmentsCall({ id, assignments: next }));
+      },
       async removeActivity(activity) {
         if (!await dlg.confirm(`Remove "${activity.text}" from the checklist?\n\nIf it already appears on completed records it will be switched off instead.`)) return;
         const r = await run(removeLabActivityCall({ id, activityId: activity.id }));
@@ -300,7 +322,7 @@ export default function DepartmentDetailPage() {
       },
     };
   }, [d, id, dlg, debounce, show, putLabConfigCall, restoreLabCall, addLabUnitCall, updateLabUnitCall, removeLabUnitCall,
-    addLabActivityCall, updateLabActivityCall, removeLabActivityCall]);
+    addLabActivityCall, updateLabActivityCall, removeLabActivityCall, putAssignmentsCall]);
 
   if (isLoading) {
     return <Box sx={{ p: 4, color: tokens.slate, fontFamily: fonts.mono, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Loading department…</Box>;

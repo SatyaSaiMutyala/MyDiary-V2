@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import {
@@ -49,8 +49,6 @@ import { useFresh } from '../store/useFresh';
 import { longDate, shortDate } from '../utils/dates';
 import { colors, radius, s, vs } from '../theme';
 
-const REMARK_DELAY = 700;
-
 // What this screen shows; fetched again when it comes back into view.
 const FRESH = ['LabBoard', 'LabDay'];
 
@@ -70,15 +68,22 @@ export function LabReadinessScreen() {
   const TODAY = todayIso();
 
   // Opened from somewhere that knows which round it wants (the Home cards, a notification).
+  // Read once, on the way in: after that the person's own choice of unit, day and round stands.
+  const opened = useRef(false);
   useEffect(() => {
-    if (route.params?.phase) {
-      dispatch(phaseChosen(route.params.phase));
+    if (opened.current) {
+      return;
     }
-    if (route.params?.unit) {
-      dispatch(unitChosen(route.params.unit));
+    opened.current = true;
+    const { phase: p, unit: u, date: d } = route.params ?? {};
+    if (p) {
+      dispatch(phaseChosen(p));
     }
-    if (route.params?.date) {
-      dispatch(dateChosen(route.params.date));
+    if (u) {
+      dispatch(unitChosen(u));
+    }
+    if (d) {
+      dispatch(dateChosen(d));
     }
   }, [route.params, dispatch]);
 
@@ -105,37 +110,6 @@ export function LabReadinessScreen() {
   const [removePhoto, removeCall] = useRemoveLabPhotoMutation();
 
   const { sections, items } = useMemo(() => groupBoard(board), [board]);
-
-  // Remarks are typed on the phone and sent a moment after the person stops typing, so a
-  // half-written sentence is never saved and nothing is lost if the screen is left.
-  const [drafts, setDrafts] = useState({});
-  const timers = useRef({});
-  const editRemark = (key, text) => {
-    setDrafts(d => ({ ...d, [key]: text }));
-    clearTimeout(timers.current[key]);
-    timers.current[key] = setTimeout(async () => {
-      if (!target) {
-        return;
-      }
-      try {
-        await setRemark({ ...target, taskKey: key, remark: text }).unwrap();
-      } catch {
-        // The refetched record shows what was saved; the draft stays on screen.
-      }
-      setDrafts(d => {
-        const rest = { ...d };
-        delete rest[key];
-        return rest;
-      });
-    }, REMARK_DELAY);
-  };
-  useEffect(() => {
-    setDrafts({});
-  }, [target?.unitKey, target?.date, target?.phase]);
-  useEffect(() => {
-    const pending = timers.current;
-    return () => Object.values(pending).forEach(clearTimeout);
-  }, []);
 
   const run = board?.run ?? null;
   const progress = board?.progress;
@@ -167,6 +141,7 @@ export function LabReadinessScreen() {
             : longDate(date)
         }
         title="Lab readiness"
+        onBack={() => (nav.canGoBack() ? nav.goBack() : nav.navigate('Tabs'))}
         eyebrowAction={
           <DateField
             value={date}
@@ -351,22 +326,24 @@ export function LabReadinessScreen() {
                 <ChecklistItemRow
                   key={a.key}
                   activity={a}
-                  item={
-                    drafts[a.key] !== undefined
-                      ? { ...item, remark: drafts[a.key] }
-                      : item
-                  }
+                  item={item}
                   locked={locked}
                   onStatus={st =>
                     setItem({ ...target, taskKey: a.key, status: st ?? null })
                   }
-                  onRemark={text => editRemark(a.key, text)}
-                  onAddPhotos={photos =>
-                    photos.forEach(photo =>
-                      addPhoto({ ...target, taskKey: a.key, photo }),
-                    )
+                  onRemark={text =>
+                    setRemark({ ...target, taskKey: a.key, remark: text })
                   }
-                  onRemovePhoto={id => removePhoto({ ...target, photoId: id })}
+                  // One at a time: two uploads of the same activity finishing out of order
+                  // would leave the strip showing the wrong one until the next refresh.
+                  onAddPhotos={async photos => {
+                    for (const photo of photos) {
+                      await addPhoto({ ...target, taskKey: a.key, photo });
+                    }
+                  }}
+                  onRemovePhoto={id =>
+                    removePhoto({ ...target, taskKey: a.key, photoId: id })
+                  }
                 />
               );
             }}

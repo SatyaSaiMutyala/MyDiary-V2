@@ -67,6 +67,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   image: { width: '100%', height: '80%' },
+  under: { position: 'absolute', top: '10%' },
   sample: { alignItems: 'center', gap: vs(10) },
   caption: {
     position: 'absolute',

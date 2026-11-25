@@ -1,21 +1,39 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
+import { ChevronLeft } from 'lucide-react-native';
 import { colors, fs, s, vs } from '../theme';
 import { AppText } from './AppText';
+import { IconButton } from './IconButton';
 import { TealHeader } from './TealHeader';
 
 // Teal top band of the tab screens. Two rows of fixed height, so every tab
 // screen has a header of exactly the same size.
+//
+// `onBack` draws a back arrow on the left. A tab screen has nowhere to go
+// back to and leaves it out; a screen opened from somewhere else passes it,
+// so there is always a way out that is not the phone's own gesture.
 export function ScreenHeader({
   eyebrow,
   title,
   eyebrowAction,
+  onBack,
   right,
   children,
 }) {
   return (
     <TealHeader topGap={8} arcHeight={vs(190)} style={styles.header}>
       <View style={styles.top}>
+        {onBack ? (
+          <IconButton
+            icon={ChevronLeft}
+            label="Back"
+            color={colors.white}
+            iconSize={24}
+            strokeWidth={2}
+            onPress={onBack}
+            style={styles.back}
+          />
+        ) : null}
         <View style={styles.text}>
           <View style={styles.eyebrow}>
             <AppText
@@ -52,6 +70,7 @@ const styles = StyleSheet.create({
     gap: s(12),
     height: vs(42),
   },
+  back: { marginLeft: -s(8) },
   text: { flex: 1 },
   eyebrow: { flexDirection: 'row', alignItems: 'center', gap: s(10) },
   // Long text gives way, so a link beside it is never pushed out of view.

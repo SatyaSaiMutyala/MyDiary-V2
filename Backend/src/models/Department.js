@@ -57,6 +57,12 @@ const assignmentSchema = new Schema(
     name: { type: String, required: true, trim: true },
     positionId: { type: Schema.Types.ObjectId, default: null },
     role: { type: String, enum: ASSIGNMENT_ROLES, default: 'member' },
+    /**
+     * Which unit of the department this person works in — the key of a labReadiness unit. Only the
+     * laboratory uses it: it is how My Activity knows whose board to show them. Blank everywhere
+     * else, and blank here until an admin sets it.
+     */
+    unitKey: { type: String, default: '', trim: true },
   },
   { _id: false },
 );
@@ -110,6 +116,12 @@ const labActivitySchema = new Schema({
   text: { type: String, required: true, trim: true },
   scheduledTime: { type: String, default: '' },
   scope: { type: String, enum: LAB_SCOPES, default: 'all' },
+  /**
+   * Whose line it is, by position — empty means everyone in the department, exactly as an untagged
+   * shift task does. `scope` says which branches the line appears on; this says who it belongs to
+   * once it is there. Both are applied.
+   */
+  positionIds: { type: [Schema.Types.ObjectId], default: () => [] },
   /** No photograph, no sign-off. */
   photoRequired: { type: Boolean, default: false },
   active: { type: Boolean, default: true },
@@ -222,6 +234,7 @@ export function serializeLabReadiness(lr) {
       id: a._id.toString(), key: a.key, phase: a.phase, section: a.section ?? '', text: a.text,
       scheduledTime: a.scheduledTime ?? '', scope: a.scope ?? 'all',
       photoRequired: Boolean(a.photoRequired), active: a.active !== false, order: a.order ?? 1,
+      positionIds: (a.positionIds ?? []).map((id) => id.toString()),
     })),
   };
 }
@@ -241,7 +254,7 @@ export function serializeDepartment(d) {
     monthlyTasks: (d.monthlyTasks ?? []).map((t) => serializeTask(t, 'monthly')),
     reviewCadence: serializeCadence(d.reviewCadence),
     labReadiness: serializeLabReadiness(d.labReadiness),
-    assignments: (d.assignments ?? []).map((a) => ({ name: a.name, positionId: a.positionId ? a.positionId.toString() : null, role: a.role ?? 'member' })),
+    assignments: (d.assignments ?? []).map((a) => ({ name: a.name, positionId: a.positionId ? a.positionId.toString() : null, role: a.role ?? 'member', unitKey: a.unitKey ?? '' })),
     createdBy: { id: d.createdBy?.id ? d.createdBy.id.toString() : null, name: d.createdBy?.name ?? '' },
     createdAt: (d.createdAt ?? new Date()).toISOString(),
     updatedAt: (d.updatedAt ?? d.createdAt ?? new Date()).toISOString(),

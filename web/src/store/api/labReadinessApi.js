@@ -39,6 +39,12 @@ export const labReadinessApi = baseApi.injectEndpoints({
       providesTags: (_r, _e, a) => [board(a)],
     }),
 
+    /** The signed-in person's own lines for a day — what My Activity shows the laboratory. */
+    getMyLabLines: b.query({
+      query: ({ date, departmentId } = {}) => ({ url: '/lab-readiness/mine', params: cleanParams({ date, departmentId }) }),
+      providesTags: (_r, _e, a = {}) => [DAY(a.date), { type: 'LabRun', id: 'MINE' }],
+    }),
+
     getLabHistory: b.query({
       query: (params = {}) => ({ url: '/lab-readiness/history', params: cleanParams(params) }),
       transformResponse: (r) => r.records,
@@ -153,7 +159,7 @@ export const labReadinessApi = baseApi.injectEndpoints({
 });
 
 export const {
-  useGetLabDayQuery, useGetLabBoardQuery, useGetLabHistoryQuery, useGetLabRecordQuery,
+  useGetLabDayQuery, useGetLabBoardQuery, useGetMyLabLinesQuery, useGetLabHistoryQuery, useGetLabRecordQuery,
   useSetLabItemMutation, useSetLabRemarkMutation,
   useAddLabPhotoMutation, useRemoveLabPhotoMutation,
   useSignOffLabMutation, useReopenLabMutation,

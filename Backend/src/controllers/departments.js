@@ -61,6 +61,8 @@ const assignmentInput = z
     name: text('Person', 200).min(1, 'Enter the person’s name.'),
     positionId: z.union([objectId, z.null()]).optional(),
     role: z.enum(['member', 'head', 'cmd', 'cgo'], { error: 'A role must be one of: member, head, cmd, cgo.' }).optional(),
+    /** Which unit of the department they work in — only the laboratory uses it. */
+    unitKey: text('Unit', 60).optional(),
   })
   .strict();
 

@@ -89,6 +89,48 @@ describe('Lab Readiness', () => {
       expect(del.body.department.labReadiness.units.some((u) => u.id === unit.id)).toBe(false);
     });
 
+    it('adds an activity of the department\'s own, which then appears on the board', async () => {
+      const add = await request(app).post(`/api/departments/${deptId}/lab-readiness/activities`).set(auth(token)).send({
+        phase: 'opening',
+        section: 'Facility, safety & housekeeping',
+        text: 'Check that the standby generator has fuel',
+        scheduledTime: '07:15',
+        photoRequired: true,
+      });
+      expect(add.status).toBe(201);
+      const mine = add.body.department.labReadiness.activities.find((a) => a.text.includes('standby generator'));
+      expect(mine).toMatchObject({ phase: 'opening', photoRequired: true, scheduledTime: '07:15', active: true });
+      expect(mine.key).toBeTruthy(); // it gets its own code, like the sheet's own lines
+
+      // It is on today's board straight away, under the section it was given…
+      const board = (await getBoard('opening')).body;
+      const added = board.activities.find((a) => a.key === mine.key);
+      expect(added).toMatchObject({ text: 'Check that the standby generator has fuel', photoRequired: true });
+      expect(added.section).toBe('Facility, safety & housekeeping');
+      // …and it counts towards the round, so it has to be answered before sign-off.
+      expect(board.progress.missing).toContain(`${mine.key} — no status yet`);
+
+      // Restoring the standard sheet leaves it alone — it is not part of the standard sheet.
+      const restored = await request(app).post(`/api/departments/${deptId}/lab-readiness/restore`).set(auth(token));
+      expect(restored.body.added).toEqual({ units: 0, activities: 0 });
+      expect(restored.body.department.labReadiness.activities.some((a) => a.key === mine.key)).toBe(true);
+
+      // Taken off again (nothing has been recorded against it, so it really goes).
+      const gone = await request(app).delete(`/api/departments/${deptId}/lab-readiness/activities/${mine.id}`).set(auth(token));
+      expect(gone.body.deleted).toBe(true);
+      expect((await getBoard('opening')).body.activities.some((a) => a.key === mine.key)).toBe(false);
+    });
+
+    it('refuses an activity with no round and one with no words', async () => {
+      const noPhase = await request(app).post(`/api/departments/${deptId}/lab-readiness/activities`).set(auth(token)).send({ text: 'Something' });
+      expect(noPhase.status).toBe(400);
+      expect(noPhase.body.error.message).toContain('opening or the closing round');
+
+      const noText = await request(app).post(`/api/departments/${deptId}/lab-readiness/activities`).set(auth(token)).send({ phase: 'closing', text: '' });
+      expect(noText.status).toBe(400);
+      expect(noText.body.error.message).toContain('Enter what has to be done');
+    });
+
     it('refuses a duplicate unit key and a bad cut-off', async () => {
       const dup = await request(app).post(`/api/departments/${deptId}/lab-readiness/units`).set(auth(token))
         .send({ name: 'Clinical Biochemistry', key: UNIT });
@@ -400,5 +442,120 @@ describe('Lab Readiness', () => {
     const r = await request(app).get(`/api/lab-readiness?departmentId=${other.body.department.id}`).set(auth(token));
     expect(r.status).toBe(400);
     expect(r.body.error.message).toContain('not switched on');
+  });
+
+  describe('whose line is whose', () => {
+    let positions = [];
+    let keys = {};
+
+    beforeAll(async () => {
+      // The laboratory's own positions, as Department Master has them.
+      for (const name of ['Lab Technician', 'Lab In-charge', 'Phlebotomist']) {
+        const r = await request(app).post(`/api/departments/${deptId}/positions`).set(auth(token)).send({ name });
+        expect(r.status).toBe(201);
+      }
+      const dept = (await request(app).get(`/api/departments/${deptId}`).set(auth(token))).body.department;
+      positions = dept.positions;
+
+      // Tag three activities of the opening round, one per position; the rest stay everybody's.
+      const opening = dept.labReadiness.activities.filter((a) => a.phase === 'opening' && a.active !== false);
+      keys = { tech: opening[0], charge: opening[1], phleb: opening[2] };
+      const tag = (a, name) =>
+        request(app).patch(`/api/departments/${deptId}/lab-readiness/activities/${a.id}`).set(auth(token))
+          .send({ positionIds: [positions.find((p) => p.name === name).id] });
+      expect((await tag(keys.tech, 'Lab Technician')).status).toBe(200);
+      expect((await tag(keys.charge, 'Lab In-charge')).status).toBe(200);
+      expect((await tag(keys.phleb, 'Phlebotomist')).status).toBe(200);
+    });
+
+    it('keeps every line on the board, and says whose each one is', async () => {
+      const board = (await getBoard('opening')).body;
+      // Nothing is hidden: the round is signed as one sheet.
+      expect(board.activities.length).toBeGreaterThan(3);
+      const tagged = board.activities.find((a) => a.key === keys.tech.key);
+      expect(tagged.positions).toEqual([{ id: positions.find((p) => p.name === 'Lab Technician').id, name: 'Lab Technician' }]);
+      const untagged = board.activities.find((a) => a.positions.length === 0);
+      expect(untagged).toBeTruthy();
+    });
+
+    it('marks an admin’s own lines as all of them', async () => {
+      const board = (await getBoard('opening')).body;
+      expect(board.me.role).toBe('head');
+      expect(board.activities.every((a) => a.mine)).toBe(true);
+    });
+
+    it('marks only their own for someone holding a position', async () => {
+      const tech = await createAndLogin(app, token, {
+        name: 'Ravi Teja', email: 'ravi.labtest@trustlab.co.in', role: 'employee',
+        department: 'Clinical Laboratory', position: 'Lab Technician', modules: ['labReadiness', 'activity'],
+      });
+      const board = (await request(app).get(at('opening')).set(auth(tech.token))).body;
+
+      expect(board.me.positionName).toBe('Lab Technician');
+      expect(board.activities.find((a) => a.key === keys.tech.key).mine).toBe(true);
+      expect(board.activities.find((a) => a.key === keys.charge.key).mine).toBe(false);
+      expect(board.activities.find((a) => a.key === keys.phleb.key).mine).toBe(false);
+      // An untagged line is everybody's, exactly like an untagged shift task.
+      expect(board.activities.find((a) => a.positions.length === 0).mine).toBe(true);
+      // …and they can still answer a line that is not theirs: a round nobody can finish is worse.
+      const r = await request(app).put(`${at('opening')}/items/${keys.charge.key}`).set(auth(tech.token)).send({ status: 'done' });
+      expect(r.status).toBe(200);
+      await request(app).put(`${at('opening')}/items/${keys.charge.key}`).set(auth(tech.token)).send({ status: null });
+    });
+  });
+
+  describe('a person’s own lines, for My Activity', () => {
+    let staff;
+    let positionId;
+
+    beforeAll(async () => {
+      const dept = (await request(app).get(`/api/departments/${deptId}`).set(auth(token))).body.department;
+      positionId = dept.positions.find((p) => p.name === 'Phlebotomist').id;
+      staff = await createAndLogin(app, token, {
+        name: 'Kavya Reddy', email: 'kavya.labtest@trustlab.co.in', role: 'employee',
+        department: 'Clinical Laboratory', position: 'Phlebotomist', modules: ['labReadiness', 'activity'],
+      });
+      // Put her in a unit, the way an admin does in Department Master.
+      const r = await request(app).put(`/api/departments/${deptId}/assignments`).set(auth(token)).send({
+        assignments: [{ name: 'Kavya Reddy', positionId, role: 'member', unitKey: UNIT }],
+      });
+      expect(r.status).toBe(200);
+    });
+
+    it('gives her unit and only her lines, both rounds', async () => {
+      const r = await request(app).get(`/api/lab-readiness/mine?date=${DATE}`).set(auth(staff.token));
+      expect(r.status).toBe(200);
+      expect(r.body.unit).toMatchObject({ key: UNIT, name: 'Clinical Biochemistry' });
+      expect(r.body.me).toMatchObject({ positionName: 'Phlebotomist', unitKey: UNIT });
+
+      const opening = r.body.phases.opening.lines;
+      expect(opening.length).toBeGreaterThan(0);
+      // The two lines tagged to other positions are not hers.
+      const board = (await getBoard('opening')).body;
+      const others = board.activities.filter((a) => a.positions.length && a.positions[0].name !== 'Phlebotomist');
+      for (const o of others) {
+        expect(opening.some((l) => l.key === o.key)).toBe(false);
+      }
+      expect(r.body.total).toBe(opening.length + r.body.phases.closing.lines.length);
+    });
+
+    it('says plainly when nobody has given them a unit', async () => {
+      const nobody = await createAndLogin(app, token, {
+        name: 'Hari Prasad', email: 'hari.labtest@trustlab.co.in', role: 'employee',
+        department: 'Clinical Laboratory', modules: ['labReadiness'],
+      });
+      const r = await request(app).get('/api/lab-readiness/mine').set(auth(nobody.token));
+      expect(r.status).toBe(200);
+      expect(r.body.unit).toBeNull();
+      expect(r.body.total).toBe(0);
+    });
+
+    it('refuses a unit that does not exist', async () => {
+      const r = await request(app).put(`/api/departments/${deptId}/assignments`).set(auth(token)).send({
+        assignments: [{ name: 'Kavya Reddy', positionId, unitKey: 'nrl-nowhere' }],
+      });
+      expect(r.status).toBe(400);
+      expect(r.body.error.message).toContain('not a unit of');
+    });
   });
 });

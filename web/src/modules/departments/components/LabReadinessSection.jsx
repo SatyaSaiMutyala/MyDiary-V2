@@ -4,6 +4,7 @@ import Grid from '@mui/material/Grid';
 import { Btn, SelectInput, DelBtn } from '../../../components';
 import { tokens, fonts } from '../../../theme/tokens';
 import DeptSection, { SectionNote, EmptyLine } from './DeptSection';
+import { PosChips } from './Chips';
 import LiveInput, { TimeInput } from './LiveInput';
 import { taskTextSx } from './styles';
 
@@ -55,7 +56,7 @@ function Flag({ on, onClick, title, children, colour = tokens.teal, soft = token
  */
 export default function LabReadinessSection({ dept, lab }) {
   const lr = dept.labReadiness ?? { enabled: false, units: [], activities: [], openingCutoff: '09:30', closingCutoff: '22:30' };
-  const [open, setOpen] = useState({ opening: false, closing: false, units: true });
+  const [open, setOpen] = useState({ opening: false, closing: false, units: true, people: false });
   const units = lr.units ?? [];
   const activities = lr.activities ?? [];
 
@@ -64,6 +65,11 @@ export default function LabReadinessSection({ dept, lab }) {
     closing: activities.filter((a) => a.phase === 'closing'),
   };
   const photoCount = activities.filter((a) => a.photoRequired && a.active !== false).length;
+
+  const positionName = (id) => (dept.positions ?? []).find((p) => p.id === id)?.name ?? '';
+  const people = [...(dept.assignments ?? [])]
+    .map((a) => ({ name: a.name, role: a.role ?? 'member', unitKey: a.unitKey ?? '', positionName: positionName(a.positionId) }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   const toggle = (k) => setOpen((o) => ({ ...o, [k]: !o[k] }));
 
@@ -163,6 +169,35 @@ export default function LabReadinessSection({ dept, lab }) {
             ))}
           </Lane>
 
+          {/* WHO WORKS WHERE — the other half of "whose line is this" */}
+          <Lane
+            label="👥 Who works where"
+            count={`${people.filter((p) => p.unitKey).length} of ${people.length} placed`}
+            colour={tokens.purple}
+            open={open.people}
+            onToggle={() => toggle('people')}
+          >
+            <SectionNote sx={{ mb: '8px' }}>
+              The unit a person works in is how <strong>My Activity</strong> knows which board is theirs. Their
+              position comes from Settings · Users; set the unit here. Somebody with no unit still sees the
+              board — they just get no lines of their own on My Activity.
+            </SectionNote>
+            {people.length === 0 ? <EmptyLine>Nobody is in this department yet.</EmptyLine> : people.map((p) => (
+              <Box key={p.name} sx={{ p: '8px 10px', m: '4px 0', bgcolor: tokens.card, border: `1px solid ${tokens.line}`, borderRadius: '7px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <Typography sx={{ fontSize: 12.5, fontWeight: 600, color: tokens.ink, flex: 1, minWidth: 160 }}>{p.name}</Typography>
+                <Box sx={{ fontFamily: fonts.mono, fontSize: 9.5, p: '3px 9px', borderRadius: '10px', bgcolor: p.positionName ? tokens.tealSoft : tokens.creamWarm, color: p.positionName ? tokens.tealDark : tokens.slateSoft, fontWeight: 700, letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
+                  {p.positionName || (p.role === 'head' ? 'DEPARTMENT HEAD' : 'NO POSITION')}
+                </Box>
+                <Box sx={{ width: 210 }}>
+                  <SelectInput value={p.unitKey} sx={selectSx} onChange={(e) => lab.setPersonUnit(p.name, e.target.value)}>
+                    <option value="">— no unit —</option>
+                    {units.filter((u) => u.active !== false).map((u) => <option key={u.key} value={u.key}>{u.name}</option>)}
+                  </SelectInput>
+                </Box>
+              </Box>
+            ))}
+          </Lane>
+
           {/* ACTIVITIES, one lane per round */}
           {PHASES.map((p) => (
             <Lane
@@ -176,7 +211,7 @@ export default function LabReadinessSection({ dept, lab }) {
             >
               {byPhase[p.key].length === 0 ? <EmptyLine>No activities in this round yet.</EmptyLine> : (
                 <Box sx={{ overflowX: 'auto' }}>
-                  <Box sx={{ minWidth: 820 }}>
+                  <Box sx={{ minWidth: 1060 }}>
                     {groupBySection(byPhase[p.key]).map((g) => (
                       <Box key={g.heading} sx={{ mb: '10px' }}>
                         <Typography sx={{ fontFamily: fonts.mono, fontSize: 9.5, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, color: tokens.slateSoft, p: '8px 4px 4px' }}>
@@ -197,6 +232,14 @@ export default function LabReadinessSection({ dept, lab }) {
                                   {SCOPES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                                 </SelectInput>
                               </Box>
+                              {/* Scope says which branches the line appears on; this says whose
+                                  line it is once it is there. Both are applied. */}
+                              <PosChips
+                                positions={dept.positions ?? []}
+                                positionIds={a.positionIds ?? []}
+                                onToggle={(pid) => lab.toggleActivityPosition(a, pid)}
+                                onClear={() => lab.updateActivity(a.id, 'positionIds', [])}
+                              />
                               <Flag
                                 on={a.photoRequired}
                                 colour={tokens.amber}

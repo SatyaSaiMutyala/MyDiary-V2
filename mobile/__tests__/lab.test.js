@@ -7,6 +7,7 @@
  */
 import React from 'react';
 import renderer, { act } from 'react-test-renderer';
+import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import board from './fixtures/board.json';
@@ -22,7 +23,9 @@ import {
   needsRemark,
   clock,
 } from '../src/lab/model';
+import { settle } from '../src/store/api/labReadinessApi';
 import { ChecklistItemRow } from '../src/components/ChecklistItemRow';
+import { ScreenHeader } from '../src/components/ScreenHeader';
 import { LabSections } from '../src/components/LabSections';
 import { LabRecordRow } from '../src/components/LabRecordRow';
 import { ReopenLog } from '../src/components/ReopenLog';
@@ -242,5 +245,157 @@ describe('the day', () => {
     }
     const signed = day.units.find(u => u.phases.opening.signedAt);
     expect(signed.phases.opening.status).toBe('signed');
+  });
+});
+
+describe('settling a write into the board on screen', () => {
+  // What the phone has on screen: o02 ticked a moment ago, o03 about to be answered.
+  const onScreen = () => ({
+    activities: board.activities,
+    progress: {
+      total: 2,
+      done: 1,
+      missing: ['o03 — no status yet'],
+      complete: false,
+    },
+    declaration: 'old wording',
+    run: {
+      startedAt: '2026-11-25T06:00:00.000Z',
+      items: [
+        { taskKey: 'o02', status: 'done', remark: '' },
+        { taskKey: 'o03', status: null, remark: '' },
+      ],
+      photos: [{ id: 'p1', taskKey: 'o02', name: 'fridge.jpg' }],
+    },
+  });
+
+  // What the server answers to the o03 write — a whole board, as it stood when o03 was saved.
+  const answer = {
+    activities: board.activities,
+    progress: { total: 2, done: 2, missing: [], complete: true },
+    declaration: 'new wording',
+    run: {
+      startedAt: '2026-11-25T06:00:00.000Z',
+      signedAt: null,
+      items: [
+        { taskKey: 'o02', status: 'done', remark: '' },
+        { taskKey: 'o03', status: 'deviation', remark: 'Pump noisy.' },
+      ],
+      photos: [{ id: 'p1', taskKey: 'o02', name: 'fridge.jpg' }],
+    },
+  };
+
+  it('takes the activity it wrote, and the tally', () => {
+    const draft = onScreen();
+    expect(settle(draft, answer, 'o03')).toBeUndefined();
+    expect(draft.run.items.find(i => i.taskKey === 'o03')).toMatchObject({
+      status: 'deviation',
+      remark: 'Pump noisy.',
+    });
+    expect(draft.progress.complete).toBe(true);
+    expect(draft.declaration).toBe('new wording');
+  });
+
+  it('does not undo a tick made while it was in the air', () => {
+    const draft = onScreen();
+    // While o03 was being saved, the person answered o04 as well and it is already on screen.
+    draft.run.items.push({
+      taskKey: 'o04',
+      status: 'na',
+      remark: 'Closed today.',
+    });
+    draft.run.photos.push({ id: 'p2', taskKey: 'o04', name: 'door.jpg' });
+
+    settle(draft, answer, 'o03');
+
+    // The answer knows nothing about o04 — and must not take it away again.
+    expect(draft.run.items.find(i => i.taskKey === 'o04')).toMatchObject({
+      status: 'na',
+    });
+    expect(draft.run.photos.map(p => p.id).sort()).toEqual(['p1', 'p2']);
+    // Each activity is still there exactly once.
+    const keys = draft.run.items.map(i => i.taskKey);
+    expect(new Set(keys).size).toBe(keys.length);
+  });
+
+  it('replaces the photographs of the activity it wrote, and only those', () => {
+    const draft = onScreen();
+    draft.run.photos.push({
+      id: 'sending-1',
+      taskKey: 'o03',
+      pendingUri: 'file:///tmp/x.jpg',
+    });
+    settle(
+      draft,
+      {
+        ...answer,
+        run: {
+          ...answer.run,
+          photos: [
+            { id: 'p1', taskKey: 'o02', name: 'fridge.jpg' },
+            { id: 'p9', taskKey: 'o03', name: 'pump.jpg' },
+          ],
+        },
+      },
+      'o03',
+    );
+
+    const o03 = draft.run.photos.filter(p => p.taskKey === 'o03');
+    expect(o03).toHaveLength(1); // the half-sent one is gone, the stored one is there
+    expect(o03[0].id).toBe('p9');
+    expect(draft.run.photos.some(p => p.id === 'p1')).toBe(true);
+  });
+
+  it('replaces the whole board when the write was a sign-off', () => {
+    const draft = onScreen();
+    const signed = {
+      ...answer,
+      run: { ...answer.run, signedAt: '2026-11-25T09:10:00.000Z' },
+    };
+    expect(settle(draft, signed, undefined)).toBe(signed);
+  });
+
+  it('clears the record when the server says there is none', () => {
+    const draft = onScreen();
+    settle(draft, { ...answer, run: null }, 'o03');
+    expect(draft.run).toBeNull();
+  });
+});
+
+describe('getting back out of a screen', () => {
+  // Lab Readiness is opened from More, so it needs a way back that is not the phone's own gesture.
+  const labels = node => {
+    if (!node || typeof node !== 'object') {
+      return [];
+    }
+    if (Array.isArray(node)) {
+      return node.flatMap(labels);
+    }
+    const own = node.props?.accessibilityLabel
+      ? [node.props.accessibilityLabel]
+      : [];
+    return [...own, ...labels(node.children)];
+  };
+
+  // The teal header asks whether its screen is the one in view, so it needs a navigator around it.
+  const header = props =>
+    draw(
+      <NavigationContainer>
+        <ScreenHeader {...props} />
+      </NavigationContainer>,
+    );
+
+  it('draws a back arrow when the screen has somewhere to go back to', () => {
+    const tree = header({
+      eyebrow: 'today',
+      title: 'Lab readiness',
+      onBack: () => {},
+    });
+    expect(labels(tree.toJSON())).toContain('Back');
+  });
+
+  it('draws none on a tab screen, which has nowhere to go back to', () => {
+    const tree = header({ eyebrow: 'today', title: 'My Activity' });
+    expect(labels(tree.toJSON())).not.toContain('Back');
   });
 });

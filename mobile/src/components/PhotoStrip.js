@@ -1,5 +1,11 @@
 import React, { useState } from 'react';
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Image,
+  Pressable,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { Camera, Image as ImageIcon, Upload, X } from 'lucide-react-native';
 import { pickPhotos, takePhoto } from '../utils/photos';
 import { colors, hairline, radius, s, vs } from '../theme';
@@ -35,14 +41,22 @@ export function PhotoStrip({
           {photos.map(p => (
             <View key={p.id}>
               <Pressable
-                accessibilityLabel="Open photograph"
+                accessibilityLabel={
+                  p.pending ? 'Photograph being sent' : 'Open photograph'
+                }
+                disabled={p.pending}
                 onPress={() => setOpen(p)}
                 style={styles.thumb}
               >
+                {/* The copy on the phone sits underneath, so swapping to the stored
+                    photograph never shows an empty square. */}
+                {p.localUri && !p.pending ? (
+                  <Image source={{ uri: p.localUri }} style={styles.under} />
+                ) : null}
                 {p.source ?? p.uri ? (
                   <Image
                     source={p.source ?? { uri: p.uri }}
-                    style={styles.image}
+                    style={[styles.image, p.pending && styles.sendingImage]}
                   />
                 ) : (
                   <ImageIcon
@@ -51,8 +65,15 @@ export function PhotoStrip({
                     strokeWidth={1.6}
                   />
                 )}
+                {/* Still on its way to the server: the photograph is already here, so it is shown
+                    at once rather than making the person wait on a blank square. */}
+                {p.pending ? (
+                  <View style={styles.sending}>
+                    <ActivityIndicator size="small" color={colors.white} />
+                  </View>
+                ) : null}
               </Pressable>
-              {locked || !onRemove ? null : (
+              {locked || !onRemove || p.pending ? null : (
                 <Pressable
                   hitSlop={s(8)}
                   accessibilityLabel="Remove photograph"
@@ -132,6 +153,13 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   image: { width: '100%', height: '100%' },
+  under: { ...StyleSheet.absoluteFillObject },
+  sendingImage: { opacity: 0.45 },
+  sending: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   remove: {
     position: 'absolute',
     top: -s(6),
