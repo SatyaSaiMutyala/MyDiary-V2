@@ -12,7 +12,7 @@ import {
   useUpdateAgendaSectionMutation, useUpdateDepartmentMutation, useUpdatePositionMutation, useUpdateTaskMutation,
 } from '../../store/api/departmentsApi';
 import {
-  useAddLabActivityMutation, useAddLabUnitMutation, usePutLabConfigMutation, useRemoveLabActivityMutation,
+  useAddLabUnitMutation, usePutLabConfigMutation, useRemoveLabActivityMutation,
   useRemoveLabUnitMutation, useRestoreLabChecklistMutation, useUpdateLabActivityMutation, useUpdateLabUnitMutation,
 } from '../../store/api/labReadinessApi';
 import { errorCode } from '../../store/api/baseApi';
@@ -77,7 +77,6 @@ export default function DepartmentDetailPage() {
   const [addLabUnitCall] = useAddLabUnitMutation();
   const [updateLabUnitCall] = useUpdateLabUnitMutation();
   const [removeLabUnitCall] = useRemoveLabUnitMutation();
-  const [addLabActivityCall] = useAddLabActivityMutation();
   const [updateLabActivityCall] = useUpdateLabActivityMutation();
   const [removeLabActivityCall] = useRemoveLabActivityMutation();
   const [putAssignmentsCall] = usePutAssignmentsMutation();
@@ -240,8 +239,6 @@ export default function DepartmentDetailPage() {
   const lab = useMemo(() => {
     const run = async (promise) => { try { return await promise.unwrap(); } catch (err) { show(err); return null; } };
     const later = (key, promise) => debounce(key, () => { void run(promise()); });
-    const lr = () => d?.labReadiness ?? { units: [], activities: [] };
-    const headings = (phase) => Array.from(new Set(lr().activities.filter((a) => a.phase === phase).map((a) => a.section).filter(Boolean)));
 
     return {
       setEnabled(on) {
@@ -270,24 +267,6 @@ export default function DepartmentDetailPage() {
         const r = await run(removeLabUnitCall({ id, unitId: unit.id }));
         if (r?.message) show(r.message);
       },
-      async addActivity(phase) {
-        const text = await dlg.prompt(`What has to be done in the ${phase} round?`);
-        if (text === null || !text.trim()) return;
-        const existing = headings(phase);
-        const section = await dlg.prompt(
-          'Which section does it belong under?' + (existing.length ? '\n\nSections already in this round:\n· ' + existing.join('\n· ') : ''),
-          existing[existing.length - 1] || '',
-        );
-        if (section === null) return;
-        const scheduledTime = await dlg.prompt('When in the round? (HH:MM, or leave blank)', '');
-        if (scheduledTime === null) return;
-        const photo = await dlg.confirm('Does this activity need a photograph before the round can be signed off?');
-        void run(addLabActivityCall({
-          id, phase, text: text.trim(), section: section.trim(),
-          scheduledTime: /^([01]\d|2[0-3]):[0-5]\d$/.test(scheduledTime.trim()) ? scheduledTime.trim() : '',
-          photoRequired: photo,
-        }));
-      },
       updateActivity(activityId, field, value) {
         const typed = field === 'text' || field === 'section';
         const body = { id, activityId, [field]: value };
@@ -303,17 +282,21 @@ export default function DepartmentDetailPage() {
         void run(updateLabActivityCall({ id, activityId: activity.id, positionIds: ids }));
       },
       /**
-       * Put somebody in a unit. The people list is sent back whole, because that is what the API
-       * takes, so everyone else's position and unit is carried over untouched.
+       * Save the department's people list whole, which is what the API takes.
+       *
+       * The list handed in includes everyone who belongs to the department by either route — its
+       * own list, or the department chosen on their account — so saving it also writes in anybody
+       * who was only there by their account. That is deliberate: once they have been given a unit,
+       * they are part of this department's roster in their own right.
        */
-      setPersonUnit(name, unitKey) {
-        const next = (d?.assignments ?? []).map((a) => ({
-          name: a.name,
-          positionId: a.positionId ?? null,
-          role: a.role ?? 'member',
-          unitKey: a.name === name ? unitKey : (a.unitKey ?? ''),
+      setPeople(people) {
+        const assignments = people.map((p) => ({
+          name: p.name,
+          positionId: p.positionId ?? null,
+          role: p.role ?? 'member',
+          unitKey: p.unitKey ?? '',
         }));
-        void run(putAssignmentsCall({ id, assignments: next }));
+        void run(putAssignmentsCall({ id, assignments }));
       },
       async removeActivity(activity) {
         if (!await dlg.confirm(`Remove "${activity.text}" from the checklist?\n\nIf it already appears on completed records it will be switched off instead.`)) return;
@@ -322,7 +305,7 @@ export default function DepartmentDetailPage() {
       },
     };
   }, [d, id, dlg, debounce, show, putLabConfigCall, restoreLabCall, addLabUnitCall, updateLabUnitCall, removeLabUnitCall,
-    addLabActivityCall, updateLabActivityCall, removeLabActivityCall, putAssignmentsCall]);
+    updateLabActivityCall, removeLabActivityCall, putAssignmentsCall]);
 
   if (isLoading) {
     return <Box sx={{ p: 4, color: tokens.slate, fontFamily: fonts.mono, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Loading department…</Box>;

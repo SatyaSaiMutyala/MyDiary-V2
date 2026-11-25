@@ -5,6 +5,8 @@ import { Btn, SelectInput, DelBtn } from '../../../components';
 import { tokens, fonts } from '../../../theme/tokens';
 import DeptSection, { SectionNote, EmptyLine } from './DeptSection';
 import { PosChips } from './Chips';
+import { useListAssignmentsQuery } from '../../../store/api/departmentsApi';
+import LabActivityModal from '../modals/LabActivityModal';
 import LiveInput, { TimeInput } from './LiveInput';
 import { taskTextSx } from './styles';
 
@@ -67,8 +69,31 @@ export default function LabReadinessSection({ dept, lab }) {
   const photoCount = activities.filter((a) => a.photoRequired && a.active !== false).length;
 
   const positionName = (id) => (dept.positions ?? []).find((p) => p.id === id)?.name ?? '';
-  const people = [...(dept.assignments ?? [])]
-    .map((a) => ({ name: a.name, role: a.role ?? 'member', unitKey: a.unitKey ?? '', positionName: positionName(a.positionId) }))
+
+  /**
+   * Everyone in this department, from both places a person can belong to one: the department's own
+   * people list, and the department chosen on their account in Settings. Listing only the first
+   * left anyone who belongs by their account alone with no row here — and so no way to be given a
+   * unit, which is the one thing this block exists to do.
+   */
+  const { data: orgMap } = useListAssignmentsQuery();
+  const stored = new Map((dept.assignments ?? []).map((a) => [a.name, a]));
+  const names = new Set(stored.keys());
+  Object.entries(orgMap ?? {}).forEach(([name, a]) => { if (a.departmentId === dept.id) names.add(name); });
+  const people = [...names]
+    .map((name) => {
+      const own = stored.get(name);
+      const acct = orgMap?.[name];
+      const positionId = own?.positionId ?? acct?.positionId ?? null;
+      return {
+        name,
+        positionId,
+        role: own?.role ?? acct?.role ?? 'member',
+        unitKey: own?.unitKey ?? acct?.unitKey ?? '',
+        positionName: positionName(positionId),
+        listed: Boolean(own),
+      };
+    })
     .sort((a, b) => a.name.localeCompare(b.name));
 
   const toggle = (k) => setOpen((o) => ({ ...o, [k]: !o[k] }));
@@ -180,7 +205,7 @@ export default function LabReadinessSection({ dept, lab }) {
             <SectionNote sx={{ mb: '8px' }}>
               The unit a person works in is how <strong>My Activity</strong> knows which board is theirs. Their
               position comes from Settings · Users; set the unit here. Somebody with no unit still sees the
-              board — they just get no lines of their own on My Activity.
+              board — they just get no lines of their own on My Activity, and the app tells them to ask you.
             </SectionNote>
             {people.length === 0 ? <EmptyLine>Nobody is in this department yet.</EmptyLine> : people.map((p) => (
               <Box key={p.name} sx={{ p: '8px 10px', m: '4px 0', bgcolor: tokens.card, border: `1px solid ${tokens.line}`, borderRadius: '7px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -189,7 +214,7 @@ export default function LabReadinessSection({ dept, lab }) {
                   {p.positionName || (p.role === 'head' ? 'DEPARTMENT HEAD' : 'NO POSITION')}
                 </Box>
                 <Box sx={{ width: 210 }}>
-                  <SelectInput value={p.unitKey} sx={selectSx} onChange={(e) => lab.setPersonUnit(p.name, e.target.value)}>
+                  <SelectInput value={p.unitKey} sx={selectSx} onChange={(e) => lab.setPeople(people.map((x) => (x.name === p.name ? { ...x, unitKey: e.target.value } : x)))}>
                     <option value="">— no unit —</option>
                     {units.filter((u) => u.active !== false).map((u) => <option key={u.key} value={u.key}>{u.name}</option>)}
                   </SelectInput>
@@ -242,7 +267,11 @@ function groupBySection(list) {
  */
 export function LabRounds({ dept, lab }) {
   const activities = dept.labReadiness?.activities ?? [];
-  return PHASES.map((p) => {
+  // `{ phase }` opens the form empty for a new line; `{ phase, activity }` opens it on that line.
+  const [editing, setEditing] = useState(null);
+
+  return (<>
+    {PHASES.map((p) => {
     const items = activities.filter((a) => a.phase === p.key);
     return (
       <DeptSection
@@ -250,7 +279,7 @@ export function LabRounds({ dept, lab }) {
         title={<>{p.key === 'opening' ? '🌅 Opening Shift Tasks' : '🌙 Closing Shift Tasks'}</>}
         titleColor={p.colour}
         count={`${items.length} activities`}
-        action={<Btn size="sm" variant="primary" sx={{ bgcolor: p.colour, borderColor: p.colour, '&:hover': { bgcolor: p.colour } }} onClick={() => lab.addActivity(p.key)}>+ Add activity</Btn>}
+        action={<Btn size="sm" variant="primary" sx={{ bgcolor: p.colour, borderColor: p.colour, '&:hover': { bgcolor: p.colour } }} onClick={() => setEditing({ phase: p.key })}>+ Add activity</Btn>}
       >
         <SectionNote>
           This department records its {p.key} round on the <strong>Lab Readiness</strong> board — every line
@@ -301,6 +330,9 @@ export function LabRounds({ dept, lab }) {
               <Flag on={a.active !== false} onClick={() => lab.updateActivity(a.id, 'active', a.active === false)} title={a.active === false ? 'Switched off — it does not appear on the board' : 'On the board'}>
                 {a.active === false ? 'OFF' : 'ON'}
               </Flag>
+              {/* Everything about the line in one form — quicker than hunting across the row,
+                  and it is the same form "+ Add activity" opens. */}
+              <Btn size="sm" onClick={() => setEditing({ phase: p.key, activity: a })} title="Open this line in a form" sx={{ minHeight: 28, px: '9px', fontSize: 12.5, flexShrink: 0 }}>✎</Btn>
               <DelBtn onClick={() => lab.removeActivity(a)} title="Remove this activity" />
             </Box>
             <Box sx={{ display: 'flex', gap: '8px', alignItems: 'center', mt: '5px', pl: '42px' }}>
@@ -317,6 +349,15 @@ export function LabRounds({ dept, lab }) {
         </Box>
       )}
       </DeptSection>
-    );
-  });
+      );
+    })}
+
+    <LabActivityModal
+      open={Boolean(editing)}
+      dept={dept}
+      phase={editing?.phase ?? 'opening'}
+      activity={editing?.activity}
+      onClose={() => setEditing(null)}
+    />
+  </>);
 }
