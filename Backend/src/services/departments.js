@@ -4,6 +4,7 @@
  * (models/ActivityTick.js).
  */
 import mongoose from 'mongoose';
+import { ActivityEntry, toLoggedLanes } from '../models/ActivityEntry.js';
 import { ActivityTick, toActivityLog } from '../models/ActivityTick.js';
 import { CADENCE_AGENDA_FIELD, Department, TASK_LIST_FIELD, serializeDepartment } from '../models/Department.js';
 import { buildInitialDepartments, EMPLOYEE_ASSIGNMENTS } from '../data/departments.js';
@@ -174,11 +175,18 @@ export async function patchDepartment(d, patch) {
   return before;
 }
 
-/** Deletes the department and every shift tick recorded against it. @param {any} d */
+/**
+ * Deletes the department and every shift tick recorded against it.
+ *
+ * Logged activities (ActivityEntry) are a person's own record of work they did, not a tick against a
+ * task that no longer exists, so they are kept — only their link to the department is loosened.
+ * @param {any} d
+ */
 export async function deleteDepartmentCascade(d) {
   const ticks = await ActivityTick.deleteMany({ department: d._id });
+  const logged = await ActivityEntry.updateMany({ department: d._id }, { $set: { department: null } });
   await d.deleteOne();
-  return { ticks: ticks.deletedCount ?? 0 };
+  return { ticks: ticks.deletedCount ?? 0, logged: logged.modifiedCount ?? 0 };
 }
 
 // ---------------------------------------------------------------- positions
@@ -445,6 +453,58 @@ export async function setTick({ person, date, departmentId, kind, taskId, done, 
     await ActivityTick.deleteOne({ person, date, kind, taskId });
   }
   return { department: d, text: task ? task.text : `${d.name} ${kind} review` };
+}
+
+// ---------------------------------------------------------------- logged activities (ad-hoc)
+
+/** The same forgiving person match the tick log uses, so "Pavan" finds "Pavan (IT)". @param {string} p */
+const personRe = (p) => new RegExp(`^${escapeRegex(cleanName(p))}(\\s*\\(.*\\))?$`, 'i');
+
+/**
+ * One person's logged activities for a day, grouped by lane.
+ * @param {{ date: string, person: string }} input
+ */
+export async function readLoggedActivity({ date, person }) {
+  const entries = await ActivityEntry.find({ date, person: personRe(person) }).sort({ createdAt: 1 });
+  return toLoggedLanes(entries);
+}
+
+/**
+ * Records something that was not on the checklist.
+ * @param {{ person: string, date: string, lane: string, text: string, atTime?: string, tag?: string, departmentId?: string | null, by: any }} input
+ */
+export async function addLoggedActivity({ person, date, lane, text, atTime = '', tag = '', departmentId = null, by }) {
+  const department = departmentId ? (await findDepartmentOr404(departmentId))._id : null;
+  const e = await ActivityEntry.create({
+    person, date, lane, text, atTime, tag, done: true, department,
+    by: { id: by?._id ?? null, name: by?.name ?? '' },
+  });
+  return e;
+}
+
+/** @param {string} id @param {string} person @param {boolean} forAnyone */
+export async function findLoggedOr404(id, person, forAnyone) {
+  const e = await ActivityEntry.findById(id);
+  if (!e) throw notFound('That logged activity no longer exists. Refresh the page.');
+  if (!forAnyone && !personRe(person).test(e.person)) {
+    throw notFound('That logged activity no longer exists. Refresh the page.');
+  }
+  return e;
+}
+
+/** @param {any} e @param {{ text?: string, atTime?: string, tag?: string, done?: boolean }} patch */
+export async function patchLoggedActivity(e, patch) {
+  const before = { text: e.text, atTime: e.atTime, tag: e.tag, done: e.done };
+  for (const f of ['text', 'atTime', 'tag', 'done']) if (patch[f] !== undefined) e[f] = patch[f];
+  await e.save();
+  return before;
+}
+
+/** @param {any} e */
+export async function removeLoggedActivity(e) {
+  const text = e.text;
+  await e.deleteOne();
+  return { text };
 }
 
 // ---------------------------------------------------------------- seed

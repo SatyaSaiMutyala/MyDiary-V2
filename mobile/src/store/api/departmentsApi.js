@@ -47,6 +47,42 @@ export const departmentsApi = baseApi.injectEndpoints({
       query: body => ({ url: 'departments/activity', method: 'PUT', body }),
       invalidatesTags: ['Activity', 'Dashboard'],
     }),
+
+    /**
+     * "Log activity" — the day's work that nobody had preset as a task, grouped by lane:
+     * { daily: [], weekly: [], monthly: [] }.
+     */
+    getLoggedActivity: build.query({
+      query: params => ({
+        url: 'departments/activity/logged',
+        params: clean(params),
+      }),
+      transformResponse: r => r.logged ?? { daily: [], weekly: [], monthly: [] },
+      providesTags: ['LoggedActivity'],
+    }),
+    logActivity: build.mutation({
+      query: body => ({
+        url: 'departments/activity/logged',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['LoggedActivity'],
+    }),
+    updateLoggedActivity: build.mutation({
+      query: ({ id, ...body }) => ({
+        url: `departments/activity/logged/${id}`,
+        method: 'PATCH',
+        body,
+      }),
+      invalidatesTags: ['LoggedActivity'],
+    }),
+    removeLoggedActivity: build.mutation({
+      query: id => ({
+        url: `departments/activity/logged/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['LoggedActivity'],
+    }),
   }),
 });
 
@@ -56,4 +92,8 @@ export const {
   useListAssignmentsQuery,
   useGetActivityQuery,
   useSetActivityTickMutation,
+  useGetLoggedActivityQuery,
+  useLogActivityMutation,
+  useUpdateLoggedActivityMutation,
+  useRemoveLoggedActivityMutation,
 } = departmentsApi;

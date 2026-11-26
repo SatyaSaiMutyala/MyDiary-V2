@@ -17,6 +17,7 @@ import { LabRecordScreen } from '../screens/LabRecordScreen';
 import { LabReopenScreen } from '../screens/LabReopenScreen';
 import { LabSignOffScreen } from '../screens/LabSignOffScreen';
 import { LogDetailScreen } from '../screens/LogDetailScreen';
+import { LogActivityScreen } from '../screens/LogActivityScreen';
 import { LogFormScreen } from '../screens/LogFormScreen';
 import { LogsScreen } from '../screens/LogsScreen';
 import { MeetingActionsScreen } from '../screens/MeetingActionsScreen';
@@ -184,6 +185,7 @@ export function RootNavigator() {
         {/* My To-Do — built */}
         <Stack.Screen name="TaskDetail" component={TaskDetailScreen} />
         <Stack.Screen name="TaskForm" component={TaskFormScreen} />
+        <Stack.Screen name="LogActivity" component={LogActivityScreen} />
 
         {/* My Diary — built */}
         <Stack.Screen name="DiaryEntry" component={DiaryEntryScreen} />

@@ -2,6 +2,7 @@ import { baseApi, cleanParams } from './baseApi';
 
 const LIST = { type: 'Department', id: 'LIST' };
 const ACTIVITY = { type: 'Department', id: 'ACTIVITY' };
+const LOGGED = { type: 'Department', id: 'LOGGED' };
 const ASSIGNMENTS = { type: 'Department', id: 'ASSIGNMENTS' };
 const AUDIT = { type: 'Audit', id: 'LIST' };
 
@@ -141,6 +142,26 @@ export const departmentsApi = baseApi.injectEndpoints({
       query: (body) => ({ url: '/departments/activity', method: 'PUT', body }),
       invalidatesTags: [ACTIVITY, AUDIT],
     }),
+
+    // "Log activity" — the day's work that nobody had preset as a task. Its own cache key, so it
+    // reloads on its own and the shift log the Dashboard shares is left alone.
+    getLoggedActivity: b.query({
+      query: (params) => ({ url: '/departments/activity/logged', params: cleanParams(params) }),
+      transformResponse: (r) => r.logged,
+      providesTags: [LOGGED],
+    }),
+    logActivity: b.mutation({
+      query: (body) => ({ url: '/departments/activity/logged', method: 'POST', body }),
+      invalidatesTags: [LOGGED, AUDIT],
+    }),
+    updateLoggedActivity: b.mutation({
+      query: ({ id, ...body }) => ({ url: `/departments/activity/logged/${id}`, method: 'PATCH', body }),
+      invalidatesTags: [LOGGED, AUDIT],
+    }),
+    removeLoggedActivity: b.mutation({
+      query: (id) => ({ url: `/departments/activity/logged/${id}`, method: 'DELETE' }),
+      invalidatesTags: [LOGGED, AUDIT],
+    }),
   }),
 });
 
@@ -154,4 +175,5 @@ export const {
   useAddAgendaPointMutation, useUpdateAgendaPointMutation, useRemoveAgendaPointMutation,
   useListAssignmentsQuery, usePutAssignmentsMutation,
   useGetActivityQuery, useSetActivityTickMutation,
+  useGetLoggedActivityQuery, useLogActivityMutation, useUpdateLoggedActivityMutation, useRemoveLoggedActivityMutation,
 } = departmentsApi;

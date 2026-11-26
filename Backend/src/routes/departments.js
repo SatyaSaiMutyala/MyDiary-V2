@@ -24,6 +24,11 @@ const mine = requireModule('activity', 'departments', 'dashboard');
 departmentsRouter.get('/assignments', read, departments.listAssignments);
 departmentsRouter.get('/activity', mine, departments.getActivity);
 departmentsRouter.put('/activity', mine, validateBody(departments.tickSchema), departments.putActivityTick);
+// "Log activity" — the things a day actually held that nobody had preset as a task.
+departmentsRouter.get('/activity/logged', mine, departments.getLoggedActivity);
+departmentsRouter.post('/activity/logged', mine, validateBody(departments.loggedSchema), departments.postLoggedActivity);
+departmentsRouter.patch('/activity/logged/:entryId', mine, validateBody(departments.loggedPatchSchema), departments.patchLoggedActivity);
+departmentsRouter.delete('/activity/logged/:entryId', mine, departments.removeLoggedActivity);
 
 departmentsRouter.get('/', read, departments.list);
 departmentsRouter.post('/', write, validateBody(departments.createSchema), departments.create);

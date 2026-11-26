@@ -1,7 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Check, ChevronRight } from 'lucide-react-native';
+import {
+  Check,
+  ChevronRight,
+  Pencil,
+  Plus,
+  Trash2,
+  X,
+} from 'lucide-react-native';
 import { AppText } from '../components/AppText';
 import { Card } from '../components/Card';
 import { EmptyState } from '../components/EmptyState';
@@ -18,8 +25,11 @@ import { canOpen } from '../store/api/authApi';
 import {
   useGetActivityQuery,
   useGetDepartmentQuery,
+  useGetLoggedActivityQuery,
   useListAssignmentsQuery,
+  useRemoveLoggedActivityMutation,
   useSetActivityTickMutation,
+  useUpdateLoggedActivityMutation,
 } from '../store/api/departmentsApi';
 import {
   assignmentFor,
@@ -29,6 +39,8 @@ import {
 } from '../utils/departments';
 import { useLabDayQuery, useLabMineQuery } from '../store/api/labReadinessApi';
 import { useUpdateMeMutation } from '../store/api/authApi';
+import { LOG_TAGS } from './LogActivityScreen';
+import { useConfirm } from '../components/ConfirmDialog';
 import { longDate, realToday } from '../utils/dates';
 import { colors, hairline, radius, s, vs } from '../theme';
 
@@ -76,6 +88,86 @@ function ShiftRow({ task, on, busy, last, onToggle }) {
   );
 }
 
+/** The yellow "Log activity" pill that opens the form for one lane. */
+function LogButton({ onPress, label = 'Log activity' }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={({ pressed }) => [styles.logBtn, pressed && styles.pressed]}
+    >
+      <Plus size={s(14)} color={colors.amberInk} strokeWidth={2.6} />
+      <AppText variant="metaStrong" color={colors.amberInk}>
+        {label}
+      </AppText>
+    </Pressable>
+  );
+}
+
+/**
+ * One logged activity. Dashed and amber rather than the plain card rows above it, so it never reads
+ * as a task somebody preset — it is this person's own note of what the day held.
+ */
+function LoggedRow({ entry, onToggle, onEdit, onRemove }) {
+  const tag = LOG_TAGS.find(t => t.key === entry.tag);
+  return (
+    <View style={[styles.logged, !entry.done && styles.loggedOff]}>
+      <Pressable
+        onPress={onToggle}
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: entry.done }}
+        accessibilityLabel={
+          entry.done ? 'Un-tick — logged by mistake' : 'Tick it back'
+        }
+        style={({ pressed }) => [styles.loggedBox, pressed && styles.pressed]}
+      >
+        <View style={[styles.box, entry.done && styles.boxAmber]}>
+          {entry.done ? (
+            <Check size={s(13)} color={colors.white} strokeWidth={3} />
+          ) : null}
+        </View>
+      </Pressable>
+      <View style={styles.rowText}>
+        <AppText
+          variant="body"
+          color={entry.done ? colors.ink : colors.inkMuted}
+          style={entry.done ? undefined : styles.struck}
+        >
+          {entry.text}
+        </AppText>
+        <View style={styles.lineMeta}>
+          {entry.atTime ? (
+            <AppText variant="meta" color={colors.inkFaint}>
+              {entry.atTime}
+            </AppText>
+          ) : null}
+          {tag ? <Pill label={tag.label} tone="yellow" /> : null}
+          <Pill label="Added by you" tone="yellow" />
+        </View>
+      </View>
+      <Pressable
+        onPress={onEdit}
+        accessibilityRole="button"
+        accessibilityLabel="Edit this entry"
+        hitSlop={s(6)}
+        style={({ pressed }) => [pressed && styles.pressed]}
+      >
+        <Pencil size={s(15)} color={colors.inkFaint} strokeWidth={2} />
+      </Pressable>
+      <Pressable
+        onPress={onRemove}
+        accessibilityRole="button"
+        accessibilityLabel="Remove this entry"
+        hitSlop={s(6)}
+        style={({ pressed }) => [pressed && styles.pressed]}
+      >
+        <X size={s(15)} color={colors.inkFaint} strokeWidth={2} />
+      </Pressable>
+    </View>
+  );
+}
+
 /**
  * My Activity — the checklist for today's shift, lane by lane.
  *
@@ -90,6 +182,7 @@ export function ActivityScreen() {
   const facts = useMemo(() => todayFacts(today), [today]);
   const [pending, setPending] = useState({});
   const [problem, setProblem] = useState('');
+  const confirm = useConfirm();
 
   const assignmentsQ = useListAssignmentsQuery();
   const assignment = assignmentFor(assignmentsQ.data, me?.name);
@@ -127,6 +220,15 @@ export function ActivityScreen() {
     }
   };
   const [tick] = useSetActivityTickMutation();
+  // What the day actually held, beside the checklist that was planned for it.
+  const loggedQ = useGetLoggedActivityQuery({ date: today });
+  const [updateLogged] = useUpdateLoggedActivityMutation();
+  const [removeLogged] = useRemoveLoggedActivityMutation();
+  const loggedLanes = loggedQ.data ?? { daily: [], weekly: [], monthly: [] };
+  const loggedCount =
+    loggedLanes.daily.length +
+    loggedLanes.weekly.length +
+    loggedLanes.monthly.length;
 
   const dept = deptQ.data;
   // Kept stable so the stats below are not recomputed on every render.
@@ -165,9 +267,65 @@ export function ActivityScreen() {
 
   const refresh = async () => {
     await Promise.all(
-      [assignmentsQ, deptQ, activityQ].map(q => q.refetch?.()).filter(Boolean),
+      [assignmentsQ, deptQ, activityQ, loggedQ]
+        .map(q => q.refetch?.())
+        .filter(Boolean),
     );
   };
+
+  /** Open the form for one lane, or on an entry already written. */
+  const openLog = (lane, entry) =>
+    nav.navigate('LogActivity', {
+      lane,
+      date: today,
+      departmentId: assignment.departmentId ?? undefined,
+      ...(entry ? { entry } : null),
+    });
+
+  const toggleLogged = async entry => {
+    setProblem('');
+    try {
+      await updateLogged({ id: entry.id, done: !entry.done }).unwrap();
+    } catch (err) {
+      setProblem(errorMessage(err));
+    }
+  };
+
+  const dropLogged = async entry => {
+    const yes = await confirm({
+      title: 'Remove this entry?',
+      text: entry.text,
+      confirmLabel: 'Remove',
+      tone: 'danger',
+      icon: Trash2,
+    });
+    if (!yes) {
+      return;
+    }
+    setProblem('');
+    try {
+      await removeLogged(entry.id).unwrap();
+    } catch (err) {
+      setProblem(errorMessage(err));
+    }
+  };
+
+  /**
+   * The logged rows of one lane, drawn under that lane's preset tasks.
+   *
+   * Opening and closing have no bucket of their own — a day's unplanned work goes in the daily lane,
+   * not into one end of the shift — so asking for theirs draws nothing rather than throwing.
+   */
+  const loggedRows = lane =>
+    (loggedLanes[lane] ?? []).map(e => (
+      <LoggedRow
+        key={e.id}
+        entry={e}
+        onToggle={() => toggleLogged(e)}
+        onEdit={() => openLog(e.lane, e)}
+        onRemove={() => dropLogged(e)}
+      />
+    ));
 
   /** Ticked state with the tap the user just made laid over it, so the box moves at once. */
   const isOn = (kind, taskId) => {
@@ -250,7 +408,25 @@ export function ActivityScreen() {
           />
         );
       }
-      return <EmptyState text="Nothing due today. Enjoy the quiet one." />;
+      // Nothing was preset, but the day may still have held something worth recording — so the
+      // way to record it is offered here rather than hidden behind an empty screen.
+      return (
+        <>
+          <EmptyState text="Nothing preset for your position today. Log whatever the day actually held." />
+          {loggedCount ? (
+            <View style={styles.loggedOnly}>
+              <Eyebrow label={`Logged today · ${loggedLanes.daily.length}`} />
+              <Card style={styles.lane}>{loggedRows('daily')}</Card>
+            </View>
+          ) : null}
+          <View style={styles.loneBtn}>
+            <LogButton
+              onPress={() => openLog('daily')}
+              label="Log a daily activity"
+            />
+          </View>
+        </>
+      );
     }
 
     return (
@@ -271,6 +447,20 @@ export function ActivityScreen() {
               tone={total - done ? colors.ink : colors.green}
             />
           </View>
+          {/* Logged work is counted beside the checklist, never inside it: the percentage is what
+              the HOD rolls up for compliance, and ad-hoc work would inflate it. */}
+          {loggedCount ? (
+            <>
+              <View style={styles.glanceRule} />
+              <View style={styles.stat}>
+                <Stat
+                  value={loggedCount}
+                  label="Logged"
+                  tone={colors.amberInk}
+                />
+              </View>
+            </>
+          ) : null}
         </Card>
 
         <Card style={styles.progress}>
@@ -370,13 +560,30 @@ export function ActivityScreen() {
           }
 
           const tasks = lists[lane.key];
-          if (!tasks.length) {
+          // Weekly and monthly can also hold logged activities, so a lane with no preset task left
+          // can still have a day's work in it.
+          const mine = loggedLanes[lane.key] ?? [];
+          if (!tasks.length && !mine.length) {
             return null;
           }
           const laneDone = tasks.filter(t => isOn(lane.key, t.id)).length;
+          const count = [
+            tasks.length ? `${laneDone}/${tasks.length}` : '',
+            mine.length ? `${mine.length} logged` : '',
+          ]
+            .filter(Boolean)
+            .join(' · ');
+          // Only the lanes that have a logged bucket offer the shortcut. Opening and closing have
+          // none — their unplanned work goes in the daily lane below, which has its own button —
+          // and a "+ Log" there would post a lane the server rightly refuses.
+          const canLog = lane.key === 'weekly' || lane.key === 'monthly';
           return (
             <View key={lane.key}>
-              <Eyebrow label={`${lane.label} · ${laneDone}/${tasks.length}`} />
+              <Eyebrow
+                label={`${lane.label} · ${count}`}
+                action={canLog ? '+ Log' : undefined}
+                onAction={canLog ? () => openLog(lane.key) : undefined}
+              />
               <Card style={styles.lane}>
                 {tasks.map((task, i) => (
                   <ShiftRow
@@ -384,14 +591,40 @@ export function ActivityScreen() {
                     task={task}
                     on={isOn(lane.key, task.id)}
                     busy={`${lane.key}:${task.id}` in pending}
-                    last={i === tasks.length - 1}
+                    last={i === tasks.length - 1 && !mine.length}
                     onToggle={() => toggle(lane.key, task)}
                   />
                 ))}
+                {loggedRows(lane.key)}
               </Card>
             </View>
           );
         })}
+
+        {/* The day's own lane: everything that happened but nobody had preset as a task. It is
+            always here, even empty, because the whole point is that it is where the unplanned goes. */}
+        <View>
+          <Eyebrow
+            label={`Logged today · ${loggedLanes.daily.length || 'nothing yet'}`}
+          />
+          <Card style={styles.lane}>
+            {loggedLanes.daily.length ? (
+              loggedRows('daily')
+            ) : (
+              <AppText
+                variant="body"
+                color={colors.inkMuted}
+                style={styles.loggedHint}
+              >
+                Nothing logged yet today. Record the meetings, calls, approvals
+                and decisions that were not on your checklist.
+              </AppText>
+            )}
+            <View style={styles.logRow}>
+              <LogButton onPress={() => openLog('daily')} />
+            </View>
+          </Card>
+        </View>
       </>
     );
   };
@@ -449,6 +682,33 @@ const styles = StyleSheet.create({
   },
   lastRow: { borderBottomWidth: 0 },
   rowText: { flex: 1, gap: vs(1) },
+  logBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: s(6),
+    alignSelf: 'flex-start',
+    paddingHorizontal: s(14),
+    paddingVertical: vs(9),
+    borderRadius: radius.pill,
+    backgroundColor: colors.amberTint,
+    borderWidth: hairline,
+    borderColor: colors.amber,
+  },
+  logRow: { paddingVertical: vs(11) },
+  loneBtn: { marginTop: vs(14), alignItems: 'center' },
+  loggedOnly: { marginTop: vs(14) },
+  loggedHint: { paddingVertical: vs(11) },
+  logged: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: s(10),
+    paddingVertical: vs(11),
+    borderBottomWidth: hairline,
+    borderBottomColor: colors.lineSoft,
+  },
+  loggedOff: { opacity: 0.7 },
+  loggedBox: { paddingVertical: vs(2) },
+  boxAmber: { backgroundColor: colors.amber, borderColor: colors.amber },
   askCard: { padding: s(16), gap: vs(4) },
   askText: { marginBottom: vs(8) },
   askRow: {

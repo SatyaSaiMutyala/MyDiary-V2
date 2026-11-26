@@ -8,9 +8,14 @@ import { PageHeader, EmptyState, Avatar, Btn } from '../../components';
 import { todayFacts, getTaskStatus } from '../../utils/departments';
 import { DAYS_OF_WEEK_FULL } from '../../data/departments';
 import { MONTHS } from '../../utils/dates';
-import { useGetActivityQuery, useGetDepartmentQuery, useListAssignmentsQuery, useSetActivityTickMutation } from '../../store/api/departmentsApi';
+import {
+  useGetActivityQuery, useGetDepartmentQuery, useGetLoggedActivityQuery, useListAssignmentsQuery,
+  useLogActivityMutation, useRemoveLoggedActivityMutation, useSetActivityTickMutation, useUpdateLoggedActivityMutation,
+} from '../../store/api/departmentsApi';
 import { ApiError, Fetching, useToast } from '../settings/components/listUi';
+import { useDialog } from '../../components/Dialogs';
 import { activityArgs, assignmentFor, shiftStats, PHASE_KEYS } from './utils';
+import LogActivityModal, { LOG_TAGS } from './components/LogActivityModal';
 // Kept available for parity with the prototype's renderCMDOversightBlock / renderMyActivityOversight —
 // the prototype's renderMyActivity does NOT render them, so neither do we.
 // eslint-disable-next-line no-unused-vars
@@ -38,8 +43,48 @@ function PhaseChip({ ticked, all, onClick, title, label, pct }) {
   );
 }
 
+/* .ma-lane-add — the yellow "+ Log activity" pill that sits in a lane's header. */
+function LogBtn({ onClick, label = 'Log activity' }) {
+  return (
+    <ButtonBase onClick={onClick} sx={{ p: '7px 14px', bgcolor: tokens.yellow, color: '#1F1300', border: `1.5px solid ${tokens.yellow}`, borderRadius: '16px', fontFamily: fonts.mono, fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', display: 'inline-flex', alignItems: 'center', gap: '7px', transition: 'all 0.15s', boxShadow: '0 1px 2px rgba(240,180,41,0.35)', '&:hover': { bgcolor: '#E6A415', borderColor: '#E6A415', transform: 'translateY(-1px)', boxShadow: '0 4px 10px -2px rgba(240,180,41,0.45)' } }}>
+      <Box component="span" sx={{ width: 17, height: 17, borderRadius: '4px', bgcolor: 'rgba(31,19,0,0.14)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, lineHeight: 1 }}>+</Box>
+      {label}
+    </ButtonBase>
+  );
+}
+
+/* .ma-adhoc-item — a logged activity. Dashed and amber, so it never reads as a preset task. */
+function LoggedRow({ entry, onToggle, onEdit, onRemove }) {
+  const tag = LOG_TAGS.find(t => t.id === entry.tag);
+  const chipSx = { fontFamily: fonts.mono, fontSize: 10, p: '3px 8px', borderRadius: '10px', letterSpacing: '0.06em', fontWeight: 700, whiteSpace: 'nowrap' };
+  return (
+    <Box sx={{ p: '11px 14px', m: '4px 0', bgcolor: '#FFF9EC', border: '1px dashed #B7791F', borderRadius: '8px', opacity: entry.done ? 1 : 0.7, transition: 'background 0.12s', '&:hover': { bgcolor: '#FFF4DD' } }}>
+      <Grid container spacing={1.5} sx={{ alignItems: 'center' }}>
+        <Grid size="auto">
+          <Box onClick={onToggle} title={entry.done ? 'Un-tick — I logged this by mistake' : 'Tick it back'}
+            sx={{ width: 26, height: 26, borderRadius: '6px', bgcolor: entry.done ? '#B7791F' : tokens.card, border: `2px solid ${entry.done ? '#B7791F' : '#B7791F'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, color: '#fff', cursor: 'pointer', transition: 'all 0.12s', userSelect: 'none' }}>{entry.done ? '✓' : ''}</Box>
+        </Grid>
+        <Grid size="grow">
+          <Box sx={{ fontSize: 13, color: entry.done ? tokens.ink : tokens.slate, lineHeight: 1.45, textDecoration: entry.done ? 'none' : 'line-through' }}>
+            {entry.text}
+            {entry.atTime && <Box component="span" sx={{ fontFamily: fonts.mono, fontSize: 11, color: tokens.slate, fontWeight: 700, ml: '6px' }}>· {entry.atTime}</Box>}
+          </Box>
+        </Grid>
+        <Grid size={{ xs: 12, sm: 'auto' }}>
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', justifyContent: { xs: 'flex-start', sm: 'flex-end' }, pl: { xs: '38px', sm: 0 } }}>
+            {tag && <Box sx={{ ...chipSx, bgcolor: '#FDE68A', color: '#92400E' }}>{tag.label}</Box>}
+            <Box sx={{ ...chipSx, bgcolor: '#FDE68A', color: '#92400E', textTransform: 'uppercase' }}>Added by you</Box>
+            <ButtonBase onClick={onEdit} title="Change the wording, time or tag" sx={{ width: 24, height: 24, borderRadius: '6px', fontSize: 12, color: tokens.slate, '&:hover': { bgcolor: tokens.creamWarm, color: tokens.ink } }}>✎</ButtonBase>
+            <ButtonBase onClick={onRemove} title="Remove this entry" sx={{ width: 24, height: 24, borderRadius: '6px', fontSize: 13, color: tokens.slate, '&:hover': { bgcolor: '#FEE2E2', color: tokens.red } }}>✕</ButtonBase>
+          </Box>
+        </Grid>
+      </Grid>
+    </Box>
+  );
+}
+
 /* .ma-lane */
-function Lane({ kind, title, count, pill, pillDone, children }) {
+function Lane({ kind, title, count, pill, pillDone, action, children }) {
   return (
     <Box sx={{ bgcolor: tokens.card, border: `1px solid ${tokens.line}`, borderRadius: '10px', mb: '14px', overflow: 'hidden', borderLeft: `4px solid ${LANE_BORDER[kind] || tokens.teal}` }}>
       <Box sx={{ p: { xs: '12px 14px', md: '14px 20px' }, bgcolor: tokens.cream, borderBottom: `1px solid ${tokens.line}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
@@ -47,7 +92,10 @@ function Lane({ kind, title, count, pill, pillDone, children }) {
           {title}
           {count && <Box component="span" sx={{ fontFamily: fonts.mono, fontSize: 11, color: tokens.slate, letterSpacing: '0.04em', fontWeight: 700 }}>{count}</Box>}
         </Box>
-        <Box sx={{ p: '4px 10px', bgcolor: pillDone ? tokens.tealDark : tokens.card, border: `1px solid ${pillDone ? tokens.tealDark : tokens.line}`, borderRadius: '12px', fontFamily: fonts.mono, fontSize: 11, fontWeight: 700, color: pillDone ? '#fff' : tokens.ink, letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>{pill}</Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          {pill && <Box sx={{ p: '4px 10px', bgcolor: pillDone ? tokens.tealDark : tokens.card, border: `1px solid ${pillDone ? tokens.tealDark : tokens.line}`, borderRadius: '12px', fontFamily: fonts.mono, fontSize: 11, fontWeight: 700, color: pillDone ? '#fff' : tokens.ink, letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>{pill}</Box>}
+          {action}
+        </Box>
       </Box>
       <Box sx={{ p: '10px 14px' }}>{children}</Box>
     </Box>
@@ -87,7 +135,10 @@ export default function MyActivityPage() {
   const navigate = useNavigate();
   const { viewer, isSelf } = useViewerUser();
   const [show, setShow] = useState({ opening: true, closing: true, weekly: true, monthly: true, review: true });
+  // { lane } to write a new one, { lane, entry } to change one already written, null for closed.
+  const [composer, setComposer] = useState(null);
   const { toast, show: toastShow } = useToast();
+  const dlg = useDialog();
 
   const me = viewer.name;
   const facts = todayFacts();
@@ -99,6 +150,13 @@ export default function MyActivityPage() {
   const { data: dept, error: deptErr, isLoading: deptLoading, isFetching: deptFetching, refetch: refetchDept } = useGetDepartmentQuery(assignment.departmentId, { skip: !assignment.departmentId });
   const { data: log = {}, error: logErr, isFetching: logFetching } = useGetActivityQuery(activityArgs({ date: todayStr, person: me, isSelf }));
   const [setTick] = useSetActivityTickMutation();
+  // What the day actually held, beside the checklist that was planned for it.
+  const { data: logged, error: loggedErr, isFetching: loggedFetching } = useGetLoggedActivityQuery(isSelf ? { date: todayStr } : { date: todayStr, person: me });
+  const [logActivity, logging] = useLogActivityMutation();
+  const [updateLogged] = useUpdateLoggedActivityMutation();
+  const [removeLogged] = useRemoveLoggedActivityMutation();
+  const lanesLogged = logged ?? { daily: [], weekly: [], monthly: [] };
+  const loggedCount = lanesLogged.daily.length + lanesLogged.weekly.length + lanesLogged.monthly.length;
   // A department that runs a readiness board has no shift tasks: its rounds are its opening and
   // closing tasks, and these are this person's own lines of them.
 
@@ -166,17 +224,54 @@ export default function MyActivityPage() {
     }
   };
 
+  // The three ways a logged activity changes: written, corrected or taken back.
+  const saveLogged = async ({ lane: laneKey, text, atTime, tag }) => {
+    try {
+      if (composer?.entry) await updateLogged({ id: composer.entry.id, text, atTime, tag }).unwrap();
+      else await logActivity({ lane: laneKey, text, atTime, tag, date: todayStr, ...(dept ? { departmentId: dept.id } : {}), ...(isSelf ? {} : { person: me }) }).unwrap();
+      setComposer(null);
+    } catch (err) {
+      toastShow(err);
+    }
+  };
+
+  const toggleLogged = async (entry) => {
+    try { await updateLogged({ id: entry.id, done: !entry.done }).unwrap(); } catch (err) { toastShow(err); }
+  };
+
+  const dropLogged = async (entry) => {
+    if (!(await dlg.confirm(`Remove "${entry.text.length > 70 ? entry.text.slice(0, 70) + '…' : entry.text}" from today's log?`))) return;
+    try { await removeLogged(entry.id).unwrap(); } catch (err) { toastShow(err); }
+  };
+
+  /**
+   * The logged rows of one lane, drawn under that lane's preset tasks.
+   *
+   * Opening and closing have no bucket of their own — a day's unplanned work goes in the daily lane,
+   * not into one end of the shift — so asking for theirs draws nothing rather than throwing.
+   */
+  const loggedRows = (laneKey) => (lanesLogged[laneKey] ?? []).map(e => (
+    <LoggedRow key={e.id} entry={e} onToggle={() => toggleLogged(e)} onEdit={() => setComposer({ lane: e.lane, entry: e })} onRemove={() => dropLogged(e)} />
+  ));
+
   /** One readiness line, in the same shape the lane draws a shift task. */
   const lane = (kind, label, icon) => {
     const list = lists[kind];
-    if (!show[kind] || list.length === 0) return null;
+    // Weekly and monthly can also hold logged activities, so a lane with no preset task left can still
+    // have a day's worth of work in it.
+    const mine = lanesLogged[kind] ?? [];
+    if (!show[kind] || (list.length === 0 && mine.length === 0)) return null;
     const doneCt = list.filter(t => getTaskStatus(log, me, todayStr, kind, t.id) === 'done').length;
     const pctL = list.length ? Math.round((doneCt / list.length) * 100) : 0;
+    const count = [list.length ? `${list.length} task${list.length > 1 ? 's' : ''}` : '', mine.length ? `${mine.length} logged` : ''].filter(Boolean).join(' + ');
     return (
-      <Lane key={kind} kind={kind} title={`${icon} ${label}`} count={`· ${list.length} task${list.length > 1 ? 's' : ''}`} pill={`${doneCt}/${list.length} · ${pctL}%`} pillDone={pctL === 100}>
+      <Lane key={kind} kind={kind} title={`${icon} ${label}`} count={count ? `· ${count}` : ''}
+        pill={list.length ? `${doneCt}/${list.length} · ${pctL}%` : ''} pillDone={pctL === 100}
+        action={mine.length || kind === 'weekly' || kind === 'monthly' ? <LogBtn onClick={() => setComposer({ lane: kind })} /> : undefined}>
         {list.slice().sort((a, b) => (a.order || 0) - (b.order || 0)).map(t => (
           <TaskRow key={t.id} task={t} dept={dept} isDone={getTaskStatus(log, me, todayStr, kind, t.id) === 'done'} onToggle={() => toggleTask(kind, t.id)} />
         ))}
+        {loggedRows(kind)}
       </Lane>
     );
   };
@@ -209,8 +304,8 @@ export default function MyActivityPage() {
     <Box>
       {header}
 
-      <ApiError error={logErr} sx={{ mb: '12px' }} />
-      <Fetching on={deptFetching || logFetching} />
+      <ApiError error={logErr || loggedErr} sx={{ mb: '12px' }} />
+      <Fetching on={deptFetching || logFetching || loggedFetching} />
 
       {/* .ma-hero */}
       <Box sx={{ background: `linear-gradient(135deg, ${tokens.greenDeep}, ${tokens.tealDark})`, color: '#fff', borderRadius: '14px', p: { xs: '18px', md: '22px 26px' }, mb: '18px' }}>
@@ -229,6 +324,9 @@ export default function MyActivityPage() {
                 <text x="50" y="50" fill="#fff" fontFamily={fonts.serif} fontSize="20" fontWeight="700" textAnchor="middle" dominantBaseline="central">{pct}%</text>
               </Box>
               <Box sx={{ fontFamily: fonts.mono, fontSize: 9, opacity: 0.85, letterSpacing: '0.1em', mt: '4px', textTransform: 'uppercase' }}>{doneT}/{totalT} done</Box>
+              {/* Logged work sits beside the ring rather than inside it: the ring is the checklist
+                  compliance that Department Master rolls up, and ad-hoc work would inflate it. */}
+              {loggedCount > 0 && <Box sx={{ fontFamily: fonts.mono, fontSize: 9, opacity: 0.85, letterSpacing: '0.1em', mt: '2px', textTransform: 'uppercase', color: tokens.yellow }}>+{loggedCount} logged</Box>}
             </Box>
           </Grid>
         </Grid>
@@ -250,11 +348,28 @@ export default function MyActivityPage() {
           would hide that, so it says what is missing and who sets it. */}
       {totalT === 0 && (
         <EmptyState icon="🎯" title="Clean slate" sx={{ mb: '14px' }}
-          desc={<>No department tasks for your position today. {dept.openingTasks.length || dept.closingTasks.length ? "The only configured tasks don't apply to your position." : <>Your department hasn't set up shift tasks yet — visit <Box component="a" onClick={() => navigate(`/departments/${dept.id}`)} sx={{ color: tokens.tealDark, cursor: 'pointer', fontWeight: 700 }}>Department Master</Box> to add them.</>}</>} />
+          desc={<>
+            No department tasks for your position today. {dept.openingTasks.length || dept.closingTasks.length ? "The only configured tasks don't apply to your position." : <>Your department hasn't set up shift tasks yet — visit <Box component="a" onClick={() => navigate(`/departments/${dept.id}`)} sx={{ color: tokens.tealDark, cursor: 'pointer', fontWeight: 700 }}>Department Master</Box> to add them.</>}
+            <Box sx={{ mt: '14px' }}><LogBtn onClick={() => setComposer({ lane: 'daily' })} label="Log a daily activity" /></Box>
+          </>} />
       )}
 
       {lane('opening', 'Opening Shift', '🌅')}
       {lane('closing', 'Closing Shift', '🌙')}
+
+      {/* The day's own lane: everything that happened but nobody had preset as a task. It is always
+          here, even empty, because the whole point is that it is the place to put the unplanned. */}
+      <Lane kind="daily" title="📝 Logged Today"
+        count={lanesLogged.daily.length ? `· ${lanesLogged.daily.length} entr${lanesLogged.daily.length === 1 ? 'y' : 'ies'}` : '· nothing yet'}
+        pill="" action={<LogBtn onClick={() => setComposer({ lane: 'daily' })} />}>
+        {lanesLogged.daily.length
+          ? loggedRows('daily')
+          : (
+            <Box sx={{ p: '20px 18px', textAlign: 'center', bgcolor: '#FFFBEF', border: `1px dashed ${tokens.yellow}`, borderRadius: '8px', m: '6px 0', fontSize: 13, color: tokens.ink, lineHeight: 1.5 }}>
+              Nothing logged yet today. Record the meetings, calls, approvals and decisions that were not on your checklist.
+            </Box>
+          )}
+      </Lane>
       {lane('weekly', 'Weekly Task' + (lists.weekly.length > 1 ? 's' : ''), '📅')}
       {lane('monthly', 'Monthly Task' + (lists.monthly.length > 1 ? 's' : ''), '📆')}
 
@@ -262,8 +377,19 @@ export default function MyActivityPage() {
 
       <Box sx={{ mt: '20px', p: '12px 16px', bgcolor: tokens.creamWarm, border: `1px solid ${tokens.line}`, borderRadius: '8px', fontSize: 12, color: tokens.slate, display: 'flex', alignItems: 'center', gap: '10px' }}>
         <Box component="span" sx={{ fontSize: 16 }}>💡</Box>
-        <span>Your ticks persist to today's activity log. Yesterday's activity is sealed. Your HOD and department governance can see your completion rate in the Department Master detail view.</span>
+        <span>Your ticks persist to today's activity log. Yesterday's activity is sealed. Your HOD and department governance can see your completion rate in the Department Master detail view — the checklist percentage, which logged activities are deliberately kept out of.</span>
       </Box>
+
+      <LogActivityModal
+        open={Boolean(composer)}
+        lane={composer?.lane}
+        entry={composer?.entry}
+        dateLabel={`${DAYS_OF_WEEK_FULL[dowToday]}, ${today.getDate()} ${MONTHS[today.getMonth()]} ${today.getFullYear()}`}
+        person={me}
+        busy={logging.isLoading}
+        onClose={() => setComposer(null)}
+        onSubmit={saveLogged}
+      />
       {toast}
     </Box>
   );

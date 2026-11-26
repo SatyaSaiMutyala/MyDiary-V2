@@ -97,6 +97,7 @@ export const ALL_TAGS = [
   'Departments',
   'Department',
   'Activity',
+  'LoggedActivity',
 ];
 
 export const baseApi = createApi({

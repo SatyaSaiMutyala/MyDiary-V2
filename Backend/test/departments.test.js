@@ -456,6 +456,119 @@ describe('people and the assignment map', () => {
   });
 });
 
+describe('logged activities (My Activity\u2019s "Log activity")', () => {
+  const logged = (t = token) => get('/api/departments/activity/logged?date=2026-11-21', t);
+  const log = (body, t = token) => post('/api/departments/activity/logged', { date: '2026-11-21', ...body }, t);
+
+  // A logged activity outlives its department on purpose, so the suite's own clean-up has to clear it.
+  beforeEach(async () => {
+    for (const d of ['2026-11-20', '2026-11-21']) {
+      for (const t of [token, staffToken]) {
+        const r = await get(`/api/departments/activity/logged?date=${d}`, t);
+        for (const lane of Object.values(r.body.logged ?? {})) {
+          for (const e of lane) await del(`/api/departments/activity/logged/${e.id}`, t);
+        }
+      }
+    }
+  });
+
+  it('records something off the checklist and reads it back lane by lane', async () => {
+    const d = await makeDept();
+    const r = await log({ lane: 'daily', text: 'Signed the Apollo MoU for the shared TB panel', atTime: '15:30', tag: 'approval', departmentId: d.id });
+    expect(r.status).toBe(201);
+    expect(r.body.entry).toMatchObject({
+      person: 'Venkata Cherukuri', date: '2026-11-21', lane: 'daily', atTime: '15:30', tag: 'approval',
+      done: true, departmentId: d.id,
+    });
+    expect(r.body.entry.id).toMatch(/^[0-9a-f]{24}$/);
+
+    // A second one, and one in another lane.
+    await log({ lane: 'daily', text: 'Alignment call with Fayaz on the November cash position', tag: 'call' });
+    await log({ lane: 'weekly', text: 'Walked the weekly P&L with the CFO' });
+
+    const day = await logged();
+    expect(day.status).toBe(200);
+    expect(day.body).toMatchObject({ date: '2026-11-21', person: 'Venkata Cherukuri' });
+    // Oldest first, so the day reads in the order it was lived.
+    expect(day.body.logged.daily.map((e) => e.text)).toEqual([
+      'Signed the Apollo MoU for the shared TB panel',
+      'Alignment call with Fayaz on the November cash position',
+    ]);
+    expect(day.body.logged.weekly).toHaveLength(1);
+    expect(day.body.logged.monthly).toEqual([]);
+    // A tag and a time are both optional.
+    expect(day.body.logged.weekly[0]).toMatchObject({ tag: '', atTime: '', departmentId: null });
+  });
+
+  it('keeps the day it happened on separate from every other day', async () => {
+    await log({ lane: 'daily', text: 'Yesterday\u2019s board pack read' });
+    const other = await get('/api/departments/activity/logged?date=2026-11-20');
+    expect(other.body.logged).toEqual({ daily: [], weekly: [], monthly: [] });
+  });
+
+  it('lets the owner fix the wording, re-tag it, un-tick it, or remove it', async () => {
+    const id = (await log({ lane: 'daily', text: 'Clal with the CFO', tag: 'call' })).body.entry.id;
+    const fixed = await patch(`/api/departments/activity/logged/${id}`, { text: 'Call with the CFO', atTime: '09:15' });
+    expect(fixed.status).toBe(200);
+    expect(fixed.body.entry).toMatchObject({ text: 'Call with the CFO', atTime: '09:15', tag: 'call', done: true });
+
+    const off = await patch(`/api/departments/activity/logged/${id}`, { done: false });
+    expect(off.body.entry.done).toBe(false);
+    expect((await logged()).body.logged.daily[0]).toMatchObject({ done: false });
+
+    const gone = await del(`/api/departments/activity/logged/${id}`);
+    expect(gone.status).toBe(200);
+    expect((await logged()).body.logged.daily).toEqual([]);
+    // Removing it twice is a plain 404, not a crash.
+    expect((await del(`/api/departments/activity/logged/${id}`)).status).toBe(404);
+  });
+
+  it('refuses a blank entry, an unknown lane, a bad tag and a bad time', async () => {
+    expect((await log({ lane: 'daily', text: '   ' })).status).toBe(400);
+    const lane = await log({ lane: 'hourly', text: 'Something' });
+    expect(lane.status).toBe(400);
+    expect(lane.body.error.message).toMatch(/lane must be one of: daily, weekly, monthly/);
+    expect((await log({ lane: 'daily', text: 'Something', tag: 'gossip' })).status).toBe(400);
+    expect((await log({ lane: 'daily', text: 'Something', atTime: '25:99' })).status).toBe(400);
+    expect((await log({ lane: 'daily', text: 'Something', colour: 'red' })).status).toBe(400);
+    expect((await patch('/api/departments/activity/logged/6b02dd827da25d9a175e14e8', { done: false })).status).toBe(404);
+  });
+
+  it('keeps one person\u2019s log out of another\u2019s hands', async () => {
+    const mine = (await log({ lane: 'daily', text: 'A CMD-only note' })).body.entry.id;
+    const theirs = (await log({ lane: 'daily', text: 'Ran the morning IQC review' }, staffToken)).body.entry.id;
+
+    // Somebody with My Activity only sees and touches their own.
+    const own = await logged(staffToken);
+    expect(own.body.person).toBe('Dr. Anusha Singh');
+    expect(own.body.logged.daily.map((e) => e.text)).toEqual(['Ran the morning IQC review']);
+    expect((await patch(`/api/departments/activity/logged/${mine}`, { done: false }, staffToken)).status).toBe(404);
+    expect((await del(`/api/departments/activity/logged/${mine}`, staffToken)).status).toBe(404);
+    expect((await get('/api/departments/activity/logged?person=Venkata Cherukuri', staffToken)).status).toBe(403);
+    expect((await log({ lane: 'daily', text: 'For the CMD', person: 'Venkata Cherukuri' }, staffToken)).status).toBe(403);
+
+    // Department Master may log for somebody else and clean up after them.
+    const forThem = await log({ lane: 'daily', text: 'Logged on her behalf', person: 'Dr. Anusha Singh' });
+    expect(forThem.body.entry.person).toBe('Dr. Anusha Singh');
+    expect((await get('/api/departments/activity/logged?date=2026-11-21&person=Dr. Anusha Singh')).body.logged.daily).toHaveLength(2);
+    expect((await del(`/api/departments/activity/logged/${theirs}`)).status).toBe(200);
+  });
+
+  it('refuses somebody with no My Activity, Dashboard or Department Master at all', async () => {
+    expect((await logged(outsiderToken)).status).toBe(403);
+    expect((await log({ lane: 'daily', text: 'Sneaking in' }, outsiderToken)).status).toBe(403);
+  });
+
+  it('survives its department being deleted \u2014 it is the person\u2019s own record', async () => {
+    const d = await makeDept();
+    await log({ lane: 'daily', text: 'Work that outlives the department', departmentId: d.id });
+    expect((await del(`/api/departments/${d.id}`)).status).toBe(200);
+    const after = await logged();
+    expect(after.body.logged.daily).toHaveLength(1);
+    expect(after.body.logged.daily[0].departmentId).toBe(null);
+  });
+});
+
 describe('my activity ticks', () => {
   it('ticks and un-ticks a task and reads back the log the web app expects', async () => {
     const d = await makeDept();

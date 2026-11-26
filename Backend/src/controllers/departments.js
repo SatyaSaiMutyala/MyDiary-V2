@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { currentUser } from '../middleware/auth.js';
 import { CADENCE_TABS, Department, INDICATORS, TASK_KINDS, serializeDepartment } from '../models/Department.js';
+import { LOG_LANES, LOG_TAGS, serializeEntry } from '../models/ActivityEntry.js';
 import { TICK_KINDS } from '../models/ActivityTick.js';
 import { describeChanges } from '../services/audit.js';
 import * as departments from '../services/departments.js';
@@ -152,6 +153,32 @@ export const tickSchema = z
     person: text('Person', 200).min(1, 'Enter the person’s name.').optional(),
   })
   .strict();
+
+/** POST /api/departments/activity/logged — something that was not on the checklist. */
+export const loggedSchema = z
+  .object({
+    lane: z.enum(LOG_LANES, { error: `The lane must be one of: ${LOG_LANES.join(', ')}.` }),
+    text: text('The activity', 2000).min(1, 'Say what you did.'),
+    atTime: timeOrBlank.optional(),
+    tag: z.union([z.enum(LOG_TAGS), z.literal('')], { error: `A tag must be one of: ${LOG_TAGS.join(', ')} — or empty for none.` }).optional(),
+    /** Which department it belongs to, for the governance view. Left out when they have none. */
+    departmentId: objectId.optional(),
+    date: dateString.optional(),
+    /** Logging for somebody else needs the Department Master module, as ticking for them does. */
+    person: text('Person', 200).min(1, 'Enter the person\u2019s name.').optional(),
+  })
+  .strict();
+
+/** PATCH /api/departments/activity/logged/:entryId — fix a wording, a time, a tag, or un-tick it. */
+export const loggedPatchSchema = z
+  .object({
+    text: loggedSchema.shape.text.optional(),
+    atTime: timeOrBlank.optional(),
+    tag: loggedSchema.shape.tag,
+    done: z.boolean({ error: 'done must be true or false.' }).optional(),
+  })
+  .strict()
+  .refine((v) => Object.keys(v).length > 0, 'Send the text, the time, the tag or done to change.');
 
 // ---------------------------------------------------------------- the list contract
 
@@ -484,4 +511,85 @@ export const putActivityTick = async (req, res) => {
   const log = await departments.readActivityLog({ date, persons: [person] });
   log[person] ??= { [date]: { opening: {}, closing: {}, weekly: {}, monthly: {}, review: {} } };
   res.json({ ok: true, date, person, log });
+};
+
+// ------------------------------------------------- logged activities (My Activity's "Log activity")
+
+/**
+ * Whose log this request is about, and whether that is somebody else's.
+ * @param {import('express').Request} req @param {any} me
+ */
+function logOwner(req, me) {
+  const asked = req.body?.person ?? (typeof req.query?.person === 'string' ? req.query.person : undefined);
+  const person = asked?.trim() || me.name;
+  const forSomebodyElse = cleanName(person).toLowerCase() !== cleanName(me.name).toLowerCase();
+  if (forSomebodyElse && !hasModule(me, 'departments')) {
+    throw forbidden('You can only log your own activity. Ask an admin to enable Department Master if you need to log it for somebody else.');
+  }
+  return { person, forSomebodyElse };
+}
+
+const LOGGED_PARAMS = ['date', 'person'];
+
+/**
+ * GET /api/departments/activity/logged?date=&person= — one person's day, grouped by lane.
+ * @type {import('express').RequestHandler}
+ */
+export const getLoggedActivity = async (req, res) => {
+  const me = currentUser(req);
+  const unknown = Object.keys(req.query).filter((k) => !LOGGED_PARAMS.includes(k));
+  if (unknown.length) throw badRequest(`Unknown query parameter${unknown.length > 1 ? 's' : ''}: ${unknown.join(', ')}. Allowed: ${LOGGED_PARAMS.join(', ')}.`, [{ field: unknown[0], message: 'Unknown query parameter.' }]);
+  const date = (typeof req.query.date === 'string' && req.query.date.trim()) || todayStr();
+  if (!DATE_RE.test(date)) throw badRequest('The date must be written as YYYY-MM-DD, for example 2026-11-21.', [{ field: 'date', message: `"${date}" is not a date.` }]);
+  const { person } = logOwner(req, me);
+  const lanes = await departments.readLoggedActivity({ date, person });
+  res.json({ date, person, logged: lanes });
+};
+
+/**
+ * POST /api/departments/activity/logged { lane, text, atTime?, tag?, departmentId?, date?, person? }
+ * @type {import('express').RequestHandler}
+ */
+export const postLoggedActivity = async (req, res) => {
+  const me = currentUser(req);
+  const body = req.body;
+  const date = body.date ?? todayStr();
+  const { person, forSomebodyElse } = logOwner(req, me);
+  const e = await departments.addLoggedActivity({
+    person, date, lane: body.lane, text: body.text, atTime: body.atTime ?? '', tag: body.tag ?? '',
+    departmentId: body.departmentId ?? null, by: me,
+  });
+  res.locals.audit = {
+    action: 'create',
+    entity: short(e.text, 60),
+    entityId: e._id.toString(),
+    details: `${date} · logged a ${body.lane} activity${e.tag ? ` (${e.tag})` : ''}${e.atTime ? ` at ${e.atTime}` : ''}${forSomebodyElse ? ` for ${person}` : ''}`,
+  };
+  res.status(201).json({ entry: serializeEntry(e) });
+};
+
+/**
+ * PATCH /api/departments/activity/logged/:entryId — the owner's own row, or anybody's for an admin.
+ * @type {import('express').RequestHandler}
+ */
+export const patchLoggedActivity = async (req, res) => {
+  const me = currentUser(req);
+  const e = await departments.findLoggedOr404(req.params.entryId, me.name, hasModule(me, 'departments'));
+  const before = await departments.patchLoggedActivity(e, req.body);
+  const details = describeChanges(before, { text: e.text, atTime: e.atTime, tag: e.tag, done: e.done }, ['text', 'atTime', 'tag', 'done']);
+  res.locals.audit = details ? { action: 'update', entity: short(e.text, 60), entityId: e._id.toString(), details: `${e.date} · logged activity · ${details}` } : false;
+  res.json({ entry: serializeEntry(e) });
+};
+
+/**
+ * DELETE /api/departments/activity/logged/:entryId
+ * @type {import('express').RequestHandler}
+ */
+export const removeLoggedActivity = async (req, res) => {
+  const me = currentUser(req);
+  const e = await departments.findLoggedOr404(req.params.entryId, me.name, hasModule(me, 'departments'));
+  const { date, person } = { date: e.date, person: e.person };
+  const { text } = await departments.removeLoggedActivity(e);
+  res.locals.audit = { action: 'delete', entity: short(text, 60), entityId: req.params.entryId, details: `${date} · removed a logged activity${person ? ` from ${person}'s day` : ''}` };
+  res.json({ ok: true, id: req.params.entryId });
 };
