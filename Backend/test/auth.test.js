@@ -134,10 +134,10 @@ describe('requireModule', () => {
 describe('the laboratory flag on the session user', () => {
   it('says whether this person works somewhere that runs a readiness board', async () => {
     // Nobody has a board yet, so nobody is a laboratory person.
-    // An admin is treated as a laboratory person whatever their own department is, so the board
-    // is never hidden from them.
+    // The flag is about the person's own department, not their power: an admin whose department
+    // runs no board is not a laboratory person, however much else they can see.
     const before = await request(ctx.app).get('/api/auth/me').set(auth(adminToken));
-    expect(before.body.user.lab).toBe(true);
+    expect(before.body.user.lab).toBe(false);
     expect(before.body.user.seesAll).toBe(true);
 
     // Give a department a board, and put somebody in it.

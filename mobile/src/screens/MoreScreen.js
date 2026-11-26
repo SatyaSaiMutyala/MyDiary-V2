@@ -122,8 +122,8 @@ export function MoreScreen() {
   const nav = useNavigation();
   const dispatch = useAppDispatch();
   const me = useMe();
-  // A laboratory person reaches the board from its own tab, so More does not offer it twice.
-  const labIsATab = Boolean(me?.lab) && !me?.seesAll;
+  // A laboratory person reaches the board from its own tab; everybody else has no board at all.
+  // Either way More does not list it.
   const [logout] = useLogoutMutation();
   const [unregisterDevice] = useUnregisterDeviceMutation();
   const confirm = useConfirm();
@@ -153,7 +153,7 @@ export function MoreScreen() {
 
   const allowed = rows =>
     rows.filter(
-      r => canOpen(me, r.module) && !(labIsATab && r.to === 'LabReadiness'),
+      r => canOpen(me, r.module) && r.to !== 'LabReadiness',
     );
   const initials = (me?.name ?? '')
     .split(' ')

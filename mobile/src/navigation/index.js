@@ -77,15 +77,17 @@ const renderTabBar = props => <TabBar {...props} />;
  * The five tabs, in the same shape as the v1 app: the work you do every day is one tap away,
  * everything else lives under More.
  *
- * The fourth one depends on where the person works, exactly as v1 decides it. Somebody in a
- * department that runs a readiness board gets **Lab** — the board itself, which is that
- * department's opening and closing round. Everybody else gets **Activity**, their department's
- * shift checklist. An admin gets both, because they have to be able to look at either.
+ * The fourth one depends on where the person works. Somebody in a department that runs a
+ * readiness board gets **Lab** — the board itself, which is that department's opening and closing
+ * round. Everybody else, admins included, gets **Activity**: their own department's shift
+ * checklist.
  */
 function Tabs() {
   const user = useAppSelector(st => st.session.user);
+  // One or the other, decided by the person's own department — an admin sets the board up in
+  // Department Master but does not run it, so they get their own department's checklist.
   const lab = Boolean(user?.lab);
-  const activity = !lab || Boolean(user?.seesAll);
+  const activity = !lab;
 
   return (
     <Tab.Navigator tabBar={renderTabBar} screenOptions={{ headerShown: false }}>

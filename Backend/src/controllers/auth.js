@@ -39,15 +39,14 @@ export const changePasswordSchema = z.object({
  * @param {any} user
  */
 async function withLab(user) {
-  // An admin counts as a laboratory person whatever their own department says, so the board is
-  // never hidden from them — v1 does the same, through canSeeAllData().
-  const seesAll = user.role === 'admin';
+  // Strictly "my own department runs a board", whatever this person's role is. An admin sets the
+  // board up in Department Master but does not run it, so they get their own department's shift
+  // checklist instead — v1 gave admins both; here they are kept apart on purpose.
   const name = (user.department ?? '').trim();
-  const runsABoard = name
+  const lab = name
     ? Boolean(await Department.exists({ name: new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i'), 'labReadiness.enabled': true }))
     : false;
-  const lab = seesAll || runsABoard;
-  return { ...serializeUser(user), lab, seesAll };
+  return { ...serializeUser(user), lab, seesAll: user.role === 'admin' };
 }
 
 /** POST /api/auth/login → { token, user } @type {import('express').RequestHandler} */
