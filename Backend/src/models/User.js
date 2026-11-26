@@ -29,6 +29,20 @@ const userSchema = new Schema(
     status: { type: String, enum: USER_STATUSES, required: true, default: 'active' },
     /** Modules this person can open (services/modules.js). Ignored for admins (always all). */
     modules: { type: [String], default: [] },
+    /**
+     * The identity PACE knows this person by, across every Trustlab app.
+     *
+     * PACE is the hub: it generates one UUID per employee and stores it in each app it
+     * provisions, so the same person can always be found again without matching on an
+     * email or a name that somebody may since have changed. Blank for anyone created
+     * here by hand.
+     *
+     * No `default`, deliberately: `sparse` excludes documents where the field is ABSENT,
+     * not ones where it is an empty string. A `default: ''` would therefore put every
+     * hand-created user into the unique index under the same '' key, and the second one
+     * would be rejected. Leaving it undefined keeps them out of the index entirely.
+     */
+    matchUuid: { type: String, trim: true, index: { unique: true, sparse: true } },
   },
   { timestamps: true },
 );

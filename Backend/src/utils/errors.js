@@ -1,5 +1,5 @@
 /**
- * @typedef {'unauthorized'|'forbidden'|'not_found'|'validation'|'conflict'|'internal'} ErrorCode
+ * @typedef {'unauthorized'|'forbidden'|'not_found'|'validation'|'conflict'|'not_configured'|'internal'} ErrorCode
  */
 
 /** An error that maps to the API's `{ error: { message, code, details? } }` body. */

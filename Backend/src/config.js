@@ -61,4 +61,15 @@ export const config = {
   eaName: str('EA_NAME', 'Pallavi Elisetti'),
   /** Password given to every roster user created by `npm run seed`. */
   seedPassword: str('SEED_PASSWORD', 'mydiary123'),
+  /**
+   * Shared secret PACE sends on the X-Provisioning-Token header when it creates or
+   * disables an account here (src/routes/provisioning.js).
+   *
+   * Deliberately NOT routed through secret(): leaving it unset is a legitimate
+   * state meaning "this app is not wired to the identity hub yet", and the
+   * provisioning routes answer 503 for it — which PACE shows to HR as
+   * "Not set up for provisioning yet." Throwing at boot instead would take the
+   * whole API down over a feature nobody had switched on.
+   */
+  provisioningToken: str('PROVISIONING_TOKEN', ''),
 };

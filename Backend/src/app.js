@@ -13,6 +13,7 @@ import { diaryRouter } from './routes/diary.js';
 import { labReadinessRouter } from './routes/labReadiness.js';
 import { logsRouter } from './routes/logs.js';
 import { projectsRouter } from './routes/projects.js';
+import { provisioningRouter } from './routes/provisioning.js';
 import { remindersRouter } from './routes/reminders.js';
 import { departmentsRouter } from './routes/departments.js';
 import { integrationsRouter } from './routes/integrations.js';
@@ -70,6 +71,8 @@ export function createApp() {
   app.use('/api/logs', logsRouter);
   app.use('/api/diary', diaryRouter);
   app.use('/api/projects', projectsRouter);
+  // Machine-to-machine (PACE identity hub). Token-authenticated, never a browser session.
+  app.use('/api/provisioning', provisioningRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);
