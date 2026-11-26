@@ -4,7 +4,7 @@ import { tokens } from '../../theme/tokens';
 import { useAuth } from '../../auth/AuthContext';
 import { useAppStore } from '../../store/AppStore';
 import { LOG_TEMPLATES } from '../../data/logs';
-import { PageHeader, TabBar } from '../../components';
+import { PageHeader, TabBar, Icon } from '../../components';
 import { errorMessage } from '../../store/api/baseApi';
 import {
   useCreateLogMutation, useGetLogQuery, useListLogsQuery, useLogFollowUpsQuery, useLogPeopleQuery,
@@ -72,7 +72,7 @@ export default function DiscussionLogsPage() {
   };
 
   const pickLogTemplate = async () => {
-    const menu = LOG_TEMPLATES.map((t, i) => (i + 1) + '. ' + t.emoji + ' ' + t.name).join('\n');
+    const menu = LOG_TEMPLATES.map((t, i) => (i + 1) + '. ' + t.name).join('\n');
     const pick = await dlg.prompt('Which discussion log template?\n\n' + menu + '\n\nEnter a number, or blank to cancel.');
     if (!pick) return;
     const idx = parseInt(pick.trim(), 10) - 1;
@@ -111,26 +111,26 @@ export default function DiscussionLogsPage() {
   const fuCounts = followUpsQuery.data?.counts || { open: 0, done: 0, total: 0 };
 
   const tabs = [
-    { key: 'all', icon: '💬', label: 'All Logs', count: totals.data?.total ?? 0 },
-    { key: 'people', icon: '👥', label: 'By Person', count: peopleQuery.data?.total ?? 0 },
+    { key: 'all', icon: '', label: 'All Logs', count: totals.data?.total ?? 0 },
+    { key: 'people', icon: '', label: 'By Person', count: peopleQuery.data?.total ?? 0 },
     { key: 'followups', icon: '⚡', label: 'Open Follow-ups', count: fuCounts.open },
   ];
 
   return (
     <Box>
-      <PageHeader parts={['MyDiary · Discussion Log', 'Informal Conversations']} icon="💬" title="My Discussion Logs"
+      <PageHeader parts={['MyDiary · Discussion Log', 'Informal Conversations']} icon={<Icon name="chat" />} title="My Discussion Logs"
         sub="Capture the informal — phone calls, corridor chats, WhatsApp exchanges — so you never forget what was said. Searchable, person-centric, and private by default." />
 
       {/* .logs-quickbar */}
       <Box sx={{ background: `linear-gradient(135deg, ${tokens.greenDeep}, ${tokens.tealDark})`, color: '#fff', p: '16px 20px', borderRadius: tokens.radius, mb: '18px', display: 'flex', alignItems: 'center', gap: '14px', boxShadow: tokens.shadow, flexWrap: { xs: 'wrap', lg: 'nowrap' } }}>
-        <Box sx={{ fontSize: 24, flexShrink: 0 }}>💬</Box>
+        <Box sx={{ fontSize: 24, flexShrink: 0 }}><Icon name="chat" /></Box>
         <Box sx={{ flex: 1, minWidth: 180 }}>
           <Box sx={{ fontWeight: 700, fontSize: 14 }}>Just had a conversation?</Box>
           <Box sx={{ fontSize: 12, opacity: 0.85, mt: '2px' }}>Capture it in 10 seconds while it's fresh.</Box>
         </Box>
         <InputBase value={quick} onChange={e => setQuick(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') quickLogExpand(); }} placeholder='Type a quick summary... e.g. "Called Arjun re Fernandez follow-up"'
           sx={{ flex: 1, minWidth: { xs: '100%', lg: 0 }, color: '#fff', fontSize: 14, '& .MuiInputBase-input': { p: '11px 16px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.3)', bgcolor: 'rgba(255,255,255,0.1)', height: 'auto', boxSizing: 'border-box', '&::placeholder': { color: 'rgba(255,255,255,0.65)', opacity: 1 }, '&:focus': { bgcolor: 'rgba(255,255,255,0.18)', borderColor: tokens.yellow } } }} />
-        <ButtonBase onClick={pickLogTemplate} sx={{ ...quickBtnSx, bgcolor: tokens.card, color: tokens.tealDark, border: `1px solid ${tokens.line}` }}>📋 Template</ButtonBase>
+        <ButtonBase onClick={pickLogTemplate} sx={{ ...quickBtnSx, bgcolor: tokens.card, color: tokens.tealDark, border: `1px solid ${tokens.line}` }}><Icon name="clipboard" />Template</ButtonBase>
         <ButtonBase onClick={() => openLogModal()} sx={quickBtnSx}>+ New Log</ButtonBase>
       </Box>
 

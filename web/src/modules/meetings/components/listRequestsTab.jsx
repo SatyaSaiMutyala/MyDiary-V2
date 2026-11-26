@@ -1,6 +1,6 @@
 import { Box, Typography } from '@mui/material';
 import { tokens, fonts } from '../../../theme/tokens';
-import { Btn, EmptyState } from '../../../components';
+import { Btn, EmptyState, Icon } from '../../../components';
 import { useLazyListRequestsQuery, useListRequestsQuery } from '../../../store/api/meetingRequestsApi';
 import { usePagedQuery } from '../../../store/usePagedQuery';
 import { ApiError, Fetching } from '../../settings/components/listUi';
@@ -25,12 +25,12 @@ function RequestCard({ r, direction, busy, onAccept, onPropose, onDecline }) {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', mb: '8px', flexWrap: { xs: 'wrap', sm: 'nowrap' } }}>
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography component="div" sx={{ ...monoLabel, letterSpacing: '0.08em', color: tokens.slate, mb: '4px' }}>
-            {direction === 'in' ? '📥 From' : '📤 To'}: {otherPerson}
-            {r.onBehalfOf && direction === 'in' && <RoutingBadge>🔀 On behalf of {r.onBehalfOf}</RoutingBadge>}
-            {r.routedTo && direction === 'out' && <RoutingBadge>🔀 Routed through {r.routedTo} (EA)</RoutingBadge>}
+            {direction === 'in' ? 'From' : 'To'}: {otherPerson}
+            {r.onBehalfOf && direction === 'in' && <RoutingBadge><Icon name="hybrid" />On behalf of {r.onBehalfOf}</RoutingBadge>}
+            {r.routedTo && direction === 'out' && <RoutingBadge><Icon name="hybrid" />Routed through {r.routedTo} (EA)</RoutingBadge>}
           </Typography>
           <Typography sx={{ fontSize: 14, fontWeight: 700, color: tokens.ink, mb: '4px' }}>{r.topic}</Typography>
-          <Typography sx={{ fontFamily: fonts.mono, fontSize: 11, color: tokens.tealDark, letterSpacing: '0.04em', fontWeight: 700 }}>📅 {r.proposedDate} at {r.proposedTime} · {r.durationMin} min</Typography>
+          <Typography sx={{ fontFamily: fonts.mono, fontSize: 11, color: tokens.tealDark, letterSpacing: '0.04em', fontWeight: 700 }}><Icon name="weekly" />{r.proposedDate} at {r.proposedTime} · {r.durationMin} min</Typography>
           {r.notes && <Typography sx={{ fontSize: 12, color: tokens.slate, mt: '6px', lineHeight: 1.5, fontStyle: 'italic' }}>"{r.notes}"</Typography>}
           {r.responseNote && (
             <Box sx={{ mt: '8px', p: '8px 10px', bgcolor: tokens.cream, borderLeft: `3px solid ${tokens.slateSoft}`, borderRadius: '4px', fontSize: 12, color: tokens.ink }}>
@@ -76,12 +76,12 @@ export default function ListRequestsTab({ me, onRequestMeeting }) {
   return (
     <Box>
       <Box sx={{ p: '14px 18px', bgcolor: pendingRcv.length ? tokens.yellowSoft : tokens.creamWarm, border: `1px solid ${pendingRcv.length ? tokens.yellow : tokens.line}`, borderRadius: '8px', mb: '18px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-        <Box component="span" sx={{ fontSize: 18 }}>📨</Box>
+        <Box component="span" sx={{ fontSize: 18 }}><Icon name="request" /></Box>
         <Box sx={{ flex: 1, minWidth: 200 }}>
           <Typography sx={{ fontWeight: 700, fontSize: 13, color: tokens.ink }}>{me === 'Pallavi Elisetti' ? 'EA Inbox — Meeting requests for CMD route through you' : 'Meeting Requests'}</Typography>
           <Typography sx={{ fontSize: 12, color: tokens.slate, mt: '2px' }}>{pendingRcv.length ? pendingRcv.length + ' pending your response' : 'Clean inbox — no pending requests'} · {sentPending.length} sent by you still awaiting reply</Typography>
         </Box>
-        <Btn variant="primary" size="sm" sx={{ fontSize: 12 }} onClick={onRequestMeeting}>📨 Request Meeting</Btn>
+        <Btn variant="primary" size="sm" sx={{ fontSize: 12 }} onClick={onRequestMeeting}><Icon name="request" />Request Meeting</Btn>
       </Box>
 
       <ApiError error={error} onRetry={() => { inboxQ.refetch(); sentQ.refetch(); }} sx={{ mb: 1.5 }} />
@@ -89,14 +89,14 @@ export default function ListRequestsTab({ me, onRequestMeeting }) {
 
       {pendingRcv.length > 0 && (
         <>
-          <Typography sx={{ ...monoLabel, color: tokens.red, m: '14px 0 10px' }}>📥 Awaiting your response · {pendingRcv.length}</Typography>
+          <Typography sx={{ ...monoLabel, color: tokens.red, m: '14px 0 10px' }}><Icon name="inbox" />Awaiting your response · {pendingRcv.length}</Typography>
           {pendingRcv.map(r => <RequestCard key={r.id} r={r} direction="in" {...cardProps} />)}
         </>
       )}
 
       {sentPending.length > 0 && (
         <>
-          <Typography sx={{ ...monoLabel, color: tokens.slate, m: '20px 0 10px' }}>📤 Sent by you · awaiting their reply · {sentPending.length}</Typography>
+          <Typography sx={{ ...monoLabel, color: tokens.slate, m: '20px 0 10px' }}><Icon name="share" />Sent by you · awaiting their reply · {sentPending.length}</Typography>
           {sentPending.map(r => <RequestCard key={r.id} r={r} direction="out" {...cardProps} />)}
         </>
       )}
@@ -115,13 +115,13 @@ export default function ListRequestsTab({ me, onRequestMeeting }) {
 
       {history.length > 0 && (
         <>
-          <Typography sx={{ ...monoLabel, color: tokens.slate, m: '20px 0 10px' }}>📜 History</Typography>
+          <Typography sx={{ ...monoLabel, color: tokens.slate, m: '20px 0 10px' }}><Icon name="policy" />History</Typography>
           {history.map(r => <RequestCard key={r.id} r={r} direction={r.from === me ? 'out' : 'in'} {...cardProps} />)}
         </>
       )}
 
       {!error && !loading && !pendingRcv.length && !sentPending.length && !history.length && (
-        <EmptyState icon="📨" title="No meeting requests yet" desc={<>Click <strong>Request Meeting</strong> to invite a colleague for a quick chat or sit-down. They'll get a notification and can accept, decline, or propose another time.</>} />
+        <EmptyState icon={<Icon name="request" />} title="No meeting requests yet" desc={<>Click <strong>Request Meeting</strong> to invite a colleague for a quick chat or sit-down. They'll get a notification and can accept, decline, or propose another time.</>} />
       )}
     </Box>
   );

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Box, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { PageHeader, SearchBox, FilterSelect, EmptyState, Pill } from '../../components';
+import { PageHeader, SearchBox, FilterSelect, EmptyState, Pill, Icon } from '../../components';
 import { useDebounced } from '../../utils/useDebounced';
 import { useListDecisionsQuery } from '../../store/api/decisionsApi';
 import { useListMeetingsQuery } from '../../store/api/meetingsApi';
@@ -42,7 +42,7 @@ export default function DecisionsPage() {
 
   return (
     <Box>
-      <PageHeader code="TL-OPS-DRM-001" parts={['Meeting Management', 'Decision Log']} icon="⚖" title="Decisions Registry"
+      <PageHeader code="TL-OPS-DRM-001" parts={['Meeting Management', 'Decision Log']} icon={<Icon name="decision" />} title="Decisions Registry"
         sub="Every decision made in every meeting — searchable, auditable, traceable back to the discussion that produced it." />
 
       {/* filter row */}
@@ -66,7 +66,7 @@ export default function DecisionsPage() {
       <Fetching on={isFetching} />
 
       {!error && rows.length === 0 ? (
-        isLoading || waitingForTypes ? null : <EmptyState icon="⚖" title="No matching decisions" desc="Try broader search terms or clear filters." />
+        isLoading || waitingForTypes ? null : <EmptyState icon={<Icon name="decision" />} title="No matching decisions" desc="Try broader search terms or clear filters." />
       ) : !error && (
         <Box>
           <Typography component="div" sx={{ mb: '14px', fontSize: 12, color: tokens.slate, fontFamily: fonts.mono, letterSpacing: '0.05em' }}>

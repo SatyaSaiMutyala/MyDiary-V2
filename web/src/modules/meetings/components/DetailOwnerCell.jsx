@@ -58,7 +58,7 @@ export default function DetailOwnerCell({ action: a, open, onToggle, onClose, on
 
       {open && (
         <Box onClick={(e) => e.stopPropagation()} sx={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, width: 340, maxWidth: 'calc(100vw - 48px)', maxHeight: 420, bgcolor: '#fff', border: `1px solid ${tokens.line}`, borderRadius: '10px', boxShadow: tokens.shadowLg, zIndex: 100, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <Box sx={{ p: '10px', borderBottom: `1px solid ${tokens.line}`, bgcolor: tokens.creamWarm, position: 'relative', '&::before': { content: '"🔍"', position: 'absolute', left: 20, top: '50%', transform: 'translateY(-50%)', fontSize: 12, opacity: 0.5, pointerEvents: 'none' } }}>
+          <Box sx={{ p: '10px', borderBottom: `1px solid ${tokens.line}`, bgcolor: tokens.creamWarm, position: 'relative', '&::before': { content: '""', position: 'absolute', left: 20, top: '50%', transform: 'translateY(-50%)', fontSize: 12, opacity: 0.5, pointerEvents: 'none' } }}>
             <Box component="input" ref={inputRef} type="text" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={onKey} placeholder="Search TDPL employees or type external name..."
               sx={{ width: '100%', p: '9px 12px 9px 32px', border: `1px solid ${tokens.line}`, borderRadius: '6px', fontSize: 13, bgcolor: '#fff', fontFamily: 'inherit', boxSizing: 'border-box', color: tokens.ink, '&:focus': { outline: 'none', borderColor: tokens.teal, boxShadow: `0 0 0 3px ${tokens.tealSoft}` } }} />
           </Box>

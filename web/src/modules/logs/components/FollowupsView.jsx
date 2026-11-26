@@ -2,7 +2,7 @@ import { Box } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { tokens, fonts } from '../../../theme/tokens';
 import { isOverdue } from '../../../utils/dates';
-import { DmsCard, EmptyState, MonoHeading } from '../../../components';
+import { DmsCard, EmptyState, MonoHeading, Icon } from '../../../components';
 import { ApiError, Fetching } from '../../settings/components/listUi';
 
 /** .log-followup-item (renderFUItem) — grid 24px | 1fr | auto | auto. showFrom → "from: <topic>" link */
@@ -40,7 +40,7 @@ export default function FollowupsView({ query, allFUs, counts, onToggle, onOpenL
   if (error) return head;
   if (allFUs.length === 0) {
     if (isLoading) return head;
-    return <>{head}<EmptyState icon="⚡" title="No follow-ups logged" desc="Follow-ups appear here when you add them to your discussion logs." /></>;
+    return <>{head}<EmptyState icon={<Icon name="task" />} title="No follow-ups logged" desc="Follow-ups appear here when you add them to your discussion logs." /></>;
   }
   const open = allFUs.filter(f => !f.done);
   const overdue = open.filter(f => isOverdue(f.deadline));

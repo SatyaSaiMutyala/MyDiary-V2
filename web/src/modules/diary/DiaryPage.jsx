@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Box } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { PageHeader } from '../../components';
+import { PageHeader, Icon } from '../../components';
 import { tokens } from '../../theme/tokens';
 import { useAppStore } from '../../store/AppStore';
 import { useAuth } from '../../auth/AuthContext';
@@ -140,7 +140,7 @@ export default function DiaryPage() {
 
   return (
     <Box>
-      <PageHeader code="TL-OPS-DRM-001" parts={['MyDiary · Calendar', 'Personal + Team']} icon="📅" title="My Diary"
+      <PageHeader code="TL-OPS-DRM-001" parts={['MyDiary · Calendar', 'Personal + Team']} icon={<Icon name="weekly" />} title="My Diary"
         sub="Every meeting, focus block, travel plan, reminder — one calendar. Delegate access to your EA so they can fill it in for you. Invite anyone, inside or outside TrustLab." />
 
       <EaBanner viewer={viewer} owner={owner} canEdit={canEdit} onSwitchOwner={setOwner} />

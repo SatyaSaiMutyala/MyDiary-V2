@@ -26,7 +26,7 @@ export default function OverviewPane({ p }) {
   return (
     <Grid container spacing="14px">
       <Grid size={{ xs: 12, lg: 8 }}>
-        <VSection head="🏁 Next Milestones" meta={`${upcomingMs.length} upcoming`}>
+        <VSection head="Next Milestones" meta={`${upcomingMs.length} upcoming`}>
           {upcomingMs.length ? upcomingMs.map(m => {
             const od = isOverdue(m.dueDate);
             return (
@@ -39,12 +39,12 @@ export default function OverviewPane({ p }) {
             );
           }) : <Box sx={{ color: tokens.slate, fontSize: 12, fontStyle: 'italic' }}>No pending milestones.</Box>}
         </VSection>
-        <VSection head="💬 Recent Activity">
+        <VSection head="Recent Activity">
           {(p.activity || []).slice(0, 5).map((a, i) => <ActivityEntry key={i} a={a} />)}
         </VSection>
       </Grid>
       <Grid size={{ xs: 12, lg: 4 }}>
-        <VSection head="👥 Team" meta={(p.team || []).length + (p.external || []).length} bodySx={{ p: '10px 14px' }}>
+        <VSection head="Team" meta={(p.team || []).length + (p.external || []).length} bodySx={{ p: '10px 14px' }}>
           {(p.team || []).map(t => person(t.name, t.role, false))}
           {(p.external || []).map(e => person(e.name, e.role, true))}
         </VSection>

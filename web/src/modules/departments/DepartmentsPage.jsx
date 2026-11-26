@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Box, Typography } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { useNavigate } from 'react-router-dom';
-import { PageHeader, Btn, SummaryCard, EmptyState } from '../../components';
+import { PageHeader, Btn, SummaryCard, EmptyState, Icon } from '../../components';
 import { tokens, fonts } from '../../theme/tokens';
 import { DEPT_TEMPLATES } from '../../data/departments';
 import { useListDepartmentsQuery, useRemoveDepartmentMutation } from '../../store/api/departmentsApi';
@@ -55,11 +55,11 @@ export default function DepartmentsPage() {
       <PageHeader
         code="TL-OPS-ORG-001"
         parts={['Administration', 'Department Master']}
-        icon="🏢"
+        icon={<Icon name="department" />}
         title="Department Master"
         sub="The organisational backbone — every TDPL department, division, and position, with the opening and closing tasks each one owns. Everything the shift-level My Activity module fires every day is configured here."
         actions={<>
-          <Btn size="lg" onClick={() => setPicking(true)}>📋 Use Template</Btn>
+          <Btn size="lg" onClick={() => setPicking(true)}><Icon name="clipboard" />Use Template</Btn>
           <Btn variant="primary" size="lg" onClick={newDepartment}>+ New Department</Btn>
         </>}
       />
@@ -78,7 +78,7 @@ export default function DepartmentsPage() {
       {isLoading && <Box sx={{ p: '30px', textAlign: 'center', fontFamily: fonts.mono, fontSize: 11, letterSpacing: '0.08em', color: tokens.slate, textTransform: 'uppercase' }}>Loading departments…</Box>}
 
       {!isLoading && !error && DEPARTMENTS.length === 0 && (
-        <EmptyState icon="🏢" title="No departments yet" desc={<>Start with <strong>📋 Use Template</strong> for a ready-made department, or <strong>+ New Department</strong> to build one from scratch.</>} />
+        <EmptyState icon={<Icon name="department" />} title="No departments yet" desc={<>Start with <strong><Icon name="clipboard" />Use Template</strong> for a ready-made department, or <strong>+ New Department</strong> to build one from scratch.</>} />
       )}
 
       {/* .dept-grid */}
@@ -91,7 +91,7 @@ export default function DepartmentsPage() {
             <Grid key={d.id} size={{ xs: 12, sm: 6, lg: 4 }}>
               <Box sx={{ bgcolor: tokens.card, border: `1px solid ${tokens.line}`, borderRadius: '10px', p: '16px 18px', cursor: 'pointer', transition: 'all 0.15s', borderTop: `4px solid ${tokens.teal}`, boxShadow: tokens.shadowSm, display: 'flex', flexDirection: 'column', height: '100%', '&:hover': { boxShadow: tokens.shadowLg, transform: 'translateY(-2px)', borderColor: tokens.slateSoft, borderTopColor: tokens.teal } }}>
                 <Box onClick={() => navigate('/departments/' + d.id)} sx={{ cursor: 'pointer' }}>
-                <Box sx={{ fontSize: 28, mb: '8px' }}>{d.icon}</Box>
+                <Box sx={{ mb: '8px' }}><Icon name={d.icon} size={28} /></Box>
                 <Typography sx={{ fontFamily: fonts.serif, fontSize: 18, fontWeight: 700, color: tokens.ink, lineHeight: 1.2, mb: '4px' }}>{d.name}</Typography>
                 <Box sx={{ fontFamily: fonts.mono, fontSize: 10, color: tokens.slate, letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700, mb: '10px' }}>{d.code}</Box>
                 <Typography sx={{ fontSize: 12, color: tokens.slate, lineHeight: 1.5, mb: '14px', minHeight: 36 }}>{d.description}</Typography>
@@ -111,7 +111,7 @@ export default function DepartmentsPage() {
                 <Box sx={{ display: 'flex', gap: '6px', mt: 'auto', pt: '12px', borderTop: `1px dashed ${tokens.line}` }}>
                   <Btn size="sm" onClick={() => navigate('/departments/' + d.id)} sx={{ flex: 1 }}>Open →</Btn>
                   <Btn size="sm" onClick={() => { setTemplate(null); setEditing(d); }} title={`Edit ${d.name}`}>✎ Edit</Btn>
-                  <Btn size="sm" variant="danger" onClick={() => askDelete(d)} title={`Delete ${d.name}`}>🗑</Btn>
+                  <Btn size="sm" variant="danger" onClick={() => askDelete(d)} title={`Delete ${d.name}`}><Icon name="remove" /></Btn>
                 </Box>
               </Box>
             </Grid>

@@ -1,5 +1,5 @@
 import { Box, ButtonBase, Typography } from '@mui/material';
-import { ModalShell, Btn, FootNote } from '../../../components';
+import { ModalShell, Btn, FootNote, Icon } from '../../../components';
 import { tokens, fonts } from '../../../theme/tokens';
 import { useEvidenceUrl } from '../useEvidenceUrl';
 import { clock } from '../utils';
@@ -27,7 +27,7 @@ export default function PhotoThumb({ path, photo, onOpen, onRemove, locked }) {
           <Box component="img" src={url} alt={photo.name || 'Evidence photograph'} sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
         ) : (
           <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, color: error ? tokens.bad : tokens.slateSoft }}>
-            {loading ? '⏳' : error ? '⚠' : '🖼'}
+            {loading ? '⏳' : error ? '⚠' : ''}
           </Box>
         )}
       </ButtonBase>
@@ -59,7 +59,7 @@ export function PhotoViewerModal({ open, path, photo, activity, onClose }) {
       open={open}
       onClose={onClose}
       width={760}
-      icon="🖼"
+      icon={<Icon name="image" />}
       title={photo?.name || 'Evidence photograph'}
       sub={activity ? `${activity.key.toUpperCase()} · ${activity.text}` : ''}
       bodySx={{ bgcolor: tokens.ink }}

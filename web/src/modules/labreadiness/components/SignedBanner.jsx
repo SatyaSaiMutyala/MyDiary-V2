@@ -1,5 +1,5 @@
 import { Box, Typography } from '@mui/material';
-import { Btn } from '../../../components';
+import { Btn, Icon } from '../../../components';
 import { tokens, fonts } from '../../../theme/tokens';
 import { useEvidenceUrl } from '../useEvidenceUrl';
 import { clock, prettyDate } from '../utils';
@@ -37,7 +37,7 @@ export default function SignedBanner({ board, selfiePath, onReopen, canReopen })
         </Box>
         {canReopen && (
           <Box sx={{ ml: { xs: 0, md: 'auto' } }}>
-            <Btn onClick={onReopen}>🔓 Reopen this record</Btn>
+            <Btn onClick={onReopen}><Icon name="unlock" />Reopen this record</Btn>
           </Box>
         )}
       </Box>

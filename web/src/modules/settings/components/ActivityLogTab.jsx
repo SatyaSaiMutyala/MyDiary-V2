@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { useSearchParams } from 'react-router-dom';
-import { Avatar, Btn, EmptyState, FilterSelect, Pill, SearchBox, SummaryCard } from '../../../components';
+import { Avatar, Btn, EmptyState, FilterSelect, Pill, SearchBox, SummaryCard, Icon } from '../../../components';
 import { tokens, fonts } from '../../../theme/tokens';
 import { ACTION_LABEL } from '../../../store/audit';
 import { useDebounced } from '../../../utils/useDebounced';
@@ -74,14 +74,14 @@ export default function ActivityLogTab() {
         </Box>
         {hasFilters && <Btn size="sm" variant="ghost" onClick={() => { setQ(''); setAction(''); setModule(''); setUser(''); setFrom(''); setTo(''); }}>Clear filters</Btn>}
         <Box sx={{ display: 'flex', gap: 1, ml: { sm: 'auto' } }}>
-          <Btn onClick={doExport} disabled={exporting || !data?.total}>{exporting ? 'Exporting…' : '⬇ Export CSV'}</Btn>
+          <Btn onClick={doExport} disabled={exporting || !data?.total}>{exporting ? 'Exporting…' : 'Export CSV'}</Btn>
         </Box>
       </Box>
 
       <ApiError error={error} onRetry={refetch} sx={{ mb: 1.5 }} />
 
       {!error && !isLoading && rows.length === 0 ? (
-        <EmptyState icon="🧾" title={hasFilters ? 'Nothing matches these filters' : 'No activity yet'} desc={hasFilters ? 'Try a broader search or clear a filter.' : 'Every sign-in, user change, password change and export is recorded here by the server.'} />
+        <EmptyState icon={<Icon name="receipt" />} title={hasFilters ? 'Nothing matches these filters' : 'No activity yet'} desc={hasFilters ? 'Try a broader search or clear a filter.' : 'Every sign-in, user change, password change and export is recorded here by the server.'} />
       ) : !error && (
         <TableContainer sx={{ bgcolor: tokens.card, border: `1px solid ${tokens.line}`, borderRadius: '6px', boxShadow: tokens.shadowSm }}>
           <Fetching on={isFetching} />

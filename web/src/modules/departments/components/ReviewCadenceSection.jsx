@@ -1,7 +1,7 @@
 import { Box, Typography } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { tokens, fonts } from '../../../theme/tokens';
-import { Btn, TextLink, TabBar } from '../../../components';
+import { Btn, TextLink, TabBar, Icon } from '../../../components';
 import { describeWeekly, describeMonthly } from '../../../utils/departments';
 import { EMPLOYEES } from '../../../data/employees';
 import DeptSection, { SectionNote } from './DeptSection';
@@ -34,8 +34,8 @@ export default function ReviewCadenceSection({ dept: d, tab, onTab, api }) {
   const totalPts = (list) => list.reduce((s, sec) => s + (sec.points || []).length, 0);
 
   const agendaTabs = [
-    { key: 'weekly', icon: '📅', label: 'Weekly Agenda', count: `${(rc.weeklyAgenda || []).length} sections · ${totalPts(rc.weeklyAgenda || [])} points` },
-    { key: 'monthly', icon: '📆', label: 'Monthly Agenda', count: `${(rc.monthlyAgenda || []).length} sections · ${totalPts(rc.monthlyAgenda || [])} points` },
+    { key: 'weekly', icon: '', label: 'Weekly Agenda', count: `${(rc.weeklyAgenda || []).length} sections · ${totalPts(rc.weeklyAgenda || [])} points` },
+    { key: 'monthly', icon: '', label: 'Monthly Agenda', count: `${(rc.monthlyAgenda || []).length} sections · ${totalPts(rc.monthlyAgenda || [])} points` },
   ];
 
   return (
@@ -43,7 +43,7 @@ export default function ReviewCadenceSection({ dept: d, tab, onTab, api }) {
       sx={{ borderTop: '4px solid #0A6B59' }}
       headSx={{ background: `linear-gradient(135deg, ${tokens.greenDeep}, ${tokens.tealDark})`, color: '#fff' }}
       titleColor="#fff"
-      title={<>🗓 Review Cadence</>}
+      title={<><Icon name="review" />Review Cadence</>}
       count="Governance forum for this department"
       countSx={{ color: 'rgba(255,255,255,0.75)' }}
     >
@@ -117,7 +117,7 @@ export default function ReviewCadenceSection({ dept: d, tab, onTab, api }) {
         </Box>
       )) : (
         <Box sx={{ p: '30px 20px', textAlign: 'center', bgcolor: tokens.creamWarm, border: `1px dashed ${tokens.slateSoft}`, borderRadius: '8px', color: tokens.slate }}>
-          <Box sx={{ fontSize: 30, mb: '8px' }}>📋</Box>
+          <Box sx={{ fontSize: 30, mb: '8px' }}><Icon name="clipboard" /></Box>
           <Typography sx={{ fontSize: 13, fontWeight: 700, color: tokens.ink, mb: '4px' }}>No {tab} agenda yet</Typography>
           <Typography sx={{ fontSize: 12, mb: '12px' }}>Build a reusable checklist that this department walks through every {tab === 'weekly' ? 'week' : 'month'}.</Typography>
         </Box>

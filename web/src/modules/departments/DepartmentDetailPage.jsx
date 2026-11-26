@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import { Box, Typography } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useCrumbs } from '../../store/CrumbsContext';
-import { Eyebrow, Btn } from '../../components';
+import { Eyebrow, Btn, Icon } from '../../components';
 import { tokens, fonts } from '../../theme/tokens';
 import { DAYS_OF_WEEK_FULL } from '../../data/departments';
 import {
@@ -338,7 +338,7 @@ export default function DepartmentDetailPage() {
 
       {/* .dept-detail-head */}
       <Box sx={{ p: { xs: '20px', md: '24px 28px' }, background: `linear-gradient(135deg, ${tokens.greenDeep}, ${tokens.tealDark})`, color: '#fff', borderRadius: '12px', mb: '20px', display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
-        <Box sx={{ width: 64, height: 64, borderRadius: '14px', bgcolor: 'rgba(255,255,255,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, flexShrink: 0 }}>{d.icon}</Box>
+        <Box sx={{ width: 64, height: 64, borderRadius: '14px', bgcolor: 'rgba(255,255,255,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Icon name={d.icon} size={32} /></Box>
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography component="h1" sx={{ fontFamily: fonts.serif, fontSize: 26, fontWeight: 700, m: 0, letterSpacing: '-0.01em', color: '#fff' }}>{d.name}</Typography>
           <Box sx={{ fontFamily: fonts.mono, fontSize: 11, opacity: 0.85, mt: '4px', letterSpacing: '0.04em' }}>{d.code} · {d.positions.length} position{d.positions.length !== 1 ? 's' : ''}</Box>
@@ -353,7 +353,7 @@ export default function DepartmentDetailPage() {
       </Box>
 
       {/* POSITIONS */}
-      <DeptSection title={<>👤 Positions</>} count={d.positions.length} action={<Btn variant="primary" size="sm" onClick={api.addPosition}>+ Add Position</Btn>}>
+      <DeptSection title={<><Icon name="person" />Positions</>} count={d.positions.length} action={<Btn variant="primary" size="sm" onClick={api.addPosition}>+ Add Position</Btn>}>
         <SectionNote>
           Positions are sub-roles within this department. If this department has <strong>no positions</strong>, every employee in the department does every task below.
           If positions exist, tasks can be assigned to a specific position or left as "All in department".
@@ -378,7 +378,7 @@ export default function DepartmentDetailPage() {
         <LabRounds dept={d} lab={lab} />
       ) : (
         <>
-          <DeptSection title={<>🌅 Opening Shift Tasks</>} count={d.openingTasks.length} action={<Btn variant="primary" size="sm" onClick={() => api.addDeptTask('opening')}>+ Add Task</Btn>}>
+          <DeptSection title={<><Icon name="opening" />Opening Shift Tasks</>} count={d.openingTasks.length} action={<Btn variant="primary" size="sm" onClick={() => api.addDeptTask('opening')}>+ Add Task</Btn>}>
             <SectionNote>Fired at the start of every shift for this department. Order controls the sequence shown in My Activity.</SectionNote>
             <Scroller minWidth={640}>
               <ColHeader columns={DAILY_HEADER} cols={DAILY_HEADER_COLS} />
@@ -386,7 +386,7 @@ export default function DepartmentDetailPage() {
             </Scroller>
           </DeptSection>
 
-          <DeptSection title={<>🌙 Closing Shift Tasks</>} count={d.closingTasks.length} action={<Btn variant="primary" size="sm" onClick={() => api.addDeptTask('closing')}>+ Add Task</Btn>}>
+          <DeptSection title={<><Icon name="closing" />Closing Shift Tasks</>} count={d.closingTasks.length} action={<Btn variant="primary" size="sm" onClick={() => api.addDeptTask('closing')}>+ Add Task</Btn>}>
             <SectionNote>Fired at the end of every shift. Last-mile hygiene — close logs, lock up, hand over.</SectionNote>
             <Scroller minWidth={640}>
               <ColHeader columns={DAILY_HEADER} cols={DAILY_HEADER_COLS} />
@@ -397,7 +397,7 @@ export default function DepartmentDetailPage() {
       )}
 
       {/* WEEKLY TASKS */}
-      <DeptSection title={<>📅 Weekly Tasks</>} titleColor="#5B21B6" count={(d.weeklyTasks || []).length} action={<Btn variant="primary" size="sm" onClick={() => api.addDeptTask('weekly')} sx={{ bgcolor: '#7C3AED', '&:hover': { bgcolor: '#7C3AED' } }}>+ Add Weekly Task</Btn>}>
+      <DeptSection title={<><Icon name="weekly" />Weekly Tasks</>} titleColor="#5B21B6" count={(d.weeklyTasks || []).length} action={<Btn variant="primary" size="sm" onClick={() => api.addDeptTask('weekly')} sx={{ bgcolor: '#7C3AED', '&:hover': { bgcolor: '#7C3AED' } }}>+ Add Weekly Task</Btn>}>
         <SectionNote>Recurring every week on the chosen day(s) — typically for managers to review the week's performance, trends, open items. <strong>Click a day chip to toggle it — pick as many as needed</strong>.</SectionNote>
         <Scroller minWidth={820}>
           <ColHeader columns={WEEKLY_HEADER} cols={WM_COLS} />
@@ -406,7 +406,7 @@ export default function DepartmentDetailPage() {
       </DeptSection>
 
       {/* MONTHLY TASKS */}
-      <DeptSection title={<>📆 Monthly Tasks</>} titleColor="#1E40AF" count={(d.monthlyTasks || []).length} action={<Btn variant="primary" size="sm" onClick={() => api.addDeptTask('monthly')} sx={{ bgcolor: '#2563EB', '&:hover': { bgcolor: '#2563EB' } }}>+ Add Monthly Task</Btn>}>
+      <DeptSection title={<><Icon name="monthly" />Monthly Tasks</>} titleColor="#1E40AF" count={(d.monthlyTasks || []).length} action={<Btn variant="primary" size="sm" onClick={() => api.addDeptTask('monthly')} sx={{ bgcolor: '#2563EB', '&:hover': { bgcolor: '#2563EB' } }}>+ Add Monthly Task</Btn>}>
         <SectionNote>Recurring every month on the chosen date — typically for department heads to roll up, report, and submit statutory / governance items. <strong>Type a date (1-31) or tap "Last" for the last day of every month</strong>.</SectionNote>
         <Scroller minWidth={820}>
           <ColHeader columns={MONTHLY_HEADER} cols={WM_COLS} />
@@ -423,7 +423,7 @@ export default function DepartmentDetailPage() {
         <Btn onClick={() => navigate('/departments')}>← Back to Department Master</Btn>
         <Box sx={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <Btn onClick={api.editDepartmentMeta}>✎ Edit department</Btn>
-          <Btn variant="danger" onClick={api.deleteDepartment}>🗑 Delete Department</Btn>
+          <Btn variant="danger" onClick={api.deleteDepartment}><Icon name="remove" />Delete Department</Btn>
         </Box>
       </Box>
 

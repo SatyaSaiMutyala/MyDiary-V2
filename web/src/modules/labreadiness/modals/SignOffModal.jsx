@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Box, ButtonBase, Typography } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { ModalShell, FootNote, Btn, Field, TextInput } from '../../../components';
+import { ModalShell, FootNote, Btn, Field, TextInput, Icon } from '../../../components';
 import { tokens, fonts } from '../../../theme/tokens';
 import { errorDetails, errorMessage } from '../../../store/api/baseApi';
 import { checkPhoto, prettyDate } from '../utils';
@@ -65,7 +65,7 @@ export default function SignOffModal({ open, board, me, onClose, onSign, signing
       open={open}
       onClose={signing ? () => {} : onClose}
       width={660}
-      icon="✍"
+      icon={<Icon name="rename" />}
       title={`Sign off the ${board?.phase === 'closing' ? 'closing' : 'opening'} round`}
       sub={board ? `${board.unit.name} · ${prettyDate(board.date)}` : ''}
       footer={<>
@@ -116,7 +116,7 @@ export default function SignOffModal({ open, board, me, onClose, onSign, signing
                 <Box component="img" src={preview} alt="Sign-off photograph" sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (
                 <>
-                  <Box sx={{ fontSize: 26 }}>📸</Box>
+                  <Box sx={{ fontSize: 26 }}><Icon name="camera" /></Box>
                   <Box sx={{ fontFamily: fonts.mono, fontSize: 9.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Take the photograph</Box>
                 </>
               )}
@@ -158,7 +158,7 @@ export default function SignOffModal({ open, board, me, onClose, onSign, signing
       </Grid>
 
       <Box sx={{ mt: '14px', p: '10px 14px', bgcolor: tokens.creamWarm, border: `1px solid ${tokens.line}`, borderRadius: tokens.radiusSm, fontSize: 12, color: tokens.slate, display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-        <Box component="span" sx={{ fontSize: 15 }}>🔒</Box>
+        <Box component="span" sx={{ fontSize: 15 }}><Icon name="lock" /></Box>
         <span>Once signed, this record is read-only and the time of signing is stamped on it. If something has to be corrected afterwards, it has to be reopened with a reason, and that reason stays on the record.</span>
       </Box>
     </ModalShell>

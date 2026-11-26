@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Alert, Box, Typography } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { useNavigate } from 'react-router-dom';
-import { Avatar, Btn, Card, Field, ModalShell, Pill, TextInput } from '../../../components';
+import { Avatar, Btn, Card, Field, ModalShell, Pill, TextInput, Icon } from '../../../components';
 import { useAuth } from '../../../auth/AuthContext';
 import { useViewerUser } from '../../../auth/useViewerUser';
 import { tokens, fonts } from '../../../theme/tokens';
@@ -22,7 +22,7 @@ function ChangePasswordDialog({ onClose, onDone }) {
     try { await changePassword({ current, next }).unwrap(); onDone('✓ Password changed.'); onClose(); } catch (err) { setError(err); }
   };
   return (
-    <ModalShell open onClose={onClose} width={460} icon="🔑" title="Change password" sub="Your account"
+    <ModalShell open onClose={onClose} width={460} icon={<Icon name="key" />} title="Change password" sub="Your account"
       footer={<><span /><Box sx={{ display: 'flex', gap: 1 }}><Btn onClick={onClose} disabled={isLoading}>Cancel</Btn><Btn variant="primary" onClick={submit} disabled={isLoading || !current || !next || !again}>{isLoading ? 'Saving…' : 'Change password'}</Btn></Box></>}>
       <Box component="form" onSubmit={submit} sx={{ display: 'grid', gap: 1.5 }}>
         <ApiError error={error} />
@@ -49,8 +49,8 @@ function EditProfileDialog({ user, onClose, onDone }) {
     try { const u = await updateMe(body).unwrap(); updateUser(u); onDone('✓ Profile saved.'); onClose(); } catch (err) { setError(err); }
   };
   return (
-    <ModalShell open onClose={onClose} width={460} icon="✎" title="Edit profile" sub={user.email}
-      footer={<><span /><Box sx={{ display: 'flex', gap: 1 }}><Btn onClick={onClose} disabled={isLoading}>Cancel</Btn><Btn variant="primary" onClick={submit} disabled={isLoading || !name.trim()}>{isLoading ? 'Saving…' : '💾 Save'}</Btn></Box></>}>
+    <ModalShell open onClose={onClose} width={460} icon={<Icon name="edit" />} title="Edit profile" sub={user.email}
+      footer={<><span /><Box sx={{ display: 'flex', gap: 1 }}><Btn onClick={onClose} disabled={isLoading}>Cancel</Btn><Btn variant="primary" onClick={submit} disabled={isLoading || !name.trim()}>{isLoading ? 'Saving…' : 'Save'}</Btn></Box></>}>
       <Box component="form" onSubmit={submit} sx={{ display: 'grid', gap: 1.5 }}>
         <ApiError error={error} />
         <Field label="Full name" req><TextInput value={name} onChange={e => setName(e.target.value)} autoFocus /></Field>
@@ -96,7 +96,7 @@ export default function AccountTab() {
           {!isSelf && <Typography sx={{ fontSize: 12, color: tokens.warn, mt: 1.5 }}>You are viewing as {viewer.name}. Profile and password changes apply only to your own signed-in account — switch back to yourself in the top bar.</Typography>}
           <Box sx={{ display: 'flex', gap: 1, mt: 2, flexWrap: 'wrap' }}>
             {isSelf && <Btn onClick={() => setDialog('profile')}>✎ Edit profile</Btn>}
-            {isSelf && <Btn onClick={() => setDialog('password')}>🔑 Change password</Btn>}
+            {isSelf && <Btn onClick={() => setDialog('password')}><Icon name="key" />Change password</Btn>}
             <Btn variant="danger" onClick={signOut}>Sign out</Btn>
           </Box>
         </Card>

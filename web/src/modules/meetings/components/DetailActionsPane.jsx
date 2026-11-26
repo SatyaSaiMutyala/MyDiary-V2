@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Box } from '@mui/material';
-import { Btn, TextLink, PRIORITY_STYLE, STATUS_STYLE } from '../../../components';
+import { Btn, TextLink, PRIORITY_STYLE, STATUS_STYLE, Icon } from '../../../components';
 import { tokens, fonts } from '../../../theme/tokens';
 import { isOverdue } from '../../../utils/dates';
 import DetailOwnerCell from './DetailOwnerCell';
@@ -86,12 +86,12 @@ export default function DetailActionsPane({ m, actionExtras, expandedId, expandT
             const od = a.status !== 'done' && isOverdue(a.deadline);
             const indicators = [];
             if (a.owner && a.status !== 'done') {
-              if (a.ownerType === 'external') indicators.push(<Box key="q" component="span" title="External — notified by email" sx={{ display: 'inline-flex', alignItems: 'center', gap: '4px', p: '2px 7px', bgcolor: tokens.blueSoft, color: tokens.blue, borderRadius: '8px', fontFamily: fonts.mono, fontSize: 9, letterSpacing: '0.06em', fontWeight: 700, textTransform: 'uppercase', ml: '6px' }}>📧 In {a.owner.split(' ')[0]}'s inbox</Box>);
+              if (a.ownerType === 'external') indicators.push(<Box key="q" component="span" title="External — notified by email" sx={{ display: 'inline-flex', alignItems: 'center', gap: '4px', p: '2px 7px', bgcolor: tokens.blueSoft, color: tokens.blue, borderRadius: '8px', fontFamily: fonts.mono, fontSize: 9, letterSpacing: '0.06em', fontWeight: 700, textTransform: 'uppercase', ml: '6px' }}><Icon name="email" />In {a.owner.split(' ')[0]}'s inbox</Box>);
               else indicators.push(<Box key="q" component="span" title="Visible in owner's My To-Do" sx={{ display: 'inline-flex', alignItems: 'center', gap: '4px', p: '2px 7px', bgcolor: tokens.tealSofter, color: tokens.tealDark, borderRadius: '8px', fontFamily: fonts.mono, fontSize: 9, letterSpacing: '0.06em', fontWeight: 700, textTransform: 'uppercase', ml: '6px' }}>✅ In {a.owner.split(' ')[0]}'s queue</Box>);
             }
             if (subCount) indicators.push(<Ind key="s" title="Sub-tasks" color={tokens.tealDark}>☐ {subDone}/{subCount}</Ind>);
             if (depCount) indicators.push(<Ind key="d" title="Dependencies" color={tokens.amber}>⚡ {depCount}</Ind>);
-            if (comCount) indicators.push(<Ind key="c" title="Comments" color={tokens.blue}>💬 {comCount}</Ind>);
+            if (comCount) indicators.push(<Ind key="c" title="Comments" color={tokens.blue}><Icon name="chat" />{comCount}</Ind>);
 
             return (
               <Box key={a.id}>
@@ -129,14 +129,14 @@ export default function DetailActionsPane({ m, actionExtras, expandedId, expandT
 
           <Box sx={{ p: '12px 16px', borderTop: `1px solid ${tokens.line}`, bgcolor: tokens.creamWarm, borderRadius: '0 0 10px 10px', display: 'flex', flexWrap: 'wrap', alignItems: 'center' }}>
             <TextLink onClick={onAdd}>+ Add action item</TextLink>
-            <TextLink sx={{ ml: '14px' }} onClick={onExtract}>📄 Extract from minutes…</TextLink>
-            <TextLink sx={{ ml: '14px' }} onClick={onRemind}>🔔 Remind all owners now</TextLink>
+            <TextLink sx={{ ml: '14px' }} onClick={onExtract}><Icon name="document" />Extract from minutes…</TextLink>
+            <TextLink sx={{ ml: '14px' }} onClick={onRemind}><Icon name="bell" />Remind all owners now</TextLink>
           </Box>
         </Box>
       </Box>
 
       <Box sx={{ mt: '16px', p: '14px 18px', bgcolor: tokens.creamWarm, border: `1px solid ${tokens.line}`, borderRadius: tokens.radius, fontSize: 12, color: tokens.slate, display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <Box component="span" sx={{ fontSize: 16 }}>💡</Box>
+        <Box component="span" sx={{ fontSize: 16 }}><Icon name="tip" /></Box>
         <span>Action items assigned to system users are auto-synced to their <Box component="strong" sx={{ color: tokens.tealDark }}>My To-Do</Box> inbox. Owners receive email + in-app reminders at D-2, D0 and D+1 (if still open).</span>
       </Box>
     </Box>

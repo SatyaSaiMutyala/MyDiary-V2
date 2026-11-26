@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Box, Typography } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { useNavigate } from 'react-router-dom';
-import { PageHeader, Btn, EmptyState } from '../../components';
+import { PageHeader, Btn, EmptyState, Icon } from '../../components';
 import { ApiError, Fetching } from '../settings/components/listUi';
 import { useDuplicateTemplateMutation, useListTemplatesQuery, useRemoveTemplateMutation } from '../../store/api/templatesApi';
 import { errorMessage } from '../../store/api/baseApi';
@@ -66,7 +66,7 @@ export default function TemplatesPage() {
 
   return (
     <Box>
-      <PageHeader code="TL-OPS-DRM-001" parts={['Meeting Management', 'Templates']} icon="📋" title="Agenda Templates Library"
+      <PageHeader code="TL-OPS-DRM-001" parts={['Meeting Management', 'Templates']} icon={<Icon name="clipboard" />} title="Agenda Templates Library"
         sub="Pre-built agendas for recurring meeting types — load into any new meeting to save setup time and keep reviews consistent."
         actions={<Btn variant="primary" size="lg" onClick={() => setEditing({ template: null })}>+ New Template</Btn>} />
 
@@ -80,13 +80,13 @@ export default function TemplatesPage() {
       )}
 
       {!isLoading && !error && templates.length === 0 && (
-        <EmptyState icon="📋" title="No templates yet" desc="Agenda templates let you load a ready-made agenda into any new meeting. Create one to get started." />
+        <EmptyState icon={<Icon name="clipboard" />} title="No templates yet" desc="Agenda templates let you load a ready-made agenda into any new meeting. Create one to get started." />
       )}
 
       {ORDER.filter(t => grouped[t]).map(type => (
         <Box key={type} sx={{ mb: '28px' }}>
           <Typography component="div" sx={{ fontFamily: fonts.mono, fontSize: 11, letterSpacing: '0.14em', color: tokens.slate, textTransform: 'uppercase', fontWeight: 700, mb: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {TYPES[type].icon} {TYPES[type].name}s
+            <Icon name={TYPES[type].icon} size={14} />{TYPES[type].name}s
           </Typography>
           {/* .tpl-grid */}
           <Grid container spacing="14px">
@@ -99,7 +99,7 @@ export default function TemplatesPage() {
                     <CardAction title="Make a copy" onClick={() => copyTemplate(t)}>\u29C9</CardAction>
                     <CardAction title="Remove this template" danger onClick={() => deleteTemplate(t)}>\u00D7</CardAction>
                   </Box>
-                  <Box sx={{ fontSize: 24, mb: '10px' }}>{t.ico}</Box>
+                  <Box sx={{ mb: '10px' }}><Icon name={t.ico} size={24} /></Box>
                   <Typography sx={{ fontSize: 14, fontWeight: 700, mb: '4px', pr: '84px' }}>{t.name}</Typography>
                   <Typography sx={{ fontSize: 12, color: tokens.slate, lineHeight: 1.4, mb: '10px', minHeight: 48 }}>{t.desc}</Typography>
                   <Box sx={{ fontSize: 10, color: tokens.slate, fontFamily: fonts.mono, letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 700, display: 'flex', justifyContent: 'space-between' }}>

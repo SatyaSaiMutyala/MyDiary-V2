@@ -39,7 +39,7 @@ export default function DayView({ date, entries, onOpenEntry, onNewEntry, loadin
             if (!g) return null;
             return (
               <EventBlock key={e.id} e={e} top={g.top} height={g.height} dayView onClick={() => onOpenEntry(e.id)}>
-                <Box sx={evtTimeSx}>{e.startTime}{e.endTime ? ' – ' + e.endTime : ''} {e.loc ? '· 📍 ' + e.loc : ''}</Box>
+                <Box sx={evtTimeSx}>{e.startTime}{e.endTime ? ' – ' + e.endTime : ''} {e.loc ? '· ' + e.loc : ''}</Box>
                 {e.notes && g.height > 70 ? <Box sx={{ fontSize: 11, opacity: 0.85, mt: '4px' }}>{e.notes.slice(0, 80)}{e.notes.length > 80 ? '…' : ''}</Box> : null}
               </EventBlock>
             );

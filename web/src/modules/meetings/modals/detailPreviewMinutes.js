@@ -25,7 +25,7 @@ export function previewMinutes(m, allDecisions, dlg) {
   // ===== BUILD THE CONTENT ONCE (used in <tbody>) =====
   const bodyContent = `
     <div class="hero-block">
-      <span class="type-pill">${TYPES[m.type].icon} ${TYPES[m.type].name}${m.subBadge ? ' · ' + m.subBadge : ''}</span>
+      <span class="type-pill">${TYPES[m.type].name}${m.subBadge ? ' · ' + m.subBadge : ''}</span>
       <h1 class="doc-title">${m.title}</h1>
       <div class="meta-grid">
         <div class="meta-item"><div class="meta-lbl">Date</div><div class="meta-val">${formatDateLong(dt)}</div></div>
@@ -58,8 +58,8 @@ export function previewMinutes(m, allDecisions, dlg) {
             <div class="ag-title">${a}</div>
             <div class="ag-time">${m.agendaTimes[i] || ''}</div>
           </div>
-          ${mins && mins.disc ? '<div class="disc"><span class="disc-label">💬 Discussion</span>' + mins.disc.replace(/\n/g, '<br>') + '</div>' : ''}
-          ${mins && mins.dec ? '<div class="dec"><span class="dec-label">🎯 Decision / Outcome</span>' + mins.dec.replace(/\n/g, '<br>') + '</div>' : ''}
+          ${mins && mins.disc ? '<div class="disc"><span class="disc-label">Discussion</span>' + mins.disc.replace(/\n/g, '<br>') + '</div>' : ''}
+          ${mins && mins.dec ? '<div class="dec"><span class="dec-label">Decision / Outcome</span>' + mins.dec.replace(/\n/g, '<br>') + '</div>' : ''}
           ${!mins || (!mins.disc && !mins.dec) ? '<div style="font-size:9pt;color:#9A9A9A;font-style:italic;padding:6px 0">— No notes recorded for this item —</div>' : ''}
         </div>
       `;
@@ -332,7 +332,7 @@ export function previewMinutes(m, allDecisions, dlg) {
       .size-hint { position: fixed; top: 16px; left: 16px; background: rgba(255,255,255,0.9); color: #6B6B6B; padding: 6px 12px; border-radius: 6px; font-family: 'Space Mono', monospace; font-size: 9pt; letter-spacing: 0.08em; z-index: 2000; }
     </style></head><body>
     <div class="size-hint no-print">A4 · 210mm × 297mm · ${m.agenda.length} agenda item${m.agenda.length>1?'s':''}</div>
-    <button class="print-btn no-print" onclick="window.print()">🖨 Print / Save as PDF</button>
+    <button class="print-btn no-print" onclick="window.print()">Print / Save as PDF</button>
 
     <!-- The table structure is what gives us a repeating header and footer on every printed page. -->
     <table class="page-table">

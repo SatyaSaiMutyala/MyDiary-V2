@@ -3,7 +3,7 @@ import Grid from '@mui/material/Grid';
 import { tokens, fonts } from '../../../theme/tokens';
 import { CHANNELS } from '../../../data/logs';
 import { initials, ownerAvatarColor } from '../../../utils/people';
-import { Tag } from '../../../components';
+import { Tag, Icon } from '../../../components';
 
 /** .log-with .person-chip — mini avatar + name (+ EXT) */
 export function PersonChip({ person, onClick }) {
@@ -25,7 +25,7 @@ export default function LogCard({ log: l, onOpen, onFocusPerson }) {
     <Grid container spacing={{ xs: 1, sm: '14px' }} onClick={() => onOpen(l)} sx={{ bgcolor: tokens.card, border: `1px solid ${tokens.line}`, borderTop: 'none', borderLeft: `4px solid ${ch.color}`, p: '14px 18px', cursor: 'pointer', transition: 'all 0.15s', position: 'relative', '&:hover': { bgcolor: tokens.cream } }}>
       <Grid size={{ xs: 12, sm: 'auto' }} sx={{ width: { sm: 90 }, fontFamily: fonts.mono, fontSize: 11, color: tokens.slate, letterSpacing: '0.04em', textAlign: { xs: 'left', sm: 'right' }, pt: '2px', display: { xs: 'flex', sm: 'block' }, alignItems: 'center', gap: 1 }}>
         <Box component="strong" sx={{ display: 'block', color: tokens.ink, fontSize: 14, letterSpacing: '0.02em', mb: '2px' }}>{l.time}</Box>
-        <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: '4px', mt: { xs: 0, sm: '6px' }, p: '3px 7px', bgcolor: tokens.creamWarm, borderRadius: '10px', fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 700, color: ch.color }}>{ch.emoji} {ch.label}</Box>
+        <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: '4px', mt: { xs: 0, sm: '6px' }, p: '3px 7px', bgcolor: tokens.creamWarm, borderRadius: '10px', fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 700, color: ch.color }}><Icon name={ch.icon} size={11} />{ch.label}</Box>
         {l.duration && <Box component="span" sx={{ display: 'block', fontSize: 10, color: tokens.slateSoft, mt: { xs: 0, sm: '4px' } }}>{l.duration}</Box>}
       </Grid>
       <Grid size={{ xs: 12, sm: 'grow' }} sx={{ minWidth: 0 }}>
@@ -40,7 +40,7 @@ export default function LogCard({ log: l, onOpen, onFocusPerson }) {
       </Grid>
       <Grid size={{ xs: 12, sm: 'auto' }} sx={{ display: 'flex', flexDirection: { xs: 'row', sm: 'column' }, gap: '4px', alignItems: { xs: 'center', sm: 'flex-end' } }}>
         {openFUs > 0 && <Box sx={{ bgcolor: tokens.yellowSoft, color: tokens.amber, fontFamily: fonts.mono, fontSize: 10, p: '3px 9px', borderRadius: '10px', letterSpacing: '0.04em', fontWeight: 700, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>⚡ {openFUs} follow-up{openFUs > 1 ? 's' : ''}</Box>}
-        <Box sx={{ fontSize: 11, color: tokens.slateSoft }}>🔒 {l.privacy === 'private' ? 'private' : 'shared'}</Box>
+        <Box sx={{ fontSize: 11, color: tokens.slateSoft }}><Icon name="lock" />{l.privacy === 'private' ? 'private' : 'shared'}</Box>
       </Grid>
     </Grid>
   );

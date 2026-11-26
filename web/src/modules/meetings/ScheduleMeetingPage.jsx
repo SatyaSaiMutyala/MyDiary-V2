@@ -3,7 +3,7 @@ import { Box, ButtonBase, Typography } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { tokens, fonts, TYPE_COLORS } from '../../theme/tokens';
-import { PageHeader, Btn, TextLink, AddBtn, Card, Field, FieldLabel, TextInput, TextArea, SelectInput, Segmented, ToggleRow, Chip, DelBtn } from '../../components';
+import { PageHeader, Btn, TextLink, AddBtn, Card, Field, FieldLabel, TextInput, TextArea, SelectInput, Segmented, ToggleRow, Chip, DelBtn, Icon } from '../../components';
 import { useCrumbs } from '../../store/CrumbsContext';
 import { errorMessage } from '../../store/api/baseApi';
 import { useCreateMeetingMutation, useGetMeetingQuery, useUpdateMeetingMutation } from '../../store/api/meetingsApi';
@@ -16,7 +16,7 @@ import ScheduleTypeFields, { Row, col1, col2, col3 } from './components/schedule
 import { useDialog } from '../../components/Dialogs';
 import { DateInput, DurationInput, TimeInput } from '../../components/DateTimeInput';
 
-const MODES = ['📍 In-person', '💻 Virtual', '🔀 Hybrid'];
+const MODES = ['In-person', 'Virtual', 'Hybrid'];
 
 /** The type-specific field that becomes the meeting's `subBadge`, and the one that becomes `clientName`. */
 const SUB_BADGE = { internal: 'subType', customer: 'purpose', supplier: 'topic', consultants: 'engArea', board: 'classification', other: 'category' };
@@ -42,7 +42,7 @@ function AgendaItem({ idx, item, onChange, onDelete, autoFocus }) {
 export default function ScheduleMeetingPage() {
   const dlg = useDialog();
   const navigate = useNavigate();
-  // "📋 Load from template…" sends the person to /templates; picking a card comes back here with
+  // "Load from template…" sends the person to /templates; picking a card comes back here with
   // { type, templateId } so the chosen agenda can pre-fill this form.
   const { state: navState } = useLocation();
   // One page, two jobs: /meetings/new schedules a meeting, /meetings/:id/edit changes an existing one.
@@ -235,7 +235,7 @@ export default function ScheduleMeetingPage() {
   if (isEdit && loadError) {
     return (
       <Box>
-        <PageHeader parts={['Meeting Management', 'Edit']} icon="✎" title="Edit Meeting" />
+        <PageHeader parts={['Meeting Management', 'Edit']} icon={<Icon name="edit" />} title="Edit Meeting" />
         <Card><Box sx={{ p: '40px 20px', textAlign: 'center', color: tokens.bad, fontSize: 13 }}>{errorMessage(loadError)}</Box></Card>
       </Box>
     );
@@ -243,7 +243,7 @@ export default function ScheduleMeetingPage() {
   if (isEdit && (loadingExisting || !existing)) {
     return (
       <Box>
-        <PageHeader parts={['Meeting Management', 'Edit']} icon="✎" title="Edit Meeting" />
+        <PageHeader parts={['Meeting Management', 'Edit']} icon={<Icon name="edit" />} title="Edit Meeting" />
         <Card><Box sx={{ p: '40px 20px', textAlign: 'center', color: tokens.slate, fontSize: 13 }}>Loading the meeting…</Box></Card>
       </Box>
     );
@@ -252,10 +252,10 @@ export default function ScheduleMeetingPage() {
   return (
     <Box>
       {isEdit ? (
-        <PageHeader parts={['Meeting Management', 'Edit']} icon="✎" title="Edit Meeting"
+        <PageHeader parts={['Meeting Management', 'Edit']} icon={<Icon name="edit" />} title="Edit Meeting"
           sub="Change the details of this meeting. Saving overwrites the existing meeting — it does not create a duplicate." />
       ) : (
-        <PageHeader parts={['Meeting Management', 'Schedule New']} icon="📅" title="Schedule a Meeting"
+        <PageHeader parts={['Meeting Management', 'Schedule New']} icon={<Icon name="weekly" />} title="Schedule a Meeting"
           sub="One flow for every meeting type — internal, customer, supplier, consultant, board. Pick what it is, and the form adjusts to ask only what matters for that kind of meeting." />
       )}
 
@@ -302,7 +302,7 @@ export default function ScheduleMeetingPage() {
             </Box>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center' }}>
               <TextLink onClick={addAgenda}>+ Add agenda item</TextLink>
-              <TextLink sx={{ ml: '14px' }} onClick={() => navigate('/templates')}>📋 Load from template…</TextLink>
+              <TextLink sx={{ ml: '14px' }} onClick={() => navigate('/templates')}><Icon name="clipboard" />Load from template…</TextLink>
             </Box>
             <Row sx={{ mt: '14px', mb: 0 }}><Grid size={col1}><Field label="Expected Outcome" hint="what success looks like"><TextArea value={outcome} onChange={e => setOutcome(e.target.value)} placeholder="e.g. Signed MoU · Approved budget · Clarity on next 30-day action plan" /></Field></Grid></Row>
           </Card>
@@ -356,7 +356,7 @@ export default function ScheduleMeetingPage() {
             </Typography>
             <Box sx={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
               <Btn variant="ghost" onClick={async () => { if (await dlg.confirm(isEdit ? 'Discard your changes to this meeting?' : 'Discard this meeting draft?')) navigate(isEdit ? `/meetings/${editId}` : '/meetings'); }}>Cancel</Btn>
-              {!isEdit && <Btn onClick={saveDraft}>💾 Save as Draft</Btn>}
+              {!isEdit && <Btn onClick={saveDraft}><Icon name="save" />Save as Draft</Btn>}
               <Btn variant="primary" onClick={saveNewMeeting} disabled={saving}>{saving ? (isEdit ? 'Saving…' : 'Scheduling…') : (isEdit ? 'Save Changes →' : 'Schedule Meeting →')}</Btn>
             </Box>
           </Box>

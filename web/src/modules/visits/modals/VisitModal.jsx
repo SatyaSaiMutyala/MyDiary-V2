@@ -3,7 +3,7 @@ import { Box, InputBase } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { tokens, fonts } from '../../../theme/tokens';
 import { VISIT_TYPES, RATING_AREAS, OBS_CATEGORIES, OVERALL_OPTIONS } from '../../../data/visits';
-import { ModalShell, FootNote, Btn, TextLink, AddBtn, Chip, FieldLabel, Field, TextInput, TextArea, SelectInput, VSection, DelBtn } from '../../../components';
+import { ModalShell, FootNote, Btn, TextLink, AddBtn, Chip, FieldLabel, Field, TextInput, TextArea, SelectInput, VSection, DelBtn, Icon } from '../../../components';
 import { useListUsersQuery } from '../../../store/api/usersApi';
 import { EMPLOYEE_OPTIONS } from '../utils';
 import { DateInput, TimeInput } from '../../../components/DateTimeInput';
@@ -34,9 +34,9 @@ function AreaRating({ label, value, onPick }) {
 export function PhotoSlot({ filled, onClick, title }) {
   return (
     <Box onClick={onClick} title={title} sx={filled
-      ? { width: 100, height: 100, background: `linear-gradient(135deg, ${tokens.tealSofter}, ${tokens.tealSoft})`, border: `2px solid ${tokens.teal}`, borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: onClick ? 'pointer' : 'default', color: tokens.tealDark, fontSize: 11, fontWeight: 700, letterSpacing: '0.04em', position: 'relative', '&::before': { content: '"📷"', fontSize: 28, mb: '4px' } }
+      ? { width: 100, height: 100, background: `linear-gradient(135deg, ${tokens.tealSofter}, ${tokens.tealSoft})`, border: `2px solid ${tokens.teal}`, borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: onClick ? 'pointer' : 'default', color: tokens.tealDark, fontSize: 11, fontWeight: 700, letterSpacing: '0.04em', position: 'relative', '&::before': { content: '""', fontSize: 28, mb: '4px' } }
       : { width: 100, height: 100, bgcolor: tokens.cream, border: `2px dashed ${tokens.line}`, borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 11, color: tokens.slate, fontWeight: 700, letterSpacing: '0.04em', '&:hover': { borderColor: tokens.teal, color: tokens.tealDark, bgcolor: tokens.tealSofter } }}>
-      {!filled && <><Box sx={{ fontSize: 28, mb: '4px', opacity: 0.6 }}>📷</Box><div>Add Photo</div></>}
+      {!filled && <><Box sx={{ fontSize: 28, mb: '4px', opacity: 0.6 }}><Icon name="photo" /></Box><div>Add Photo</div></>}
     </Box>
   );
 }
@@ -65,25 +65,25 @@ export default function VisitModal({ open, draft, setDraft, onClose, onSave }) {
 
   const footer = (
     <>
-      <FootNote>💾 Draft auto-saves · {v.actionItems.length} action{v.actionItems.length !== 1 ? 's' : ''} will sync to My To-Do on submit</FootNote>
+      <FootNote><Icon name="save" />Draft auto-saves · {v.actionItems.length} action{v.actionItems.length !== 1 ? 's' : ''} will sync to My To-Do on submit</FootNote>
       <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
         <Btn onClick={onClose}>Cancel</Btn>
-        <Btn onClick={() => onSave('draft', v)}>💾 Save Draft</Btn>
+        <Btn onClick={() => onSave('draft', v)}><Icon name="save" />Save Draft</Btn>
         <Btn variant="primary" onClick={() => onSave('submitted', v)}>✓ Submit Visit Report</Btn>
       </Box>
     </>
   );
 
   return (
-    <ModalShell open={open} onClose={onClose} width={920} head="gradient" icon="📝" title="Log Visit Observation"
-      sub={<Box component="span" sx={{ fontFamily: fonts.mono, letterSpacing: '0.05em', textTransform: 'uppercase' }}>{v.status === 'draft' ? '📝 Draft' : '✓ Submitted'} · {v.owner}</Box>}
+    <ModalShell open={open} onClose={onClose} width={920} head="gradient" icon={<Icon name="note" />} title="Log Visit Observation"
+      sub={<Box component="span" sx={{ fontFamily: fonts.mono, letterSpacing: '0.05em', textTransform: 'uppercase' }}>{v.status === 'draft' ? 'Draft' : '✓ Submitted'} · {v.owner}</Box>}
       footer={footer} bodySx={{ bgcolor: tokens.creamWarm, p: { xs: '16px', md: '20px 28px' } }}>
 
-      <VSection icon="📅" head="VISIT DETAILS">
+      <VSection icon={<Icon name="weekly" />} head="VISIT DETAILS">
         <Field label="Visit Title" req sx={row}><TextInput {...bind('title')} placeholder="e.g. Q2 Supplier Audit — Roche Diagnostics, Mumbai" /></Field>
         <Grid container spacing="12px" sx={row}>
-          <Grid size={{ xs: 12, sm: 6 }}><Field label="Visit Type"><SelectInput {...bind('type')}>{Object.entries(VISIT_TYPES).map(([k, t]) => <option key={k} value={k}>{t.emoji} {t.label}</option>)}</SelectInput></Field></Grid>
-          <Grid size={{ xs: 12, sm: 6 }}><Field label="Status"><SelectInput {...bind('status')}><option value="draft">📝 Draft</option><option value="submitted">✓ Submitted</option></SelectInput></Field></Grid>
+          <Grid size={{ xs: 12, sm: 6 }}><Field label="Visit Type"><SelectInput {...bind('type')}>{Object.entries(VISIT_TYPES).map(([k, t]) => <option key={k} value={k}>{t.label}</option>)}</SelectInput></Field></Grid>
+          <Grid size={{ xs: 12, sm: 6 }}><Field label="Status"><SelectInput {...bind('status')}><option value="draft"><Icon name="note" />Draft</option><option value="submitted">✓ Submitted</option></SelectInput></Field></Grid>
         </Grid>
         <Grid container spacing="12px">
           <Grid size={{ xs: 12, sm: 4 }}><Field label="Date" req><DateInput {...bind('date')} /></Field></Grid>
@@ -92,7 +92,7 @@ export default function VisitModal({ open, draft, setDraft, onClose, onSave }) {
         </Grid>
       </VSection>
 
-      <VSection icon="🏢" head="VISITED ORGANISATION / LOCATION">
+      <VSection icon={<Icon name="department" />} head="VISITED ORGANISATION / LOCATION">
         <Grid container spacing="12px" sx={row}>
           <Grid size={{ xs: 12, sm: 6 }}><Field label="Organisation / Facility Name" req><TextInput {...bind('org.name')} placeholder="e.g. Roche Diagnostics India Pvt Ltd" /></Field></Grid>
           <Grid size={{ xs: 12, sm: 6 }}><Field label="Branch / Location Name"><TextInput {...bind('org.branch')} placeholder="e.g. Mumbai Distribution Hub" /></Field></Grid>
@@ -113,7 +113,7 @@ export default function VisitModal({ open, draft, setDraft, onClose, onSave }) {
         </Grid>
       </VSection>
 
-      <VSection icon="👥" head="VISIT TEAM" meta={`${v.team.length} member${v.team.length !== 1 ? 's' : ''}`}>
+      <VSection icon={<Icon name="people" />} head="VISIT TEAM" meta={`${v.team.length} member${v.team.length !== 1 ? 's' : ''}`}>
         <FieldLabel>Visited By — TrustLab team members</FieldLabel>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '6px', mt: '6px', mb: 1, minHeight: 28 }}>
           {v.team.length ? v.team.map((a, i) => <Chip key={i} onRemove={() => upd(c => c.team.splice(i, 1))}>{a}</Chip>)
@@ -128,7 +128,7 @@ export default function VisitModal({ open, draft, setDraft, onClose, onSave }) {
         <TextInput {...bind('externalParticipants')} placeholder="Names of external attendees from the visited organisation" />
       </VSection>
 
-      <VSection icon="🎯" head="PURPOSE & SCOPE">
+      <VSection icon={<Icon name="target" />} head="PURPOSE & SCOPE">
         <Field label="Purpose of Visit" req sx={row}><TextArea minRows={2} {...bind('purpose')} placeholder="Why was this visit conducted? What was the objective?" sx={{ '& textarea.MuiInputBase-input': { minHeight: 70 } }} /></Field>
         <Grid container spacing="12px" sx={row}>
           <Grid size={{ xs: 12, sm: 6 }}><Field label="Areas Covered / Scope"><TextArea minRows={2} {...bind('scope')} placeholder="Which areas, processes, or documents were reviewed?" sx={{ '& textarea.MuiInputBase-input': { minHeight: 70 } }} /></Field></Grid>
@@ -137,7 +137,7 @@ export default function VisitModal({ open, draft, setDraft, onClose, onSave }) {
         <Field label="Tags" hint="comma-separated"><TextInput defaultValue={(v.tags || []).join(', ')} onChange={e => upd(c => { c.tags = e.target.value.split(',').map(t => t.trim()).filter(Boolean); })} placeholder="e.g. audit, vendor, Q2, Mumbai, reagent" /></Field>
       </VSection>
 
-      <VSection icon="⭐" head="AREA RATINGS" meta="Click stars to rate 1–5">
+      <VSection icon="" head="AREA RATINGS" meta="Click stars to rate 1–5">
         <Grid container spacing={1}>
           {RATING_AREAS.map(a => (
             <Grid key={a.key} size={{ xs: 12, sm: 6 }}><AreaRating label={a.label} value={v.ratings[a.key] || 0} onPick={n => setRating(a.key, n)} /></Grid>
@@ -145,7 +145,7 @@ export default function VisitModal({ open, draft, setDraft, onClose, onSave }) {
         </Grid>
       </VSection>
 
-      <VSection icon="📊" head="OVERALL ASSESSMENT">
+      <VSection icon={<Icon name="chart" />} head="OVERALL ASSESSMENT">
         <Field label="Overall Assessment" req sx={row}>
           <SelectInput {...bind('overallAssessment')}>
             <option value="">— Select Overall Assessment —</option>
@@ -155,7 +155,7 @@ export default function VisitModal({ open, draft, setDraft, onClose, onSave }) {
         <Field label="Executive Summary"><TextArea minRows={3} {...bind('executiveSummary')} placeholder="Overall summary — key findings, general impression, major outcomes..." sx={{ '& textarea.MuiInputBase-input': { minHeight: 100 } }} /></Field>
       </VSection>
 
-      <VSection icon="🔍" head="DETAILED OBSERVATIONS" meta={`${v.observations.length} item${v.observations.length !== 1 ? 's' : ''}`}>
+      <VSection icon={<Icon name="search" />} head="DETAILED OBSERVATIONS" meta={`${v.observations.length} item${v.observations.length !== 1 ? 's' : ''}`}>
         <Grid container spacing="10px" sx={{ display: { xs: 'none', md: 'flex' }, p: '8px 12px', bgcolor: tokens.creamWarm, borderRadius: '5px', mb: '6px' }}>
           <Grid size={3} sx={obsHeadCell}>CATEGORY</Grid><Grid size="grow" sx={obsHeadCell}>OBSERVATION</Grid><Grid size={3} sx={obsHeadCell}>EVIDENCE / REF</Grid><Grid size="auto" sx={{ width: 40 }} />
         </Grid>
@@ -181,7 +181,7 @@ export default function VisitModal({ open, draft, setDraft, onClose, onSave }) {
         <TextLink sx={{ mt: '4px' }} onClick={() => upd(c => c.observations.push({ category: 'Infrastructure', observation: '', evidence: '' }))}>+ Add Observation</TextLink>
       </VSection>
 
-      <VSection icon="📷" head="PHOTOS & EVIDENCE" meta={`${v.photos} / 20 photos`}>
+      <VSection icon={<Icon name="photo" />} head="PHOTOS & EVIDENCE" meta={`${v.photos} / 20 photos`}>
         <Grid container spacing={1}>
           {Array.from({ length: v.photos }).map((_, i) => <Grid key={i} size="auto"><PhotoSlot filled title="Click to remove" onClick={() => upd(c => { c.photos--; })} /></Grid>)}
           {v.photos < 20 && <Grid size="auto"><PhotoSlot onClick={() => upd(c => { c.photos++; })} /></Grid>}
@@ -189,7 +189,7 @@ export default function VisitModal({ open, draft, setDraft, onClose, onSave }) {
         <Box component="p" sx={{ fontSize: 11, color: tokens.slate, mt: '10px', mb: 0, fontFamily: fonts.mono, letterSpacing: '0.05em' }}>JPG / PNG / WEBP — up to 5 MB each, 20 max.</Box>
       </VSection>
 
-      <VSection icon="⚡" head="ACTION ITEMS" meta="Auto-syncs to My To-Do on save">
+      <VSection icon={<Icon name="task" />} head="ACTION ITEMS" meta="Auto-syncs to My To-Do on save">
         {v.actionItems.map((a, i) => (
           <Grid key={i} container spacing={1} sx={{ alignItems: 'center', p: '8px 10px', bgcolor: tokens.card, border: `1px solid ${tokens.line}`, borderLeft: `3px solid ${tokens.yellow}`, borderRadius: '5px', mb: '5px' }}>
             <Grid size={{ xs: 12, md: 'grow' }}><InputBase value={a.text || ''} placeholder="Action to be taken" onChange={e => upd(c => { c.actionItems[i].text = e.target.value; })} sx={{ width: '100%' }} inputSx={smallInput} /></Grid>
@@ -201,7 +201,7 @@ export default function VisitModal({ open, draft, setDraft, onClose, onSave }) {
         <TextLink onClick={() => upd(c => c.actionItems.push({ text: '', owner: '', deadline: '' }))}>+ Add Action Item</TextLink>
       </VSection>
 
-      <VSection icon="🔁" head="FOLLOW-UP & SIGN-OFF">
+      <VSection icon={<Icon name="repeat" />} head="FOLLOW-UP & SIGN-OFF">
         <Grid container spacing="12px" sx={row}>
           <Grid size={{ xs: 12, sm: 6 }}><Field label="Next Visit Date" hint="if required"><DateInput {...bind('nextVisitDate')} /></Field></Grid>
           <Grid size={{ xs: 12, sm: 6 }}><Field label="Follow-Up Required?">

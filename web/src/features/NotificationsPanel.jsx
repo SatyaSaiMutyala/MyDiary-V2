@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Box, ClickAwayListener, Typography } from '@mui/material';
 import { keyframes } from '@mui/material/styles';
 import { toolBtn } from '../layouts/Topbar';
-import { TextLink } from '../components';
+import { TextLink, Icon } from '../components';
 import { useLazyListNotificationsQuery, useListNotificationsQuery, useMarkNotificationReadMutation, useReadAllNotificationsMutation } from '../store/api/notificationsApi';
 import { usePagedQuery } from '../store/usePagedQuery';
 import { errorMessage } from '../store/api/baseApi';
@@ -70,7 +70,7 @@ export default function NotificationsBell({ onRail = false }) {
                 return (
                   <Box key={n.id} onClick={() => handleNotif(n)}
                     sx={{ p: '12px 18px', borderBottom: `1px solid ${tokens.lineSoft}`, display: 'flex', gap: '12px', cursor: 'pointer', transition: 'background 0.1s', bgcolor: n.unread ? tokens.tealSofter : 'transparent', '&:hover': { bgcolor: tokens.cream } }}>
-                    <Box sx={{ width: 32, height: 32, borderRadius: '50%', bgcolor: ic.bg, color: ic.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>{n.icon}</Box>
+                    <Box sx={{ width: 32, height: 32, borderRadius: '50%', bgcolor: ic.bg, color: ic.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Icon name={n.icon} size={16} /></Box>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Box sx={{ fontSize: 13, lineHeight: 1.4, '& strong': { fontWeight: 700 } }}><RichText text={n.text} /></Box>
                       <Box sx={{ fontSize: 11, color: tokens.slate, mt: '4px', fontFamily: fonts.mono, letterSpacing: '0.04em' }}>{relativeTime(n.time)}</Box>

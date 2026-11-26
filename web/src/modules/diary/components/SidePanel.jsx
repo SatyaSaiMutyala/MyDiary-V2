@@ -1,5 +1,5 @@
 import { Box, Typography } from '@mui/material';
-import { Btn } from '../../../components';
+import { Btn, Icon } from '../../../components';
 import { tokens, fonts } from '../../../theme/tokens';
 import { DIARY_CATS } from '../../../data/diary';
 import { MONTHS_FULL } from '../../../utils/dates';
@@ -51,7 +51,7 @@ export default function SidePanel({ date, entries, ownCount, upcomingMtgs, visib
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-      <SideCard head={<span>📆 {monthLabel}</span>}>
+      <SideCard head={<span><Icon name="monthly" size={13} /> {monthLabel}</span>}>
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px', mt: '4px' }}>
           {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((x, i) => (
             <Box key={i} sx={{ fontFamily: fonts.mono, fontSize: 9, color: tokens.slateSoft, textAlign: 'center', p: '4px 0', letterSpacing: '0.04em', fontWeight: 700 }}>{x}</Box>
@@ -72,7 +72,7 @@ export default function SidePanel({ date, entries, ownCount, upcomingMtgs, visib
         <CalRow onClick={() => onToggleCal('own')} check={<CalCheck checked={visibleCals.own} bg={visibleCals.own ? tokens.teal : ''}>{visibleCals.own ? '✓' : ''}</CalCheck>} name="Diary entries" count={<Box component="span" sx={calCountSx}>{ownCount}</Box>} />
         <CalRow onClick={() => onToggleCal('meetings')} check={<CalCheck checked={visibleCals.meetings} bg={visibleCals.meetings ? tokens.tealDark : ''}>{visibleCals.meetings ? '✓' : ''}</CalCheck>} name={<>Meetings <Box component="span" sx={monoSuffixSx}>· auto</Box></>} count={<Box component="span" sx={calCountSx}>{upcomingMtgs}</Box>} />
         {viewer.name === 'Pallavi Elisetti' && owner !== 'Venkata Cherukuri' && (
-          <CalRow onClick={() => onSwitchOwner('Venkata Cherukuri')} check={<CalCheck checked={false} bg={tokens.yellow} color="#fff">👁</CalCheck>} name={<>Venkata's diary <Box component="span" sx={monoSuffixSx}>· delegated</Box></>} />
+          <CalRow onClick={() => onSwitchOwner('Venkata Cherukuri')} check={<CalCheck checked={false} bg={tokens.yellow} color="#fff"><Icon name="view" /></CalCheck>} name={<>Venkata's diary <Box component="span" sx={monoSuffixSx}>· delegated</Box></>} />
         )}
         {viewer.name === 'Venkata Cherukuri' && owner === 'Venkata Cherukuri' && (
           <CalRow check={<CalCheck bg={tokens.yellow} color={tokens.greenDeep}>E</CalCheck>} name={<>Shared with: <strong>Pallavi</strong></>} count={<Box component="span" sx={{ ...calCountSx, color: tokens.yellow }}>EA</Box>} />
@@ -84,7 +84,7 @@ export default function SidePanel({ date, entries, ownCount, upcomingMtgs, visib
           {Object.entries(DIARY_CATS).map(([k, v]) => (
             <Box key={k} sx={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: 12, cursor: 'pointer' }}>
               <Box sx={{ width: 12, height: 12, borderRadius: '3px', flexShrink: 0, bgcolor: v.color }} />
-              <Box component="span" sx={{ flex: 1 }}>{v.emoji} {v.label}</Box>
+              <Box component="span" sx={{ flex: 1, display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Icon name={v.icon} size={13} />{v.label}</Box>
               <Box component="span" sx={calCountSx}>{entries.filter(e => e.cat === k).length}</Box>
             </Box>
           ))}

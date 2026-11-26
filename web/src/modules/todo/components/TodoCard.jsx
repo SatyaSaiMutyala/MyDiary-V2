@@ -2,6 +2,7 @@ import { Box, ButtonBase } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { tokens, fonts } from '../../../theme/tokens';
 import { parseDate, formatDate, daysUntil, relativeTime } from '../../../utils/dates';
+import { Icon } from '../../../components';
 
 // .priority-pill / .status-pill (prototype has no .critical rule → unstyled, as in the HTML)
 const PRI = { high: { bg: tokens.redSoft, color: tokens.red }, medium: { bg: tokens.yellowSoft, color: tokens.amber }, low: { bg: tokens.tealSoft, color: tokens.tealDark } };
@@ -25,7 +26,7 @@ function SecBtn({ blocker, onClick, children }) {
  *  onEdit is only passed when this person may change the task — whoever wrote it, or an admin.
  */
 export default function TodoCard({ t, isOverdueFlag, me, extras = {}, onOpenSource, onComplete, onSimple, onNudge, onReassign, onEdit }) {
-  const srcIco = t.source === 'meetings' ? '📅' : t.source === 'visits' ? '📝' : '⚡';
+  const srcIco = t.source === 'meetings' ? '' : t.source === 'visits' ? '' : '⚡';
   const srcLabel = t.source === 'meetings' ? 'From Meeting' : t.source === 'visits' ? 'From Visit' : 'Standalone';
   const comments = extras.comments || [];
   const lastComment = comments[comments.length - 1];
@@ -54,7 +55,7 @@ export default function TodoCard({ t, isOverdueFlag, me, extras = {}, onOpenSour
     </>;
   } else if (!isMine) {
     actionBtns = <>
-      <PrimaryBtn onClick={onNudge}>🔔 Nudge Owner</PrimaryBtn>
+      <PrimaryBtn onClick={onNudge}><Icon name="bell" />Nudge Owner</PrimaryBtn>
       <Box sx={{ display: 'flex', gap: '4px', width: '100%' }}>
         <SecBtn onClick={onReassign}>↺ Reassign</SecBtn>
         {onEdit && <SecBtn onClick={onEdit}>✎ Edit</SecBtn>}
@@ -88,17 +89,17 @@ export default function TodoCard({ t, isOverdueFlag, me, extras = {}, onOpenSour
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '14px', fontSize: 12, color: tokens.slate, mb: 1, alignItems: 'center', '& strong': { color: tokens.ink } }}>
             <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: '6px', p: '3px 8px', bgcolor: tokens.creamWarm, borderRadius: '12px', fontSize: 10, fontFamily: fonts.mono, letterSpacing: '0.04em', color: tokens.slate, textTransform: 'uppercase', fontWeight: 700 }}>{srcIco} {srcLabel}: {sourceLink}</Box>
             {isMine ? <span>Delegated by: <strong>{t.creator || '—'}</strong></span> : <span>Owner: <strong>{t.owner}</strong></span>}
-            <Box component="span" sx={isOverdueFlag ? { color: tokens.red, fontWeight: 700 } : {}}>🗓 {deadlineLabel}</Box>
+            <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: '5px', ...(isOverdueFlag ? { color: tokens.red, fontWeight: 700 } : {}) }}><Icon name="review" size={12} />{deadlineLabel}</Box>
           </Box>
           <Box sx={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
             <MiniPill style={PRI[t.priority]}>{(t.priority || 'medium').toUpperCase()}</MiniPill>
             <MiniPill style={STA[statusClass]}>{statusClass.toUpperCase().replace('-', ' ')}</MiniPill>
             {extras.subtasks && extras.subtasks.length > 0 && <Box component="span" sx={{ fontFamily: fonts.mono, fontSize: 10, color: tokens.slate, p: '3px 8px', bgcolor: tokens.creamWarm, borderRadius: '10px', letterSpacing: '0.04em', fontWeight: 700 }}>☐ {extras.subtasks.filter(s => s.done).length}/{extras.subtasks.length} sub-tasks</Box>}
-            {comments.length > 0 && <Box component="span" sx={{ fontFamily: fonts.mono, fontSize: 10, color: tokens.blue, p: '3px 8px', bgcolor: tokens.blueSoft, borderRadius: '10px', letterSpacing: '0.04em', fontWeight: 700 }}>💬 {comments.length}</Box>}
+            {comments.length > 0 && <Box component="span" sx={{ fontFamily: fonts.mono, fontSize: 10, color: tokens.blue, p: '3px 8px', bgcolor: tokens.blueSoft, borderRadius: '10px', letterSpacing: '0.04em', fontWeight: 700 }}><Icon name="chat" />{comments.length}</Box>}
           </Box>
           {lastComment && (
             <Box sx={{ bgcolor: tokens.cream, borderTop: `1px dashed ${tokens.line}`, m: { xs: '8px -16px -14px', md: '8px -20px -16px' }, p: { xs: '10px 16px', md: '10px 20px' }, fontSize: 11, color: tokens.slate, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-              <span>💬 <strong>{lastComment.user}:</strong> "{lastComment.text.slice(0, 120)}{lastComment.text.length > 120 ? '…' : ''}" · <em>{relativeTime(lastComment.at)}</em></span>
+              <span><Icon name="chat" /><strong>{lastComment.user}:</strong> "{lastComment.text.slice(0, 120)}{lastComment.text.length > 120 ? '…' : ''}" · <em>{relativeTime(lastComment.at)}</em></span>
             </Box>
           )}
         </Grid>

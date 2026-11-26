@@ -1,5 +1,6 @@
 import { Box, InputBase, Typography } from '@mui/material';
 import { tokens, fonts } from '../theme/tokens';
+import { Icon } from '../components';
 
 /** AIMS field label: 12px / 500 / muted (sentence case). req → red asterisk; hint → faint inline hint. */
 export function FieldLabel({ req, hint, right, sx, children }) {
@@ -42,7 +43,7 @@ export function Field({ label, req, hint, sx, children }) {
 export function SearchBox({ sx, ...rest }) {
   return (
     <Box sx={{ position: 'relative', flex: 1, ...sx }}>
-      <Box component="span" sx={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', fontSize: 13, opacity: 0.55, pointerEvents: 'none', zIndex: 1 }}>🔍</Box>
+      <Box component="span" sx={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', fontSize: 13, opacity: 0.55, pointerEvents: 'none', zIndex: 1 }}><Icon name="search" /></Box>
       <InputBase sx={{ width: '100%', '& .MuiInputBase-input': { p: '8px 10px 8px 34px', minHeight: 36, border: `1px solid ${tokens.line}`, borderRadius: '6px', bgcolor: tokens.card, fontSize: 13, height: 'auto', boxSizing: 'border-box', '&:hover': { borderColor: tokens.faint }, '&:focus': { borderColor: tokens.teal, boxShadow: '0 0 0 3px rgba(15,118,110,.12)' }, '&::placeholder': { color: tokens.faint, opacity: 1 } } }} {...rest} />
     </Box>
   );

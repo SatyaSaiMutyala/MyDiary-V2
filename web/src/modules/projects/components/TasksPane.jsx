@@ -1,6 +1,6 @@
 import { Box } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { Btn, EmptyState } from '../../../components';
+import { Btn, EmptyState, Icon } from '../../../components';
 import { tokens, fonts } from '../../../theme/tokens';
 import { isOverdue } from '../../../utils/dates';
 import { initials, ownerAvatarColor } from '../../../utils/people';
@@ -24,7 +24,7 @@ export default function TasksPane({ p, actions, groupBy, setGroupBy }) {
     return (
       <Box sx={{ bgcolor: tokens.card, border: `1px solid ${tokens.line}`, borderLeft: `3px solid ${PRIORITY_ACCENT[t.priority] || tokens.teal}`, borderRadius: '6px', p: '10px 12px', mb: '6px', boxShadow: tokens.shadowSm, cursor: 'pointer', transition: 'all 0.1s', '&:hover': { boxShadow: tokens.shadow, transform: 'translateY(-1px)' } }}>
         <Box sx={{ fontSize: 12, fontWeight: 700, mb: '6px', lineHeight: 1.4 }}>{t.title}</Box>
-        {ms && <Box sx={{ fontFamily: fonts.mono, fontSize: 9, color: tokens.tealDark, bgcolor: tokens.tealSofter, p: '2px 7px', borderRadius: '8px', mt: '4px', letterSpacing: '0.04em', fontWeight: 700, display: 'inline-block', mb: '6px' }}>🏁 {ms.name.slice(0, 30)}{ms.name.length > 30 ? '…' : ''}</Box>}
+        {ms && <Box sx={{ fontFamily: fonts.mono, fontSize: 9, color: tokens.tealDark, bgcolor: tokens.tealSofter, p: '2px 7px', borderRadius: '8px', mt: '4px', letterSpacing: '0.04em', fontWeight: 700, display: 'inline-block', mb: '6px' }}><Icon name="milestone" />{ms.name.slice(0, 30)}{ms.name.length > 30 ? '…' : ''}</Box>}
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
             <KAvatar bg={ownerAvatarColor(t.assignee)}>{initials(t.assignee)}</KAvatar>
@@ -49,7 +49,7 @@ export default function TasksPane({ p, actions, groupBy, setGroupBy }) {
         <Box component="input" type="checkbox" checked={done} onChange={e => actions.updateTaskStatus(p.id, t.id, e.target.checked ? 'done' : 'todo')} sx={{ width: 16, height: 16, cursor: 'pointer', m: 0, accentColor: tokens.teal }} />
         <Box sx={{ minWidth: 0 }}>
           <Box sx={{ fontSize: 13, fontWeight: 600, color: tokens.ink, textDecoration: done ? 'line-through' : 'none' }}>{t.title}</Box>
-          {ms && <Box sx={{ fontFamily: fonts.mono, fontSize: 9, color: tokens.tealDark, mt: '3px', letterSpacing: '0.04em', fontWeight: 700 }}>🏁 {ms.name}</Box>}
+          {ms && <Box sx={{ fontFamily: fonts.mono, fontSize: 9, color: tokens.tealDark, mt: '3px', letterSpacing: '0.04em', fontWeight: 700 }}><Icon name="milestone" />{ms.name}</Box>}
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px', gridColumn: { xs: '2', md: 'auto' } }}>
           <KAvatar bg={ownerAvatarColor(t.assignee)}>{initials(t.assignee)}</KAvatar>
@@ -68,7 +68,7 @@ export default function TasksPane({ p, actions, groupBy, setGroupBy }) {
     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: '12px', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
       <Box sx={{ display: 'flex', gap: '4px', p: '4px', bgcolor: tokens.creamWarm, border: `1px solid ${tokens.line}`, borderRadius: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
         <Box component="span" sx={{ fontFamily: fonts.mono, fontSize: 10, letterSpacing: '0.08em', color: tokens.slate, fontWeight: 700, p: '5px 6px 5px 10px', alignSelf: 'center' }}>GROUP BY:</Box>
-        {[['status', 'Status · Kanban'], ['milestone', '🏁 Milestone'], ['owner', '👤 Owner']].map(([k, l]) => (
+        {[['status', 'Status · Kanban'], ['milestone', 'Milestone'], ['owner', 'Owner']].map(([k, l]) => (
           <Btn key={k} size="sm" variant={groupBy === k ? 'primary' : 'default'} onClick={() => setGroupBy(k)} sx={{ p: '4px 10px', fontSize: 11 }}>{l}</Btn>
         ))}
       </Box>
@@ -116,7 +116,7 @@ export default function TasksPane({ p, actions, groupBy, setGroupBy }) {
           return (
             <Box key={m.id} sx={sectionSx}>
               <Box sx={sectionHeadSx}>
-                <Box sx={{ width: 32, height: 32, borderRadius: '8px', bgcolor: m.status === 'done' ? tokens.tealDark : od ? '#C53030' : tokens.teal, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>🏁</Box>
+                <Box sx={{ width: 32, height: 32, borderRadius: '8px', bgcolor: m.status === 'done' ? tokens.tealDark : od ? '#C53030' : tokens.teal, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}><Icon name="milestone" /></Box>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Box sx={{ fontSize: 14, fontWeight: 700, color: tokens.ink }}>{m.name}</Box>
                   <Box sx={{ fontSize: 11, color: tokens.slate, mt: '2px' }}>Due {m.dueDate} · {m.owner} · <strong>{tp.done}/{tp.total} tasks done ({tp.pct}%)</strong></Box>
@@ -162,7 +162,7 @@ export default function TasksPane({ p, actions, groupBy, setGroupBy }) {
             <Box sx={{ p: '10px 14px' }}>{tasks.map(t => taskRow(t))}</Box>
           </Box>
         );
-      }) : <EmptyState icon="✓" title="No tasks yet" />}
+      }) : <EmptyState icon={<Icon name="check" />} title="No tasks yet" />}
     </>
   );
 }

@@ -3,7 +3,7 @@ import { Box } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { useNavigate } from 'react-router-dom';
 import { tokens, fonts } from '../../../theme/tokens';
-import { Avatar } from '../../../components';
+import { Avatar, Icon } from '../../../components';
 import HeadCard from './HeadCard';
 import { deptRollupRows, sortByLowest, barClassFor } from '../utils';
 import { DAYS_OF_WEEK_FULL } from '../../../data/departments';
@@ -23,7 +23,7 @@ export function CMDOversightBlock({ departments, activityLog, facts }) {
   return (
     <Box sx={{ mt: '28px' }}>
       <Box onClick={() => setOpen(o => !o)} sx={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', p: '14px 18px', background: `linear-gradient(135deg, ${tokens.greenDeep}, ${tokens.tealDark})`, color: '#fff', borderRadius: open ? '10px 10px 0 0' : '10px', borderBottom: open ? 0 : '1px solid rgba(255,255,255,0.1)' }}>
-        <Box component="span" sx={{ fontSize: 22 }}>🌐</Box>
+        <Box component="span" sx={{ fontSize: 22 }}><Icon name="external" /></Box>
         <Box sx={{ flex: 1 }}>
           <Box sx={{ fontFamily: fonts.serif, fontSize: 17, fontWeight: 700, letterSpacing: '-0.01em' }}>Organisation Rollup — Today</Box>
           <Box sx={{ fontFamily: fonts.mono, fontSize: 11, opacity: 0.85, letterSpacing: '0.04em', mt: '2px' }}>All 17 departments · {orgDone}/{orgTotal} tasks done org-wide · {orgPct}%</Box>
@@ -36,7 +36,7 @@ export function CMDOversightBlock({ departments, activityLog, facts }) {
           <Grid container spacing={1.25}>
             {sortByLowest(rows).map(r => (
               <Grid key={r.dept.id} size={{ xs: 12, lg: 6 }}>
-                <HeadCard icon={r.dept.icon} name={r.dept.name} meta={`${r.people} people · ${r.total} task${r.total !== 1 ? 's' : ''} due today`} done={r.done} total={r.total} pct={r.pct} barClass={barClassFor(r.pct)} onClick={() => navigate(`/departments/${r.dept.id}`)} />
+                <HeadCard icon={<Icon name={r.dept.icon} size={22} />} name={r.dept.name} meta={`${r.people} people · ${r.total} task${r.total !== 1 ? 's' : ''} due today`} done={r.done} total={r.total} pct={r.pct} barClass={barClassFor(r.pct)} onClick={() => navigate(`/departments/${r.dept.id}`)} />
               </Grid>
             ))}
           </Grid>
@@ -82,12 +82,12 @@ export function MyActivityOversight({ me, departments, activityLog, facts }) {
         </Grid>
       </Box>
       <Box sx={{ display: 'flex', gap: 1, mb: '18px', alignItems: 'center', p: '10px 14px', bgcolor: tokens.card, border: `1px solid ${tokens.line}`, borderRadius: '10px', flexWrap: 'wrap' }}>
-        <Box sx={{ p: '8px 14px', bgcolor: tokens.card, border: `1px solid ${tokens.line}`, borderRadius: '20px', fontFamily: fonts.mono, fontSize: 11, fontWeight: 700, color: tokens.slate, letterSpacing: '0.04em', ml: 'auto' }}>📅 {DAYS_OF_WEEK_FULL[today.getDay()]}, {today.getDate()} {MONTHS[today.getMonth()]} {today.getFullYear()}</Box>
+        <Box sx={{ p: '8px 14px', bgcolor: tokens.card, border: `1px solid ${tokens.line}`, borderRadius: '20px', fontFamily: fonts.mono, fontSize: 11, fontWeight: 700, color: tokens.slate, letterSpacing: '0.04em', ml: 'auto' }}><Icon name="weekly" />{DAYS_OF_WEEK_FULL[today.getDay()]}, {today.getDate()} {MONTHS[today.getMonth()]} {today.getFullYear()}</Box>
       </Box>
       <Grid container spacing={1.5}>
         {sortByLowest(rows).map(r => (
           <Grid key={r.dept.id} size={{ xs: 12, lg: 6 }}>
-            <HeadCard icon={r.dept.icon} name={r.dept.name} meta={`${r.people} people · ${r.total} task${r.total !== 1 ? 's' : ''} due today`} done={r.done} total={r.total} pct={r.pct} barClass={barClassFor(r.pct)} onClick={() => navigate(`/departments/${r.dept.id}`)} />
+            <HeadCard icon={<Icon name={r.dept.icon} size={22} />} name={r.dept.name} meta={`${r.people} people · ${r.total} task${r.total !== 1 ? 's' : ''} due today`} done={r.done} total={r.total} pct={r.pct} barClass={barClassFor(r.pct)} onClick={() => navigate(`/departments/${r.dept.id}`)} />
           </Grid>
         ))}
       </Grid>

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Box, ButtonBase, Typography } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { ModalShell, Btn, Field, FieldLabel, TextInput, TextArea, SelectInput, Chip, AddBtn, FootNote } from '../../../components';
+import { ModalShell, Btn, Field, FieldLabel, TextInput, TextArea, SelectInput, Chip, AddBtn, FootNote, Icon } from '../../../components';
 import { tokens, fonts } from '../../../theme/tokens';
 import { DIARY_CATS } from '../../../data/diary';
 import { EMPLOYEES } from '../../../data/employees';
@@ -87,7 +87,7 @@ export default function EntryModal({ open, onClose, owner, viewer, date, preset,
     <ModalShell open={open} onClose={onClose} width={620} head="light" title="New Diary Entry"
       sub={<>For <Box component="strong" sx={{ color: tokens.ink }}>{owner}</Box>{isDelegated ? ' · Added by you as EA' : ''}</>}
       footer={<>
-        <FootNote>🔒 Default: visible to Pallavi (EA) · {d.cat === 'personal' ? 'PERSONAL — hidden from EA by default' : 'can be made private'}</FootNote>
+        <FootNote><Icon name="lock" />Default: visible to Pallavi (EA) · {d.cat === 'personal' ? 'PERSONAL — hidden from EA by default' : 'can be made private'}</FootNote>
         <Box sx={{ display: 'flex', gap: 1, ml: 'auto' }}>
           <Btn onClick={onClose}>Cancel</Btn>
           <Btn variant="primary" onClick={save} disabled={saving}>{saving ? 'Adding…' : '+ Add to Diary'}</Btn>
@@ -108,7 +108,7 @@ export default function EntryModal({ open, onClose, owner, viewer, date, preset,
                 textAlign: 'center', fontSize: 10, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', fontFamily: fonts.mono, display: 'block', boxShadow: sel ? `0 0 0 2px ${tokens.tealSofter}` : 'none', transition: 'all 0.15s',
                 '&:hover': { borderColor: sel ? s.border : tokens.teal },
               }}>
-                <Box component="span" sx={{ fontSize: 20, display: 'block', mb: '4px' }}>{v.emoji}</Box>{v.label}
+                <Box component="span" sx={{ display: 'block', mb: '4px' }}><Icon name={v.icon} size={20} /></Box>{v.label}
               </ButtonBase>
             </Grid>
           );
@@ -177,7 +177,7 @@ export default function EntryModal({ open, onClose, owner, viewer, date, preset,
       </Box>
 
       <Box sx={{ mt: '14px', p: '10px 14px', bgcolor: tokens.creamWarm, borderRadius: '6px', fontSize: 11, color: tokens.slate, lineHeight: 1.5 }}>
-        💡 <Box component="strong" sx={{ color: tokens.ink }}>Tip:</Box> This entry stays on your diary. Internal invitees will see it on their own diary too. External invitees receive an .ics file via email so they can add it to their calendar.
+        <Icon name="tip" /><Box component="strong" sx={{ color: tokens.ink }}>Tip:</Box> This entry stays on your diary. Internal invitees will see it on their own diary too. External invitees receive an .ics file via email so they can add it to their calendar.
       </Box>
     </ModalShell>
   );

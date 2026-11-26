@@ -1,6 +1,6 @@
 import { Box, Typography } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { PageHeader, DmsCard, Btn, Pill, EmptyState } from '../../components';
+import { PageHeader, DmsCard, Btn, Pill, EmptyState, Icon } from '../../components';
 import { ApiError, Fetching, useToast } from '../settings/components/listUi';
 import { useConnectIntegrationMutation, useListIntegrationsQuery } from '../../store/api/integrationsApi';
 import { errorMessage } from '../../store/api/baseApi';
@@ -49,7 +49,7 @@ export default function IntegrationsPage() {
 
   return (
     <Box>
-      <PageHeader code="TL-OPS-DRM-001" parts={['Meeting Management', 'Integrations']} icon="🔗" title="Integrations"
+      <PageHeader code="TL-OPS-DRM-001" parts={['Meeting Management', 'Integrations']} icon={<Icon name="link" />} title="Integrations"
         sub="Connect MyDiary Meetings with calendar, video conference, chat, CRM, and task systems so meetings flow naturally with the rest of TrustLab." />
 
       {/* .dash-meta-strip (3 cols) */}
@@ -63,7 +63,7 @@ export default function IntegrationsPage() {
       {(isFetching || connecting) && <Fetching on />}
 
       {!error && list.length === 0 ? (
-        isLoading ? null : <EmptyState icon="🔗" title="No integrations yet" desc="The register is empty — nothing is switched on." />
+        isLoading ? null : <EmptyState icon={<Icon name="link" />} title="No integrations yet" desc="The register is empty — nothing is switched on." />
       ) : (
         /* .integ-list */
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -71,7 +71,7 @@ export default function IntegrationsPage() {
             const s = STATUS[i.status] || STATUS.disconnected;
             return (
               <Box key={i.id} sx={{ bgcolor: tokens.card, border: `1px solid ${tokens.line}`, borderRadius: tokens.radius, p: '14px 18px', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: { xs: 'wrap', lg: 'nowrap' } }}>
-                <Box sx={{ width: 44, height: 44, borderRadius: '10px', bgcolor: tokens.creamWarm, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>{i.ico}</Box>
+                <Box sx={{ width: 44, height: 44, borderRadius: '10px', bgcolor: tokens.creamWarm, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Icon name={i.ico} size={22} /></Box>
                 <Box sx={{ flex: 1, minWidth: { xs: 'calc(100% - 60px)', sm: 220 } }}>
                   <Typography sx={{ fontSize: 14, fontWeight: 700 }}>{i.name}</Typography>
                   <Typography sx={{ fontSize: 12, color: tokens.slate, mt: '2px' }}>{i.desc}</Typography>

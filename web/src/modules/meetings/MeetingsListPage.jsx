@@ -3,7 +3,7 @@ import { Box } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { tokens } from '../../theme/tokens';
-import { PageHeader, Btn, SummaryCard, TabBar, SearchBox, FilterSelect, EmptyState } from '../../components';
+import { PageHeader, Btn, SummaryCard, TabBar, SearchBox, FilterSelect, EmptyState, Icon } from '../../components';
 import { useAuth } from '../../auth/AuthContext';
 import { useAppStore } from '../../store/AppStore';
 import { useCrumbs } from '../../store/CrumbsContext';
@@ -17,7 +17,7 @@ import ListRequestsTab from './components/listRequestsTab';
 import RequestMeetingModal from './modals/RequestMeetingModal';
 
 const EMPTY = {
-  upcoming: { icon: '📅', desc: 'Click + New Meeting to schedule one.' },
+  upcoming: { icon: '', desc: 'Click + New Meeting to schedule one.' },
   completed: { icon: '✓', desc: 'Completed meetings with minutes will appear here.' },
   cancelled: { icon: '⊘', desc: 'Cancelled meetings are archived here.' },
 };
@@ -92,15 +92,15 @@ export default function MeetingsListPage() {
     { key: 'upcoming', icon: '⌛', label: 'Upcoming', count: counts.up },
     { key: 'completed', icon: '✓', label: 'Completed', count: counts.comp },
     { key: 'cancelled', icon: '⊘', label: 'Cancelled', count: counts.canc },
-    { key: 'requests', icon: '📨', label: 'Requests', count: pendingIn?.total ?? 0, countSx: { bgcolor: tokens.amber, color: '#fff' } },
+    { key: 'requests', icon: '', label: 'Requests', count: pendingIn?.total ?? 0, countSx: { bgcolor: tokens.amber, color: '#fff' } },
   ];
 
   return (
     <Box>
-      <PageHeader parts={['Meeting Management']} icon="👥" title="My Meetings"
+      <PageHeader parts={['Meeting Management']} icon={<Icon name="people" />} title="My Meetings"
         sub="All your meetings in one place — schedule new ones, capture minutes, track action items through to closure."
         actions={<>
-          <Btn size="lg" onClick={() => setReqOpen(true)}>📨 Request Meeting</Btn>
+          <Btn size="lg" onClick={() => setReqOpen(true)}><Icon name="request" />Request Meeting</Btn>
           <Btn variant="primary" size="lg" onClick={() => navigate('/meetings/new')}>+ New Meeting</Btn>
         </>} />
 
@@ -142,7 +142,7 @@ export default function MeetingsListPage() {
           <ApiError error={error} onRetry={refetch} sx={{ mb: 1.5 }} />
           <Fetching on={isFetching} />
           {!error && rows.length === 0 ? (
-            isLoading ? null : <EmptyState icon={EMPTY[tab].icon} title={hasFilters ? 'No matching meetings' : `No ${tab} meetings`} desc={hasFilters ? 'Try a different search or clear the filters.' : EMPTY[tab].desc} />
+            isLoading ? null : <EmptyState icon={<Icon name={EMPTY[tab].icon} size={28} />} title={hasFilters ? 'No matching meetings' : `No ${tab} meetings`} desc={hasFilters ? 'Try a different search or clear the filters.' : EMPTY[tab].desc} />
           ) : !error && (
             <>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>

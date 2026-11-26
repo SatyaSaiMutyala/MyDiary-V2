@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Box, Checkbox, FormControlLabel, Typography } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { Btn, Field, FootNote, ModalShell, SelectInput, TextInput, TextLink, ToggleRow } from '../../../components';
+import { Btn, Field, FootNote, ModalShell, SelectInput, TextInput, TextLink, ToggleRow, Icon } from '../../../components';
 import { tokens, fonts } from '../../../theme/tokens';
 import { ADMIN_ONLY_MODULES, MODULES, ROLES, ROLE_LABEL, defaultModulesFor } from '../../../data/users';
 import { tdplEmail } from '../../../utils/people';
@@ -65,9 +65,9 @@ export default function UserDialog({ user, departments = [], deptRecords = [], o
   };
 
   return (
-    <ModalShell open onClose={onClose} width={720} icon="👤" title={user ? `Edit ${user.name}` : 'Add user'} sub={user ? [user.title, user.department].filter(Boolean).join(' · ') || user.email : 'New MyDiary user'}
+    <ModalShell open onClose={onClose} width={720} icon={<Icon name="person" />} title={user ? `Edit ${user.name}` : 'Add user'} sub={user ? [user.title, user.department].filter(Boolean).join(' · ') || user.email : 'New MyDiary user'}
       footer={<><FootNote>{d.role === 'admin' ? 'Admins always have every module.' : `${granted} of ${grantable.length} modules granted`}</FootNote>
-        <Box sx={{ display: 'flex', gap: 1 }}><Btn onClick={onClose} disabled={busy}>Cancel</Btn><Btn variant="primary" onClick={save} disabled={busy}>{busy ? 'Saving…' : '💾 Save'}</Btn></Box></>}>
+        <Box sx={{ display: 'flex', gap: 1 }}><Btn onClick={onClose} disabled={busy}>Cancel</Btn><Btn variant="primary" onClick={save} disabled={busy}>{busy ? 'Saving…' : 'Save'}</Btn></Box></>}>
       <ApiError error={error} sx={{ mb: 1.5 }} />
       <Grid container spacing="12px">
         <Grid size={{ xs: 12, sm: 6 }}><Field label="Full name" req><TextInput value={d.name} onChange={e => set('name', e.target.value)} placeholder="e.g. Dr. Anusha Singh" autoFocus={!user} /></Field></Grid>

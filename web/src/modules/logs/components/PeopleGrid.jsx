@@ -2,7 +2,7 @@ import { Box } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { tokens, fonts } from '../../../theme/tokens';
 import { initials, ownerAvatarColor } from '../../../utils/people';
-import { EmptyState } from '../../../components';
+import { EmptyState, Icon } from '../../../components';
 import { ApiError, Fetching } from '../../settings/components/listUi';
 
 /**
@@ -17,7 +17,7 @@ export default function PeopleGrid({ query, onFocusPerson }) {
   if (error) return head;
   if (people.length === 0) {
     if (isLoading) return head;
-    return <>{head}<EmptyState icon="👥" title="No logged conversations yet" desc="Start capturing your discussions to build a timeline per person." /></>;
+    return <>{head}<EmptyState icon={<Icon name="people" />} title="No logged conversations yet" desc="Start capturing your discussions to build a timeline per person." /></>;
   }
   return (
     <>
@@ -30,7 +30,7 @@ export default function PeopleGrid({ query, onFocusPerson }) {
               <Box sx={{ width: 40, height: 40, borderRadius: '50%', bgcolor: p.type === 'external' ? tokens.blue : ownerAvatarColor(p.name), color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 13, flexShrink: 0 }}>{initials(p.name)}</Box>
               <Box sx={{ flex: 1, minWidth: 0 }}>
                 <Box sx={{ fontSize: 13, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</Box>
-                <Box sx={{ fontSize: 10, color: tokens.slate, fontFamily: fonts.mono, letterSpacing: '0.05em', textTransform: 'uppercase', fontWeight: 700, mt: '2px' }}>{p.type === 'external' ? '🌐 External' : '👤 Internal'}</Box>
+                <Box sx={{ fontSize: 10, color: tokens.slate, fontFamily: fonts.mono, letterSpacing: '0.05em', textTransform: 'uppercase', fontWeight: 700, mt: '2px' }}>{p.type === 'external' ? 'External' : 'Internal'}</Box>
               </Box>
             </Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: tokens.slate, fontFamily: fonts.mono, letterSpacing: '0.04em' }}>

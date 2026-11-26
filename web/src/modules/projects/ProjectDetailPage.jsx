@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Box } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Eyebrow, Btn, EmptyState, TabBar } from '../../components';
+import { Eyebrow, Btn, EmptyState, TabBar, Icon } from '../../components';
 import { tokens, fonts } from '../../theme/tokens';
 import { useGetProjectQuery } from '../../store/api/projectsApi';
 import { ApiError } from '../settings/components/listUi';
@@ -46,7 +46,7 @@ export default function ProjectDetailPage() {
     return (
       <>
         <ApiError error={error && error.status !== 404 ? error : null} sx={{ mb: 1.5 }} />
-        <EmptyState icon="📁" title="Project not found" desc="It may have been deleted." />
+        <EmptyState icon={<Icon name="folder" />} title="Project not found" desc="It may have been deleted." />
         <Box sx={{ mt: 2 }}><Btn size="sm" onClick={() => navigate('/projects')}>← Back to Portfolio</Btn></Box>
       </>
     );
@@ -62,14 +62,14 @@ export default function ProjectDetailPage() {
   const offset = circ - (progress / 100) * circ;
 
   const tabs = [
-    { key: 'overview', icon: '📊', label: 'Overview' },
-    { key: 'gantt', icon: '📅', label: 'Timeline' },
-    { key: 'milestones', icon: '🏁', label: 'Milestones', count: `${doneMs}/${totalMs}` },
+    { key: 'overview', icon: '', label: 'Overview' },
+    { key: 'gantt', icon: '', label: 'Timeline' },
+    { key: 'milestones', icon: '', label: 'Milestones', count: `${doneMs}/${totalMs}` },
     { key: 'tasks', icon: '✓', label: 'Tasks', count: (p.tasks || []).length },
-    { key: 'team', icon: '👥', label: 'Team', count: (p.team || []).length + (p.external || []).length },
-    { key: 'kpis', icon: '📈', label: 'KPIs', count: (p.kpis || []).length },
+    { key: 'team', icon: '', label: 'Team', count: (p.team || []).length + (p.external || []).length },
+    { key: 'kpis', icon: '', label: 'KPIs', count: (p.kpis || []).length },
     { key: 'risks', icon: '⚠', label: 'Risks', count: (p.risks || []).filter(r => r.status !== 'mitigated').length },
-    { key: 'activity', icon: '💬', label: 'Activity' },
+    { key: 'activity', icon: '', label: 'Activity' },
   ];
   const metaTile = (lbl, val) => (
     <Box sx={{ p: '8px 12px', bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '6px', height: '100%' }}>
@@ -84,7 +84,7 @@ export default function ProjectDetailPage() {
 
       {/* .proj-detail-head */}
       <Box sx={{ background: STATUS_GRADIENT[p.status] || STATUS_GRADIENT.active, color: '#fff', p: { xs: '20px', md: '24px 28px' }, borderRadius: tokens.radius, mb: '18px', position: 'relative' }}>
-        <Box sx={{ fontFamily: fonts.mono, fontSize: 11, letterSpacing: '0.15em', opacity: 0.85, mb: '4px', fontWeight: 700, textTransform: 'uppercase' }}>{cat.emoji} {cat.label} · {p.code}</Box>
+        <Box sx={{ fontFamily: fonts.mono, fontSize: 11, letterSpacing: '0.15em', opacity: 0.85, mb: '4px', fontWeight: 700, textTransform: 'uppercase' }}><Icon name={cat.icon} size={13} />{cat.label} · {p.code}</Box>
         <Box sx={{ fontFamily: fonts.serif, fontSize: { xs: 22, md: 28 }, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.2, mb: 1, pr: { md: '130px' } }}>{p.name}</Box>
         <Box sx={{ fontSize: 13, opacity: 0.85, maxWidth: 760, lineHeight: 1.5, mb: '14px', pr: { md: '130px' } }}>{p.description}</Box>
 
@@ -126,7 +126,7 @@ export default function ProjectDetailPage() {
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
           <Btn size="sm" onClick={() => navigate('/projects')}>← Back to Portfolio</Btn>
           <Btn size="sm" onClick={() => setWizDraft(JSON.parse(JSON.stringify(p)))}>✎ Edit Project</Btn>
-          <Btn size="sm" onClick={() => dlg.alert('Export project report — PDF summary with all sections, timeline chart, and team view.')}>📤 Export Report</Btn>
+          <Btn size="sm" onClick={() => dlg.alert('Export project report — PDF summary with all sections, timeline chart, and team view.')}><Icon name="share" />Export Report</Btn>
         </Box>
       </Box>
 

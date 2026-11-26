@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Box, ButtonBase, Typography } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { Btn, SelectInput, DelBtn } from '../../../components';
+import { Btn, SelectInput, DelBtn, Icon } from '../../../components';
 import { tokens, fonts } from '../../../theme/tokens';
 import DeptSection, { SectionNote, EmptyLine } from './DeptSection';
 import { PosChips } from './Chips';
@@ -20,8 +20,8 @@ const SCOPES = [
   { value: 'field', label: 'Field labs only' },
 ];
 const PHASES = [
-  { key: 'opening', label: '🌅 Opening round', colour: tokens.teal },
-  { key: 'closing', label: '🌙 Closing round', colour: tokens.orange },
+  { key: 'opening', label: 'Opening round', colour: tokens.teal },
+  { key: 'closing', label: 'Closing round', colour: tokens.orange },
 ];
 
 const selectSx = { minHeight: 30, p: '4px 26px 4px 8px', fontSize: 11.5, backgroundPosition: 'right 8px center' };
@@ -84,7 +84,7 @@ export default function LabReadinessSection({ dept, lab }) {
 
   return (
     <DeptSection
-      title={<>🔬 Lab Readiness · daily board</>}
+      title={<><Icon name="lab" />Lab Readiness · daily board</>}
       titleColor={tokens.tealDark}
       count={lr.enabled ? `${units.filter((u) => u.active !== false).length} units · ${activities.filter((a) => a.active !== false).length} activities · ${photoCount} need a photo` : 'off'}
       action={head}
@@ -135,7 +135,7 @@ export default function LabReadinessSection({ dept, lab }) {
 
           {/* UNITS */}
           <Lane
-            label="🏥 Units"
+            label="Units"
             count={`${units.length} · ${units.filter((u) => u.active !== false).length} active`}
             colour={tokens.tealDark}
             open={open.units}
@@ -218,7 +218,7 @@ export function LabRounds({ dept, lab }) {
     return (
       <DeptSection
         key={p.key}
-        title={<>{p.key === 'opening' ? '🌅 Opening Shift Tasks' : '🌙 Closing Shift Tasks'}</>}
+        title={<>{p.key === 'opening' ? 'Opening Shift Tasks' : 'Closing Shift Tasks'}</>}
         titleColor={p.colour}
         count={`${items.length} activities`}
         action={<Btn size="sm" variant="primary" sx={{ bgcolor: p.colour, borderColor: p.colour, '&:hover': { bgcolor: p.colour } }} onClick={() => setEditing({ phase: p.key })}>+ Add activity</Btn>}
@@ -267,7 +267,7 @@ export function LabRounds({ dept, lab }) {
                 onClick={() => lab.updateActivity(a.id, 'photoRequired', !a.photoRequired)}
                 title={a.photoRequired ? 'A photograph is required before sign-off' : 'No photograph required'}
               >
-                📷 {a.photoRequired ? 'REQUIRED' : 'NO'}
+                <Icon name="photo" />{a.photoRequired ? 'REQUIRED' : 'NO'}
               </Flag>
               <Flag on={a.active !== false} onClick={() => lab.updateActivity(a.id, 'active', a.active === false)} title={a.active === false ? 'Switched off — it does not appear on the board' : 'On the board'}>
                 {a.active === false ? 'OFF' : 'ON'}

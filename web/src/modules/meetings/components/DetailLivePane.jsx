@@ -1,6 +1,6 @@
 import { Box } from '@mui/material';
 import { keyframes } from '@mui/material/styles';
-import { Btn } from '../../../components';
+import { Btn, Icon } from '../../../components';
 import { tokens, fonts } from '../../../theme/tokens';
 
 const pulse = keyframes`0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0.5); } 50% { box-shadow: 0 0 0 12px rgba(255,255,255,0); }`;
@@ -30,7 +30,7 @@ export default function DetailLivePane({ m, recording, onToggleRecording, onDown
   return (
     <Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: '12px', md: '16px' }, p: '14px 18px', background: isRecording ? 'linear-gradient(90deg, #8B1E1E, #C53030)' : `linear-gradient(90deg, ${tokens.greenDeep}, ${tokens.greenMid})`, color: '#fff', borderRadius: tokens.radius, mb: '18px', flexWrap: { xs: 'wrap', md: 'nowrap' } }}>
-        <Box sx={{ width: 42, height: 42, borderRadius: '50%', bgcolor: isRecording ? '#fff' : 'rgba(255,255,255,0.15)', color: isRecording ? tokens.red : 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0, animation: isRecording ? `${pulse} 1.5s infinite` : 'none' }}>{isRecording ? '🎙' : '🎤'}</Box>
+        <Box sx={{ width: 42, height: 42, borderRadius: '50%', bgcolor: isRecording ? '#fff' : 'rgba(255,255,255,0.15)', color: isRecording ? tokens.red : 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0, animation: isRecording ? `${pulse} 1.5s infinite` : 'none' }}>{isRecording ? '' : ''}</Box>
         <Box sx={{ flex: 1, minWidth: 180 }}>
           <Box sx={{ fontWeight: 700, fontSize: 14, letterSpacing: '0.02em' }}>{isRecording ? 'RECORDING IN PROGRESS' : 'Live Transcription · Ready'}</Box>
           <Box sx={{ fontSize: 11, opacity: 0.8, mt: '2px', fontFamily: fonts.mono, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{isRecording ? 'Speaker diarization · English + Hindi + Telugu · via Deepgram' : 'Press Record to start capturing · AI transcribes with speaker labels'}</Box>
@@ -45,7 +45,7 @@ export default function DetailLivePane({ m, recording, onToggleRecording, onDown
       <Box sx={{ bgcolor: tokens.card, border: `1px solid ${tokens.line}`, borderRadius: tokens.radius, p: { xs: '16px', md: '20px 24px' }, maxHeight: 500, overflowY: 'auto', mb: '18px', fontFamily: fonts.sans }}>
         {transcript.length === 0 ? (
           <Box sx={{ textAlign: 'center', p: '40px 20px', color: tokens.slate, fontSize: 13 }}>
-            <Box sx={{ fontSize: 36, opacity: 0.4, mb: '10px' }}>🎙</Box>
+            <Box sx={{ fontSize: 36, opacity: 0.4, mb: '10px' }}><Icon name="mic" /></Box>
             <Box sx={{ fontWeight: 700, mb: '6px' }}>No transcript yet</Box>
             <Box>Press <strong>Start Recording</strong> above to begin live transcription. Speaker labels, timestamps, and multi-language support included.</Box>
           </Box>

@@ -3,6 +3,7 @@ export { default as PageHeader } from './PageHeader';
 export { default as Btn, TextLink, QuickLinkBtn, AddBtn } from './Btn';
 export { default as Pill, PriorityPill, StatusPill, TypePill, RsvpPill, Tag, PRIORITY_STYLE, STATUS_STYLE, RSVP_STYLE } from './Pill';
 export { default as Avatar } from './Avatar';
+export { default as Icon, ICON_NAMES } from './Icon';
 export { SummaryCard, DmsCard, Card, VSection, EmptyState, MonoHeading, GradientHero, ProgressBar } from './Cards';
 export { default as TabBar, FilterPill, Segmented } from './Tabs';
 export { FieldLabel, TextInput, TextArea, SelectInput, Field, SearchBox, FilterSelect, ToggleRow, Chip, DelBtn } from './Fields';

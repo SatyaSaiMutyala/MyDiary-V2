@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Box } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { useNavigate } from 'react-router-dom';
-import { PageHeader, Btn, FilterPill, SearchBox, FilterSelect, EmptyState } from '../../components';
+import { PageHeader, Btn, FilterPill, SearchBox, FilterSelect, EmptyState, Icon } from '../../components';
 import { tokens, fonts } from '../../theme/tokens';
 import { useAppStore } from '../../store/AppStore';
 import { useListProjectsQuery } from '../../store/api/projectsApi';
@@ -97,25 +97,25 @@ export default function ProjectsPage() {
 
   return (
     <>
-      <PageHeader parts={['Project Management', 'Portfolio']} icon="📁" title="My Projects"
+      <PageHeader parts={['Project Management', 'Portfolio']} icon={<Icon name="folder" />} title="My Projects"
         sub="Milestones · Deadlines · Revisions · Team Collaboration · Progress Tracking — your full project portfolio across TrustLab."
         actions={<>
-          <Btn size="lg" onClick={() => dlg.alert('Export portfolio report — PDF summary of all projects with status, milestones, and team allocation.')}>📤 Export</Btn>
+          <Btn size="lg" onClick={() => dlg.alert('Export portfolio report — PDF summary of all projects with status, milestones, and team allocation.')}><Icon name="share" />Export</Btn>
           <Btn size="lg" variant="primary" onClick={() => openProjectModal()}>+ New Project</Btn>
         </>} />
 
       <Grid container spacing="12px" sx={{ mb: '20px' }}>
-        <Grid size={{ xs: 12, sm: 6, lg: 3 }}><StatCard icon="📁" label="Total Projects" value={total} sub={<>{Object.keys(catCounts).filter(k => catCounts[k]).length} categories · all departments</>} /></Grid>
-        <Grid size={{ xs: 12, sm: 6, lg: 3 }}><StatCard accent="blue" icon="🏃" label="Active" value={active} sub={<>In motion · {visible.filter(p => p.status === 'at-risk').length} at-risk</>} /></Grid>
-        <Grid size={{ xs: 12, sm: 6, lg: 3 }}><StatCard accent="red" icon="⚠" label="Overdue Milestones" value={allOverdueMilestones.length} sub={<>Across <strong>{overdueCount}</strong> project{overdueCount !== 1 ? 's' : ''}</>} /></Grid>
-        <Grid size={{ xs: 12, sm: 6, lg: 3 }}><StatCard accent="yellow" icon="🏁" label="Total Milestones" value={allMilestones.length} sub={<><strong>{milestonesDone}</strong> done · <strong>{milestonesInProg}</strong> in progress</>} /></Grid>
+        <Grid size={{ xs: 12, sm: 6, lg: 3 }}><StatCard icon={<Icon name="folder" />} label="Total Projects" value={total} sub={<>{Object.keys(catCounts).filter(k => catCounts[k]).length} categories · all departments</>} /></Grid>
+        <Grid size={{ xs: 12, sm: 6, lg: 3 }}><StatCard accent="blue" icon={<Icon name="running" />} label="Active" value={active} sub={<>In motion · {visible.filter(p => p.status === 'at-risk').length} at-risk</>} /></Grid>
+        <Grid size={{ xs: 12, sm: 6, lg: 3 }}><StatCard accent="red" icon={<Icon name="warning" />} label="Overdue Milestones" value={allOverdueMilestones.length} sub={<>Across <strong>{overdueCount}</strong> project{overdueCount !== 1 ? 's' : ''}</>} /></Grid>
+        <Grid size={{ xs: 12, sm: 6, lg: 3 }}><StatCard accent="yellow" icon={<Icon name="milestone" />} label="Total Milestones" value={allMilestones.length} sub={<><strong>{milestonesDone}</strong> done · <strong>{milestonesInProg}</strong> in progress</>} /></Grid>
       </Grid>
 
       <Box sx={{ background: `linear-gradient(135deg, ${tokens.card}, ${tokens.creamWarm})`, border: `1px solid ${tokens.line}`, borderLeft: `4px solid ${tokens.teal}`, borderRadius: tokens.radius, p: '14px 18px', mb: '14px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-        <Box sx={{ fontSize: 20 }}>📂</Box>
+        <Box sx={{ fontSize: 20 }}><Icon name="folderOpen" /></Box>
         <Box sx={{ fontWeight: 700, fontSize: 14, flex: 1 }}>Project Portfolio</Box>
         <Box sx={{ fontFamily: fonts.mono, fontSize: 11, color: tokens.slate, letterSpacing: '0.08em', fontWeight: 700 }}>FY 2026-27</Box>
-        <Btn size="sm" onClick={() => setTplOpen(true)}>📋 Templates</Btn>
+        <Btn size="sm" onClick={() => setTplOpen(true)}><Icon name="clipboard" />Templates</Btn>
       </Box>
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', mb: '14px' }}>
@@ -127,7 +127,7 @@ export default function ProjectsPage() {
         <FilterPill active={filter === 'completed'} onClick={() => setFilter('completed')} count={completedCount}>Completed</FilterPill>
         <FilterSelect value={catFilter} onChange={e => setCatFilter(e.target.value)} sx={{ ml: { md: 'auto' } }}>
           <option value="">All Categories</option>
-          {Object.entries(PROJ_CATEGORIES).map(([k, v]) => <option key={k} value={k}>{v.emoji} {v.label} ({catCounts[k] || 0})</option>)}
+          {Object.entries(PROJ_CATEGORIES).map(([k, v]) => <option key={k} value={k}>{v.label} ({catCounts[k] || 0})</option>)}
         </FilterSelect>
       </Box>
 
@@ -137,7 +137,7 @@ export default function ProjectsPage() {
       {isLoading ? (
         <Box sx={{ p: '60px 20px', textAlign: 'center', color: tokens.slate, fontFamily: fonts.mono, fontSize: 12, letterSpacing: '0.08em' }}>Loading projects…</Box>
       ) : error ? null : filtered.length === 0 ? (
-        <EmptyState icon="📁" title="No projects match" desc="Clear filters or create a new project." />
+        <EmptyState icon={<Icon name="folder" />} title="No projects match" desc="Clear filters or create a new project." />
       ) : (
         <>
           <Grid container spacing="14px">

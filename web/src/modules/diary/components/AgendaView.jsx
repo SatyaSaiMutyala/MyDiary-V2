@@ -1,5 +1,5 @@
 import { Box } from '@mui/material';
-import { EmptyState } from '../../../components';
+import { EmptyState, Icon } from '../../../components';
 import { tokens, fonts } from '../../../theme/tokens';
 import { DIARY_CATS } from '../../../data/diary';
 import { DAYS, MONTHS } from '../../../utils/dates';
@@ -48,11 +48,11 @@ export default function AgendaView({ date, entries, onOpenEntry, loading }) {
                   </Box>
                   {/* .agenda-main */}
                   <Box sx={{ borderLeft: `3px solid ${AGENDA_BORDER[e.cat] || tokens.teal}`, pl: '14px', minWidth: 0 }}>
-                    <Box sx={{ fontSize: 14, fontWeight: 700, mb: '4px' }}>{cat.emoji} {e.title}</Box>
+                    <Box sx={{ fontSize: 14, fontWeight: 700, mb: '4px' }}><Icon name={cat.icon} size={14} />{e.title}</Box>
                     <Box sx={{ display: 'flex', gap: '12px', fontSize: 11, color: tokens.slate, fontFamily: fonts.mono, letterSpacing: '0.04em', flexWrap: 'wrap' }}>
                       <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>{cat.label.toUpperCase()}</Box>
-                      {e.loc && <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>📍 {e.loc}</Box>}
-                      {people > 0 && <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>👥 {people} {e.external && e.external.length ? '· ' + e.external.length + ' external' : ''}</Box>}
+                      {e.loc && <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Icon name="place" />{e.loc}</Box>}
+                      {people > 0 && <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Icon name="people" />{people} {e.external && e.external.length ? '· ' + e.external.length + ' external' : ''}</Box>}
                     </Box>
                   </Box>
                   {/* .agenda-right-badges */}
@@ -66,7 +66,7 @@ export default function AgendaView({ date, entries, onOpenEntry, loading }) {
           </Box>
         );
       })}
-      {!any && <EmptyState icon="📅" title="Nothing scheduled" desc="The next 3 weeks are clear. Click + New Entry above to add something." />}
+      {!any && <EmptyState icon={<Icon name="weekly" />} title="Nothing scheduled" desc="The next 3 weeks are clear. Click + New Entry above to add something." />}
     </Box>
   );
 }

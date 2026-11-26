@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Box, Typography } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { Btn, Card } from '../../../components';
+import { Btn, Card, Icon } from '../../../components';
 
 /** Btn sitting on a dark Card title bar (Card forces white text there). */
 const barBtnSx = { bgcolor: 'rgba(255,255,255,.12)', borderColor: 'rgba(255,255,255,.4)', '&:hover': { bgcolor: 'rgba(255,255,255,.22)', borderColor: '#fff', color: '#fff' } };
@@ -49,7 +49,7 @@ function ContextCard({ ctx }) {
   return (
     <Box sx={{ background: `linear-gradient(135deg, ${tokens.card}, ${tokens.creamWarm})`, border: `1px solid ${tokens.line}`, borderLeft: `4px solid ${tokens.blue}`, borderRadius: tokens.radius, p: { xs: '16px', md: '18px 22px' }, mb: '18px' }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: '14px', gap: 1, flexWrap: 'wrap' }}>
-        <Box sx={{ fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}><Box component="span" sx={{ fontSize: 18 }}>💼</Box> {ctx.customer} — Account Context</Box>
+        <Box sx={{ fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}><Box component="span" sx={{ fontSize: 18 }}><Icon name="briefcase" /></Box> {ctx.customer} — Account Context</Box>
         <Box sx={monoLbl()}>Pulled from SalesPulse 365 · TruFlow</Box>
       </Box>
       <Grid container spacing="12px" sx={{ mb: '14px' }}>
@@ -118,13 +118,13 @@ function ParkingLot({ items, onAdd, onRemove }) {
 // renderContributions
 function Contributions({ items }) {
   return (
-    <Card num="C" title="Agenda Contributions" sub="From attendees before the meeting · vote with 👍">
+    <Card num="C" title="Agenda Contributions" sub="From attendees before the meeting — attendees vote on what to cover">
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: '6px', mt: '10px' }}>
         {items.map((c, i) => (
           <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: '10px', p: '8px 12px', bgcolor: tokens.cream, border: `1px solid ${tokens.line}`, borderRadius: '6px', fontSize: 13, flexWrap: 'wrap' }}>
             <Box component="span" sx={{ flex: 1, minWidth: 160 }}>{c.text}</Box>
             <Box component="span" sx={{ fontSize: 10, color: tokens.slate, fontFamily: fonts.mono, letterSpacing: '0.04em', textTransform: 'uppercase', fontWeight: 700 }}>{c.from}</Box>
-            <Box component="span" sx={{ bgcolor: tokens.yellowSoft, color: tokens.amber, p: '2px 8px', borderRadius: '10px', fontFamily: fonts.mono, fontSize: 10, fontWeight: 700, letterSpacing: '0.04em' }}>👍 {c.votes}</Box>
+            <Box component="span" sx={{ bgcolor: tokens.yellowSoft, color: tokens.amber, p: '2px 8px', borderRadius: '10px', fontFamily: fonts.mono, fontSize: 10, fontWeight: 700, letterSpacing: '0.04em' }}><Icon name="thumbUp" />{c.votes}</Box>
           </Box>
         ))}
       </Box>
@@ -139,7 +139,7 @@ function PreRead({ preRead }) {
   const pct = Math.round((opened / preRead.length) * 100);
   return (
     <Card num="P" title="Pre-Read Engagement" sub={`Who's reviewed the briefing pack · ${pct}% opened`}
-      right={<Btn size="sm" sx={barBtnSx} onClick={() => dlg.alert('Reminder nudges sent to ' + (preRead.length - opened) + ' attendees who have not yet opened the pack.')}>🔔 Nudge Un-opened</Btn>}>
+      right={<Btn size="sm" sx={barBtnSx} onClick={() => dlg.alert('Reminder nudges sent to ' + (preRead.length - opened) + ' attendees who have not yet opened the pack.')}><Icon name="bell" />Nudge Un-opened</Btn>}>
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
         {preRead.map((p, i) => (
           <Box key={i} sx={{ display: 'grid', gridTemplateColumns: '1fr 100px', gap: '10px', alignItems: 'center', p: '6px 10px', bgcolor: tokens.cream, borderRadius: '5px' }}>

@@ -131,7 +131,7 @@ export function AppStoreProvider({ children }) {
     });
   }, []);
 
-  const notify = useCallback(({ type = 'action', text, icon = '🔔', time = 'Just now' }) => {
+  const notify = useCallback(({ type = 'action', text, icon = '', time = 'Just now' }) => {
     if (blockIfSpectating()) return;
     setState(s => withAudit({ ...s, notifications: [{ id: 'n' + Date.now() + Math.random().toString(36).slice(2, 5), type, unread: true, text, time, icon }, ...s.notifications] },
       [entry(s, { action: 'notify', module: 'Notifications', entity: 'Notification', details: String(text).replace(/<[^>]+>/g, '') })]));

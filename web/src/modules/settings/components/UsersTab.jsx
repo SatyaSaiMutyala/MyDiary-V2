@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, Tooltip } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Avatar, Btn, EmptyState, FilterSelect, Pill, SearchBox, SummaryCard } from '../../../components';
+import { Avatar, Btn, EmptyState, FilterSelect, Pill, SearchBox, SummaryCard, Icon } from '../../../components';
 import { useAuth } from '../../../auth/AuthContext';
 import { useAppStore } from '../../../store/AppStore';
 import { tokens, fonts } from '../../../theme/tokens';
@@ -113,7 +113,7 @@ export default function UsersTab() {
       <ApiError error={error} onRetry={refetch} sx={{ mb: 1.5 }} />
 
       {!error && !isLoading && rows.length === 0 ? (
-        <EmptyState icon="👥" title={hasFilters ? 'No users match' : 'No users yet'} desc={hasFilters ? 'Try a different search or clear the filters.' : 'Add the first user with “+ Add user”.'} />
+        <EmptyState icon={<Icon name="people" />} title={hasFilters ? 'No users match' : 'No users yet'} desc={hasFilters ? 'Try a different search or clear the filters.' : 'Add the first user with “+ Add user”.'} />
       ) : !error && (
         <TableContainer sx={{ bgcolor: tokens.card, border: `1px solid ${tokens.line}`, borderRadius: '6px', boxShadow: tokens.shadowSm }}>
           <Fetching on={isFetching} />
@@ -165,11 +165,11 @@ export default function UsersTab() {
                     <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' }, fontFamily: fonts.mono, fontSize: 12, color: tokens.muted, whiteSpace: 'nowrap' }}>{fmtDate(u.createdAt)}</TableCell>
                     <TableCell align="right">
                       <Box sx={{ display: 'inline-flex', gap: 0.5 }}>
-                        {!self && u.status === 'active' && <Btn size="sm" onClick={() => viewAs(u)} title={`See MyDiary as ${u.name}`}>👁 View as</Btn>}
+                        {!self && u.status === 'active' && <Btn size="sm" onClick={() => viewAs(u)} title={`See MyDiary as ${u.name}`}><Icon name="view" />View as</Btn>}
                         <Btn size="sm" onClick={() => setEditing(u)}>✎ Edit</Btn>
-                        <Btn size="sm" onClick={() => reset(u)} disabled={busy} title="Reset password">🔑</Btn>
+                        <Btn size="sm" onClick={() => reset(u)} disabled={busy} title="Reset password"><Icon name="key" /></Btn>
                         {!self && <Btn size="sm" onClick={() => toggleStatus(u)} disabled={busy} title={u.status === 'active' ? 'Deactivate' : 'Activate'}>{u.status === 'active' ? '⏸' : '▶'}</Btn>}
-                        {!self && <Btn size="sm" variant="danger" onClick={() => removeUser(u)} disabled={busy} title="Remove user">🗑</Btn>}
+                        {!self && <Btn size="sm" variant="danger" onClick={() => removeUser(u)} disabled={busy} title="Remove user"><Icon name="remove" /></Btn>}
                       </Box>
                     </TableCell>
                   </TableRow>

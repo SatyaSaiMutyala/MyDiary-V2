@@ -60,7 +60,7 @@ export default function UnitStrip({ units = [], selected, phase, onPick }) {
               <Box sx={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                 {['opening', 'closing'].map((p) => (
                   <ButtonBase key={p} onClick={() => onPick(u.key, p)} title={`Open the ${p} round`} sx={{ borderRadius: '10px', p: '1px 2px', fontFamily: 'inherit', '&:hover': { bgcolor: tokens.tealSofter } }}>
-                    <PhasePip icon={p === 'opening' ? '🌅' : '🌙'} state={u.phases[p]} />
+                    <PhasePip icon={p === 'opening' ? '' : ''} state={u.phases[p]} />
                   </ButtonBase>
                 ))}
               </Box>

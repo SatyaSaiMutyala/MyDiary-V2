@@ -11,8 +11,9 @@ import { useDebounced } from '../utils/useDebounced';
 import { useSearchQuery } from '../store/api/searchApi';
 import { errorMessage } from '../store/api/baseApi';
 import { useDialog } from '../components/Dialogs';
+import { Icon } from '../components';
 
-const SERVER_ICON = { users: '👤', audit: '🧾' };
+const SERVER_ICON = { users: '', audit: '' };
 
 /** <kbd> chip inside .cmd-hint */
 function Kbd({ children }) {
@@ -52,20 +53,20 @@ export default function CommandPalette({ open, onClose }) {
     // Server (API) results first, with their routes
     if (query) {
       if (server?.q === serverQ) {
-        server.groups.forEach(g => g.items.forEach(it => out.push({ label: it.title, sub: [g.label, it.subtitle].filter(Boolean).join(' · '), ico: SERVER_ICON[g.key] || '🔎', do: () => go(it.route), group: 'Server' })));
+        server.groups.forEach(g => g.items.forEach(it => out.push({ label: it.title, sub: [g.label, it.subtitle].filter(Boolean).join(' · '), ico: SERVER_ICON[g.key] || '', do: () => go(it.route), group: 'Server' })));
       }
       if (serverError) out.push({ label: errorMessage(serverError), sub: 'Server', ico: '⚠', disabled: true, group: 'Server' });
       else if (serverBusy || serverQ !== query) out.push({ label: 'Searching the server…', sub: 'Server', ico: '…', disabled: true, group: 'Server' });
     }
     // Navigation
     [
-      { label: 'Go to Dashboard', sub: 'View', ico: '📊', do: () => go('/') },
-      { label: 'Go to My Meetings', sub: 'View', ico: '👥', do: () => go('/meetings') },
+      { label: 'Go to Dashboard', sub: 'View', ico: '', do: () => go('/') },
+      { label: 'Go to My Meetings', sub: 'View', ico: '', do: () => go('/meetings') },
       { label: 'Go to My To-Do', sub: 'View', ico: '✅', do: () => go('/todo') },
       { label: 'New Ad-hoc Task', sub: 'Allocate', ico: '⚡', do: () => go('/todo', { state: { openStandaloneTask: true } }) },
       { label: 'Go to Decisions', sub: 'View', ico: '⚖', do: () => go('/decisions') },
-      { label: 'Go to Templates', sub: 'View', ico: '📋', do: () => go('/templates') },
-      { label: 'Go to Integrations', sub: 'View', ico: '🔗', do: () => go('/integrations') },
+      { label: 'Go to Templates', sub: 'View', ico: '', do: () => go('/templates') },
+      { label: 'Go to Integrations', sub: 'View', ico: '', do: () => go('/integrations') },
       { label: 'Schedule New Meeting', sub: 'Action', ico: '➕', do: () => go('/meetings/new') },
     ].forEach(x => {
       if (!query || x.label.toLowerCase().includes(query) || x.sub.toLowerCase().includes(query)) out.push({ ...x, group: 'Jump to' });
@@ -93,7 +94,7 @@ export default function CommandPalette({ open, onClose }) {
     // People
     EMPLOYEES.forEach(g => g.people.forEach(p => {
       if (query && (p.name.toLowerCase().includes(query) || p.role.toLowerCase().includes(query))) {
-        out.push({ label: p.name, sub: 'Person · ' + p.role, ico: '👤', do: () => dlg.alert('Person profile for ' + p.name + ' — would open their meetings, actions and recent activity.'), group: 'People' });
+        out.push({ label: p.name, sub: 'Person · ' + p.role, ico: '', do: () => dlg.alert('Person profile for ' + p.name + ' — would open their meetings, actions and recent activity.'), group: 'People' });
       }
     }));
     const limit = query ? 30 : 50;
@@ -144,7 +145,7 @@ export default function CommandPalette({ open, onClose }) {
                 {showGroup && <Box sx={{ p: '10px 22px 6px', fontFamily: fonts.mono, fontSize: 10, color: tokens.slate, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700 }}>{it.group}</Box>}
                 <Box data-focused={focused ? 'true' : 'false'} onClick={() => run(i)} onMouseEnter={() => setFocus(i)}
                   sx={{ p: '10px 22px', cursor: it.disabled ? 'default' : 'pointer', display: 'flex', alignItems: 'center', gap: '12px', fontSize: 13, color: it.disabled ? tokens.slate : 'inherit', fontStyle: it.disabled ? 'italic' : 'normal', bgcolor: focused && !it.disabled ? tokens.tealSofter : 'transparent', '&:hover': { bgcolor: it.disabled ? 'transparent' : tokens.tealSofter } }}>
-                  <Box sx={{ width: 28, height: 28, borderRadius: '6px', bgcolor: tokens.creamWarm, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, flexShrink: 0 }}>{it.ico}</Box>
+                  <Box sx={{ width: 28, height: 28, borderRadius: '6px', bgcolor: tokens.creamWarm, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Icon name={it.ico} size={15} /></Box>
                   <Box sx={{ flex: 1, fontWeight: 500, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.label}</Box>
                   <Box sx={{ fontSize: 11, color: tokens.slate, fontFamily: fonts.mono, letterSpacing: '0.04em', textTransform: 'uppercase', flexShrink: 0, display: { xs: 'none', sm: 'block' }, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.sub}</Box>
                 </Box>

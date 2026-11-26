@@ -1,6 +1,6 @@
 import { Box, Typography } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { Eyebrow, Btn, TypePill, RsvpPill, Chip, FieldLabel, Avatar } from '../../../components';
+import { Eyebrow, Btn, TypePill, RsvpPill, Chip, FieldLabel, Avatar, Icon } from '../../../components';
 import { tokens, fonts, TYPE_COLORS } from '../../../theme/tokens';
 import { TYPES } from '../../../data/meetings';
 import { parseDate, formatDateLong, formatTime, isToday, daysUntil } from '../../../utils/dates';
@@ -24,16 +24,16 @@ export default function DetailHead({ m, onEdit, onDuplicate, onMarkCompleted, on
     </>);
   } else if (m.status === 'completed') {
     actionBtns = (<>
-      <Btn size="sm" onClick={onPreview}>👁 Preview</Btn>
-      <Btn size="sm" onClick={onExport}>📄 Export Minutes</Btn>
-      <Btn size="sm" onClick={onCirculate}>📧 Circulate</Btn>
+      <Btn size="sm" onClick={onPreview}><Icon name="view" />Preview</Btn>
+      <Btn size="sm" onClick={onExport}><Icon name="document" />Export Minutes</Btn>
+      <Btn size="sm" onClick={onCirculate}><Icon name="email" />Circulate</Btn>
       <Btn size="sm" onClick={onDuplicate}>⧉ Duplicate</Btn>
     </>);
   } else {
     actionBtns = (<>
       <Btn size="sm" onClick={onRestore}>↺ Restore</Btn>
       <Btn size="sm" onClick={onDuplicate}>⧉ Duplicate as New</Btn>
-      <Btn size="sm" variant="danger" onClick={onDelete}>🗑 Delete</Btn>
+      <Btn size="sm" variant="danger" onClick={onDelete}><Icon name="remove" />Delete</Btn>
     </>);
   }
 
@@ -48,13 +48,13 @@ export default function DetailHead({ m, onEdit, onDuplicate, onMarkCompleted, on
       <Box sx={{ bgcolor: tokens.card, border: `1px solid ${tokens.line}`, borderLeft: `4px solid ${(TYPE_COLORS[m.type] || TYPE_COLORS.other).line}`, borderRadius: tokens.radius, p: { xs: '18px 16px', md: '22px 24px' }, mb: '18px', boxShadow: tokens.shadowSm }}>
         <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '20px', mb: '14px', flexWrap: { xs: 'wrap', lg: 'nowrap' } }}>
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            <TypePill type={m.type} sx={{ mb: '7px' }}>{TYPES[m.type].icon} {TYPES[m.type].name}{m.subBadge ? ' · ' + m.subBadge : ''}</TypePill>
+            <TypePill type={m.type} sx={{ mb: '7px' }}><Icon name={TYPES[m.type].icon} size={12} />{TYPES[m.type].name}{m.subBadge ? ' · ' + m.subBadge : ''}</TypePill>
             <Typography component="h1" sx={{ fontFamily: fonts.serif, fontSize: { xs: 22, md: 28 }, fontWeight: 700, letterSpacing: '-0.01em', m: '8px 0 10px', lineHeight: 1.2 }}>{m.title}</Typography>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: { xs: '10px 16px', md: '20px' }, fontSize: 13, color: tokens.slate, '& strong': { color: tokens.ink, fontWeight: 600 } }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span>📅</span><strong>{formatDateLong(dt)}</strong></Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span>🕐</span><strong>{formatTime(m.time)}</strong> · {m.dur}</Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span><Icon name="weekly" /></span><strong>{formatDateLong(dt)}</strong></Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span><Icon name="clock" /></span><strong>{formatTime(m.time)}</strong> · {m.dur}</Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span>{m.mode.split(' ')[0]}</span>{m.loc}</Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span>👤</span>Chair: <strong>{m.chair}</strong></Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span><Icon name="person" /></span>Chair: <strong>{m.chair}</strong></Box>
             </Box>
           </Box>
           <Box sx={{ display: 'flex', gap: 1, flexShrink: 0, flexWrap: 'wrap' }}>{actionBtns}</Box>
@@ -101,7 +101,7 @@ export default function DetailHead({ m, onEdit, onDuplicate, onMarkCompleted, on
                           {n.respondedNote && <Box sx={{ fontSize: 11, color: tokens.slate, fontStyle: 'italic', mt: '4px', p: '4px 8px', bgcolor: tokens.cream, borderRadius: '4px' }}>"{n.respondedNote}"</Box>}
                         </Box>
                         <Box sx={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
-                          <SimBtn title="Simulate what this invitee sees in their email" onClick={(e) => { e.stopPropagation(); onOpenRsvp(idx); }}>📧 Open as recipient</SimBtn>
+                          <SimBtn title="Simulate what this invitee sees in their email" onClick={(e) => { e.stopPropagation(); onOpenRsvp(idx); }}><Icon name="email" />Open as recipient</SimBtn>
                           {!n.email && <SimBtn onClick={(e) => { e.stopPropagation(); onEditEmail(idx); }}>+ Add email</SimBtn>}
                         </Box>
                       </Box>

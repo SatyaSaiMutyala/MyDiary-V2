@@ -4,7 +4,7 @@ import Grid from '@mui/material/Grid';
 import { useNavigate } from 'react-router-dom';
 import { useViewerUser } from '../../auth/useViewerUser';
 import { tokens, fonts } from '../../theme/tokens';
-import { PageHeader, EmptyState, Avatar, Btn } from '../../components';
+import { PageHeader, EmptyState, Avatar, Btn, Icon } from '../../components';
 import { todayFacts, getTaskStatus } from '../../utils/departments';
 import { DAYS_OF_WEEK_FULL } from '../../data/departments';
 import { MONTHS } from '../../utils/dates';
@@ -36,8 +36,8 @@ function PhaseChip({ ticked, all, onClick, title, label, pct }) {
     : ticked ? { bgcolor: tokens.card, color: tokens.tealDark } : { bgcolor: tokens.cream, color: tokens.slate };
   return (
     <ButtonBase onClick={onClick} title={title} sx={{ p: '7px 14px 7px 10px', bgcolor: base.bg, border: `1px solid ${base.border}`, borderRadius: '20px', display: 'inline-flex', alignItems: 'center', gap: 1, fontFamily: fonts.mono, fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: base.color, cursor: 'pointer', transition: 'all 0.12s', '&:hover': { borderColor: tokens.teal } }}>
-      <Box component="span" sx={{ width: 18, height: 18, borderRadius: '4px', bgcolor: check.bg, border: `2px solid ${check.border}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: check.color, flexShrink: 0, transition: 'all 0.12s' }}>{ticked ? '✓' : ''}</Box>
-      <span>{label}</span>
+      <Box component="span" sx={{ width: 18, height: 18, borderRadius: '4px', bgcolor: check.bg, border: `2px solid ${check.border}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: check.color, flexShrink: 0, transition: 'all 0.12s' }}>{ticked ? <Icon name="check" size={12} /> : null}</Box>
+      <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>{label}</Box>
       {pct !== undefined && <Box component="span" sx={{ fontSize: 10, p: '1px 7px', borderRadius: '10px', fontWeight: 700, ...pctSx }}>{pct}</Box>}
     </ButtonBase>
   );
@@ -47,7 +47,7 @@ function PhaseChip({ ticked, all, onClick, title, label, pct }) {
 function LogBtn({ onClick, label = 'Log activity' }) {
   return (
     <ButtonBase onClick={onClick} sx={{ p: '7px 14px', bgcolor: tokens.yellow, color: '#1F1300', border: `1.5px solid ${tokens.yellow}`, borderRadius: '16px', fontFamily: fonts.mono, fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', display: 'inline-flex', alignItems: 'center', gap: '7px', transition: 'all 0.15s', boxShadow: '0 1px 2px rgba(240,180,41,0.35)', '&:hover': { bgcolor: '#E6A415', borderColor: '#E6A415', transform: 'translateY(-1px)', boxShadow: '0 4px 10px -2px rgba(240,180,41,0.45)' } }}>
-      <Box component="span" sx={{ width: 17, height: 17, borderRadius: '4px', bgcolor: 'rgba(31,19,0,0.14)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, lineHeight: 1 }}>+</Box>
+      <Box component="span" sx={{ width: 17, height: 17, borderRadius: '4px', bgcolor: 'rgba(31,19,0,0.14)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}><Icon name="add" size={13} /></Box>
       {label}
     </ButtonBase>
   );
@@ -62,7 +62,7 @@ function LoggedRow({ entry, onToggle, onEdit, onRemove }) {
       <Grid container spacing={1.5} sx={{ alignItems: 'center' }}>
         <Grid size="auto">
           <Box onClick={onToggle} title={entry.done ? 'Un-tick — I logged this by mistake' : 'Tick it back'}
-            sx={{ width: 26, height: 26, borderRadius: '6px', bgcolor: entry.done ? '#B7791F' : tokens.card, border: `2px solid ${entry.done ? '#B7791F' : '#B7791F'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, color: '#fff', cursor: 'pointer', transition: 'all 0.12s', userSelect: 'none' }}>{entry.done ? '✓' : ''}</Box>
+            sx={{ width: 26, height: 26, borderRadius: '6px', bgcolor: entry.done ? '#B7791F' : tokens.card, border: `2px solid ${entry.done ? '#B7791F' : '#B7791F'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', cursor: 'pointer', transition: 'all 0.12s', userSelect: 'none' }}>{entry.done ? <Icon name="check" size={16} /> : null}</Box>
         </Grid>
         <Grid size="grow">
           <Box sx={{ fontSize: 13, color: entry.done ? tokens.ink : tokens.slate, lineHeight: 1.45, textDecoration: entry.done ? 'none' : 'line-through' }}>
@@ -72,10 +72,10 @@ function LoggedRow({ entry, onToggle, onEdit, onRemove }) {
         </Grid>
         <Grid size={{ xs: 12, sm: 'auto' }}>
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', justifyContent: { xs: 'flex-start', sm: 'flex-end' }, pl: { xs: '38px', sm: 0 } }}>
-            {tag && <Box sx={{ ...chipSx, bgcolor: '#FDE68A', color: '#92400E' }}>{tag.label}</Box>}
+            {tag && <Box sx={{ ...chipSx, bgcolor: '#FDE68A', color: '#92400E', display: 'inline-flex', alignItems: 'center', gap: '5px' }}><Icon name={tag.icon} size={12} />{tag.label}</Box>}
             <Box sx={{ ...chipSx, bgcolor: '#FDE68A', color: '#92400E', textTransform: 'uppercase' }}>Added by you</Box>
-            <ButtonBase onClick={onEdit} title="Change the wording, time or tag" sx={{ width: 24, height: 24, borderRadius: '6px', fontSize: 12, color: tokens.slate, '&:hover': { bgcolor: tokens.creamWarm, color: tokens.ink } }}>✎</ButtonBase>
-            <ButtonBase onClick={onRemove} title="Remove this entry" sx={{ width: 24, height: 24, borderRadius: '6px', fontSize: 13, color: tokens.slate, '&:hover': { bgcolor: '#FEE2E2', color: tokens.red } }}>✕</ButtonBase>
+            <ButtonBase onClick={onEdit} title="Change the wording, time or tag" sx={{ width: 24, height: 24, borderRadius: '6px', color: tokens.slate, '&:hover': { bgcolor: tokens.creamWarm, color: tokens.ink } }}><Icon name="edit" size={15} /></ButtonBase>
+            <ButtonBase onClick={onRemove} title="Remove this entry" sx={{ width: 24, height: 24, borderRadius: '6px', color: tokens.slate, '&:hover': { bgcolor: '#FEE2E2', color: tokens.red } }}><Icon name="cross" size={15} /></ButtonBase>
           </Box>
         </Grid>
       </Grid>
@@ -88,7 +88,7 @@ function Lane({ kind, title, count, pill, pillDone, action, children }) {
   return (
     <Box sx={{ bgcolor: tokens.card, border: `1px solid ${tokens.line}`, borderRadius: '10px', mb: '14px', overflow: 'hidden', borderLeft: `4px solid ${LANE_BORDER[kind] || tokens.teal}` }}>
       <Box sx={{ p: { xs: '12px 14px', md: '14px 20px' }, bgcolor: tokens.cream, borderBottom: `1px solid ${tokens.line}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
-        <Box sx={{ fontFamily: fonts.serif, fontSize: 16, fontWeight: 700, color: tokens.ink, display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box sx={{ fontFamily: fonts.serif, fontSize: 16, fontWeight: 700, color: tokens.ink, display: 'flex', alignItems: 'center', gap: 1, '& > svg': { mr: '-2px' } }}>
           {title}
           {count && <Box component="span" sx={{ fontFamily: fonts.mono, fontSize: 11, color: tokens.slate, letterSpacing: '0.04em', fontWeight: 700 }}>{count}</Box>}
         </Box>
@@ -115,14 +115,14 @@ function TaskRow({ task, dept, isDone, onToggle }) {
     <Box sx={{ p: '11px 14px', m: '4px 0', bgcolor: isDone ? tokens.creamWarm : tokens.card, opacity: isDone ? 0.6 : 1, border: `1px solid ${tokens.line}`, borderRadius: '8px', transition: 'background 0.12s', '&:hover': { bgcolor: isDone ? tokens.creamWarm : tokens.cream } }}>
       <Grid container spacing={1.5} sx={{ alignItems: "center" }}>
         <Grid size="auto">
-          <Box onClick={onToggle} sx={{ width: 26, height: 26, borderRadius: '6px', bgcolor: isDone ? tokens.tealDark : tokens.card, border: `2px solid ${isDone ? tokens.tealDark : tokens.lineSoft}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, color: '#fff', cursor: 'pointer', transition: 'all 0.12s', userSelect: 'none', '&:hover': { borderColor: tokens.teal } }}>{isDone ? '✓' : ''}</Box>
+          <Box onClick={onToggle} sx={{ width: 26, height: 26, borderRadius: '6px', bgcolor: isDone ? tokens.tealDark : tokens.card, border: `2px solid ${isDone ? tokens.tealDark : tokens.lineSoft}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', cursor: 'pointer', transition: 'all 0.12s', userSelect: 'none', '&:hover': { borderColor: tokens.teal } }}>{isDone ? <Icon name="check" size={16} /> : null}</Box>
         </Grid>
         <Grid size="grow">
           <Box sx={{ fontSize: 13, color: isDone ? tokens.slate : tokens.ink, lineHeight: 1.45, textDecoration: isDone ? 'line-through' : 'none' }}>{task.text}</Box>
         </Grid>
         <Grid size={{ xs: 12, sm: 'auto' }}>
           <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', justifyContent: { xs: 'flex-start', sm: 'flex-end' }, pl: { xs: '38px', sm: 0 } }}>
-            {task.defaultTime ? <Box sx={{ ...chipSx, color: tokens.slate, bgcolor: tokens.creamWarm }}>⏱ {task.defaultTime}</Box> : <Box />}
+            {task.defaultTime ? <Box sx={{ ...chipSx, color: tokens.slate, bgcolor: tokens.creamWarm, display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Icon name="clock" size={12} />{task.defaultTime}</Box> : <Box />}
             {posBadge}
           </Box>
         </Grid>
@@ -161,7 +161,7 @@ export default function MyActivityPage() {
   // closing tasks, and these are this person's own lines of them.
 
   const header = (
-    <PageHeader code="TL-OPS-ACT-001" parts={['MyDiary · Personal', 'Daily Shift Checklist']} icon="✍" title="My Activity"
+    <PageHeader code="TL-OPS-ACT-001" parts={['MyDiary · Personal', 'Daily Shift Checklist']} icon={<Icon name="rename" size={20} />} title="My Activity"
       sub="Your department's opening & closing shift checklist for the day, plus any weekly or monthly items due today. Tick off as you go — completion rolls up to Department Master for governance." />
   );
 
@@ -187,7 +187,7 @@ export default function MyActivityPage() {
     return (
       <Box>
         {header}
-        <EmptyState icon="🏢" title="You are not assigned to a department yet"
+        <EmptyState icon={<Icon name="department" size={28} />} title="You are not assigned to a department yet"
           desc={<>Ask your HR Head or an admin to assign your department in <Box component="a" onClick={() => navigate('/departments')} sx={{ color: tokens.tealDark, cursor: 'pointer', fontWeight: 700 }}>Department Master</Box>, and your daily shift checklist will appear here.</>} />
       </Box>
     );
@@ -255,7 +255,7 @@ export default function MyActivityPage() {
   ));
 
   /** One readiness line, in the same shape the lane draws a shift task. */
-  const lane = (kind, label, icon) => {
+  const lane = (kind, label, iconName) => {
     const list = lists[kind];
     // Weekly and monthly can also hold logged activities, so a lane with no preset task left can still
     // have a day's worth of work in it.
@@ -265,7 +265,7 @@ export default function MyActivityPage() {
     const pctL = list.length ? Math.round((doneCt / list.length) * 100) : 0;
     const count = [list.length ? `${list.length} task${list.length > 1 ? 's' : ''}` : '', mine.length ? `${mine.length} logged` : ''].filter(Boolean).join(' + ');
     return (
-      <Lane key={kind} kind={kind} title={`${icon} ${label}`} count={count ? `· ${count}` : ''}
+      <Lane key={kind} kind={kind} title={<><Icon name={iconName} />{label}</>} count={count ? `· ${count}` : ''}
         pill={list.length ? `${doneCt}/${list.length} · ${pctL}%` : ''} pillDone={pctL === 100}
         action={mine.length || kind === 'weekly' || kind === 'monthly' ? <LogBtn onClick={() => setComposer({ lane: kind })} /> : undefined}>
         {list.slice().sort((a, b) => (a.order || 0) - (b.order || 0)).map(t => (
@@ -289,7 +289,7 @@ export default function MyActivityPage() {
       const pts = agenda.reduce((s, sec) => s + (sec.points || []).length, 0);
       const t = weeklyDue ? rc.weekly.time : rc.monthly.time;
       review = (
-        <Lane kind="review" title={`🗓 ${kind === 'weekly' ? 'Weekly' : 'Monthly'} Review Meeting (you chair)`} pill={`${pts} agenda points`}>
+        <Lane kind="review" title={<><Icon name="review" />{`${kind === 'weekly' ? 'Weekly' : 'Monthly'} Review Meeting (you chair)`}</>} pill={`${pts} agenda points`}>
           <Box sx={{ p: '12px 14px', bgcolor: tokens.cream, borderRadius: '6px', fontSize: 13, color: tokens.ink, lineHeight: 1.5 }}>
             <Box sx={{ mb: '6px' }}><strong>{dept.name}</strong> {kind} review is today{t ? ' at ' + t : ''}.</Box>
             <Box sx={{ fontSize: 12, color: tokens.slate, mb: '10px' }}>Agenda walks {agenda.length} section{agenda.length !== 1 ? 's' : ''} with {pts} discussion points. RAG-flag each point during the meeting.</Box>
@@ -313,8 +313,8 @@ export default function MyActivityPage() {
           <Grid size="auto"><Avatar name={me} size={68} fontSize={22} sx={{ border: '3px solid rgba(255,255,255,0.3)' }} /></Grid>
           <Grid size="grow">
             <Box component="h1" sx={{ fontFamily: fonts.serif, fontSize: 24, m: 0, fontWeight: 700 }}>{me === 'Venkata Cherukuri' ? 'Your activity' : `${me}'s activity`}</Box>
-            <Box sx={{ fontFamily: fonts.mono, fontSize: 11, opacity: 0.85, mt: '4px', letterSpacing: '0.04em' }}>{dept.icon} {dept.name} · {posLabel}</Box>
-            <Box sx={{ fontSize: 13, opacity: 0.92, mt: '6px' }}>Day-opening, day-closing and any weekly/monthly items on your plate today. {totalT === 0 ? "Nothing scheduled — you're free for ad-hoc work." : `Tick as you go. ${pct === 100 ? '🎉 All done — clean close!' : `${totalT - doneT} to go.`}`}</Box>
+            <Box sx={{ fontFamily: fonts.mono, fontSize: 11, opacity: 0.85, mt: '4px', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '6px' }}><Icon name={dept.icon} size={13} />{dept.name} · {posLabel}</Box>
+            <Box sx={{ fontSize: 13, opacity: 0.92, mt: '6px' }}>Day-opening, day-closing and any weekly/monthly items on your plate today. {totalT === 0 ? "Nothing scheduled — you're free for ad-hoc work." : `Tick as you go. ${pct === 100 ? 'All done — clean close!' : `${totalT - doneT} to go.`}`}</Box>
           </Grid>
           <Grid size={{ xs: 12, md: 'auto' }}>
             <Box sx={{ textAlign: 'center' }}>
@@ -336,30 +336,30 @@ export default function MyActivityPage() {
       <Box sx={{ display: 'flex', gap: 1, mb: '18px', alignItems: 'center', p: '10px 14px', bgcolor: tokens.card, border: `1px solid ${tokens.line}`, borderRadius: '10px', flexWrap: 'wrap' }}>
         <Box component="span" sx={{ fontFamily: fonts.mono, fontSize: 10, letterSpacing: '0.1em', color: tokens.slate, fontWeight: 700, textTransform: 'uppercase', mr: '4px' }}>SHOW:</Box>
         <PhaseChip all ticked={allOn} onClick={toggleAll} title="Tick everything on or off" label="All" pct={`${doneT}/${totalT}`} />
-        {op.total > 0 && <PhaseChip ticked={show.opening} onClick={() => togglePhase('opening')} label="🌅 Opening" pct={`${op.done}/${op.total}`} />}
-        {cl.total > 0 && <PhaseChip ticked={show.closing} onClick={() => togglePhase('closing')} label="🌙 Closing" pct={`${cl.done}/${cl.total}`} />}
-        {lists.weekly.length > 0 && <PhaseChip ticked={show.weekly} onClick={() => togglePhase('weekly')} label="📅 Weekly" pct={`${wk.done}/${wk.total}`} />}
-        {lists.monthly.length > 0 && <PhaseChip ticked={show.monthly} onClick={() => togglePhase('monthly')} label="📆 Monthly" pct={`${mo.done}/${mo.total}`} />}
-        {review && <PhaseChip ticked={show.review} onClick={() => togglePhase('review')} label="🗓 Review" />}
-        <Box sx={{ p: '8px 14px', bgcolor: tokens.card, border: `1px solid ${tokens.line}`, borderRadius: '20px', fontFamily: fonts.mono, fontSize: 11, fontWeight: 700, color: tokens.slate, letterSpacing: '0.04em', ml: { xs: 0, sm: 'auto' } }}>📅 {DAYS_OF_WEEK_FULL[dowToday]}, {today.getDate()} {MONTHS[today.getMonth()]} {today.getFullYear()}</Box>
+        {op.total > 0 && <PhaseChip ticked={show.opening} onClick={() => togglePhase('opening')} label={<><Icon name="opening" size={13} />Opening</>} pct={`${op.done}/${op.total}`} />}
+        {cl.total > 0 && <PhaseChip ticked={show.closing} onClick={() => togglePhase('closing')} label={<><Icon name="closing" size={13} />Closing</>} pct={`${cl.done}/${cl.total}`} />}
+        {lists.weekly.length > 0 && <PhaseChip ticked={show.weekly} onClick={() => togglePhase('weekly')} label={<><Icon name="weekly" size={13} />Weekly</>} pct={`${wk.done}/${wk.total}`} />}
+        {lists.monthly.length > 0 && <PhaseChip ticked={show.monthly} onClick={() => togglePhase('monthly')} label={<><Icon name="monthly" size={13} />Monthly</>} pct={`${mo.done}/${mo.total}`} />}
+        {review && <PhaseChip ticked={show.review} onClick={() => togglePhase('review')} label={<><Icon name="review" size={13} />Review</>} />}
+        <Box sx={{ p: '8px 14px', bgcolor: tokens.card, border: `1px solid ${tokens.line}`, borderRadius: '20px', fontFamily: fonts.mono, fontSize: 11, fontWeight: 700, color: tokens.slate, letterSpacing: '0.04em', ml: { xs: 0, sm: 'auto' }, display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Icon name="weekly" size={13} />{DAYS_OF_WEEK_FULL[dowToday]}, {today.getDate()} {MONTHS[today.getMonth()]} {today.getFullYear()}</Box>
       </Box>
 
       {/* A lab person with no unit has a board waiting but no lines of their own — "clean slate"
           would hide that, so it says what is missing and who sets it. */}
       {totalT === 0 && (
-        <EmptyState icon="🎯" title="Clean slate" sx={{ mb: '14px' }}
+        <EmptyState icon={<Icon name="target" size={28} />} title="Clean slate" sx={{ mb: '14px' }}
           desc={<>
             No department tasks for your position today. {dept.openingTasks.length || dept.closingTasks.length ? "The only configured tasks don't apply to your position." : <>Your department hasn't set up shift tasks yet — visit <Box component="a" onClick={() => navigate(`/departments/${dept.id}`)} sx={{ color: tokens.tealDark, cursor: 'pointer', fontWeight: 700 }}>Department Master</Box> to add them.</>}
             <Box sx={{ mt: '14px' }}><LogBtn onClick={() => setComposer({ lane: 'daily' })} label="Log a daily activity" /></Box>
           </>} />
       )}
 
-      {lane('opening', 'Opening Shift', '🌅')}
-      {lane('closing', 'Closing Shift', '🌙')}
+      {lane('opening', 'Opening Shift', 'opening')}
+      {lane('closing', 'Closing Shift', 'closing')}
 
       {/* The day's own lane: everything that happened but nobody had preset as a task. It is always
           here, even empty, because the whole point is that it is the place to put the unplanned. */}
-      <Lane kind="daily" title="📝 Logged Today"
+      <Lane kind="daily" title={<><Icon name="logged" />Logged Today</>}
         count={lanesLogged.daily.length ? `· ${lanesLogged.daily.length} entr${lanesLogged.daily.length === 1 ? 'y' : 'ies'}` : '· nothing yet'}
         pill="" action={<LogBtn onClick={() => setComposer({ lane: 'daily' })} />}>
         {lanesLogged.daily.length
@@ -370,13 +370,13 @@ export default function MyActivityPage() {
             </Box>
           )}
       </Lane>
-      {lane('weekly', 'Weekly Task' + (lists.weekly.length > 1 ? 's' : ''), '📅')}
-      {lane('monthly', 'Monthly Task' + (lists.monthly.length > 1 ? 's' : ''), '📆')}
+      {lane('weekly', 'Weekly Task' + (lists.weekly.length > 1 ? 's' : ''), 'weekly')}
+      {lane('monthly', 'Monthly Task' + (lists.monthly.length > 1 ? 's' : ''), 'monthly')}
 
       {show.review && review}
 
       <Box sx={{ mt: '20px', p: '12px 16px', bgcolor: tokens.creamWarm, border: `1px solid ${tokens.line}`, borderRadius: '8px', fontSize: 12, color: tokens.slate, display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <Box component="span" sx={{ fontSize: 16 }}>💡</Box>
+        <Icon name="tip" size={18} />
         <span>Your ticks persist to today's activity log. Yesterday's activity is sealed. Your HOD and department governance can see your completion rate in the Department Master detail view — the checklist percentage, which logged activities are deliberately kept out of.</span>
       </Box>
 

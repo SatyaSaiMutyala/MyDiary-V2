@@ -1,6 +1,6 @@
 // Department Master — departments, positions, shift tasks, seeds, review cadence, templates.
 const DEPARTMENTS_BASE = [
-  { id: 'd1', code: 'TDPL-CLIN-001', name: 'Clinical Laboratory', icon: '🔬',
+  { id: 'd1', code: 'TDPL-CLIN-001', name: 'Clinical Laboratory', icon: 'lab',
     description: 'Core processing units — Biochemistry, Haematology, Serology, Microbiology, Histopathology, Molecular Biology.',
     positions: [
       { id: 'p1', name: 'Lab Technician', description: 'Operates analysers, runs IQC, processes samples' },
@@ -22,7 +22,7 @@ const DEPARTMENTS_BASE = [
       { id: 'c4', order: 4, text: 'Fridge & freezer closing temperature log entry', defaultTime: '19:15', positionId: null },
     ],
   },
-  { id: 'd2', code: 'TDPL-LOG-001', name: 'Logistics', icon: '🚚',
+  { id: 'd2', code: 'TDPL-LOG-001', name: 'Logistics', icon: 'logistics',
     description: 'Sample transport from branches to central lab, report delivery, inter-branch movement.',
     positions: [
       { id: 'p1', name: 'Dispatch Co-ordinator', description: 'Routes planning and driver supervision' },
@@ -39,7 +39,7 @@ const DEPARTMENTS_BASE = [
       { id: 'c3', order: 3, text: 'Next day\'s route plan finalised', defaultTime: '20:45', positionId: 'p1' },
     ],
   },
-  { id: 'd3', code: 'TDPL-HR-001', name: 'HR', icon: '👥',
+  { id: 'd3', code: 'TDPL-HR-001', name: 'HR', icon: 'people',
     description: 'People operations — hiring, induction, attendance, training, employee grievance.',
     positions: [
       { id: 'p1', name: 'HR Executive', description: 'Day-to-day HR ops, attendance, grievances' },
@@ -55,7 +55,7 @@ const DEPARTMENTS_BASE = [
       { id: 'c2', order: 2, text: 'Update joining tracker for tomorrow\'s inductees', defaultTime: '18:30', positionId: 'p1' },
     ],
   },
-  { id: 'd4', code: 'TDPL-PROC-001', name: 'Procurement', icon: '🛒',
+  { id: 'd4', code: 'TDPL-PROC-001', name: 'Procurement', icon: 'cart',
     description: 'Vendor management, PO raising, stock replenishment for reagents, consumables, non-medical supplies.',
     positions: [
       { id: 'p1', name: 'Procurement Executive', description: 'POs, vendor quotations, follow-ups' },
@@ -71,7 +71,7 @@ const DEPARTMENTS_BASE = [
       { id: 'c2', order: 2, text: 'Update next-day priority indent list', defaultTime: '18:30', positionId: 'p1' },
     ],
   },
-  { id: 'd5', code: 'TDPL-ARC-001', name: 'Audit, Risk & Compliance', icon: '🛡',
+  { id: 'd5', code: 'TDPL-ARC-001', name: 'Audit, Risk & Compliance', icon: 'quality',
     description: 'Internal audit, statutory compliance tracker, risk register maintenance, NCR follow-ups.',
     positions: [
       { id: 'p1', name: 'Compliance Officer', description: 'Compliance calendar, filing deadlines, NCR tracking' },
@@ -87,7 +87,7 @@ const DEPARTMENTS_BASE = [
       { id: 'c2', order: 2, text: 'Audit findings entered in audit log', defaultTime: '18:30', positionId: 'p2' },
     ],
   },
-  { id: 'd6', code: 'TDPL-MM-001', name: 'Material Management', icon: '📦',
+  { id: 'd6', code: 'TDPL-MM-001', name: 'Material Management', icon: 'package',
     description: 'Inward/outward stock movement, warehouse, ROP, expiry tracker, inter-branch transfers.',
     positions: [
       { id: 'p1', name: 'Store Keeper', description: 'Physical inward/outward, shelving, cycle count' },
@@ -104,7 +104,7 @@ const DEPARTMENTS_BASE = [
       { id: 'c2', order: 2, text: 'Close warehouse; cold storage closing temperature log', defaultTime: '19:30', positionId: 'p1' },
     ],
   },
-  { id: 'd7', code: 'TDPL-IT-001', name: 'Information Technology', icon: '💻',
+  { id: 'd7', code: 'TDPL-IT-001', name: 'Information Technology', icon: 'computer',
     description: 'LIS/HIS uptime, network, hardware, user access, software module releases, data integrity.',
     positions: [
       { id: 'p1', name: 'Support Executive', description: 'L1/L2 helpdesk, user access, hardware issues' },
@@ -121,7 +121,7 @@ const DEPARTMENTS_BASE = [
       { id: 'c2', order: 2, text: 'Scheduled nightly backup confirmed queued', defaultTime: '19:00', positionId: 'p1' },
     ],
   },
-  { id: 'd8', code: 'TDPL-CSD-001', name: 'Customer Service Desk (CSD)', icon: '☎',
+  { id: 'd8', code: 'TDPL-CSD-001', name: 'Customer Service Desk (CSD)', icon: 'phone',
     description: 'Front-desk patient queries, appointment confirmations, complaint handling, report release requests.',
     positions: [
       { id: 'p1', name: 'CSD Executive', description: 'Phone, walk-in, WhatsApp query handling' },
@@ -136,7 +136,7 @@ const DEPARTMENTS_BASE = [
       { id: 'c1', order: 1, text: 'EOD summary — queries handled, pending, SLA breaches', defaultTime: '19:00', positionId: 'p2' },
     ],
   },
-  { id: 'd9', code: 'TDPL-CRM-001', name: 'CRM / Home Collections', icon: '🏠',
+  { id: 'd9', code: 'TDPL-CRM-001', name: 'CRM / Home Collections', icon: 'home',
     description: 'Doctor relationship management, home-collection operations, loyalty programme, refer-a-friend.',
     positions: [
       { id: 'p1', name: 'Home Collection Phlebotomist', description: 'Field sample collection at patient homes' },
@@ -153,7 +153,7 @@ const DEPARTMENTS_BASE = [
       { id: 'c2', order: 2, text: 'Day\'s doctor interactions logged in CRM with outcome', defaultTime: '18:30', positionId: 'p2' },
     ],
   },
-  { id: 'd10', code: 'TDPL-BMO-001', name: 'Biomedical (BMO)', icon: '⚙',
+  { id: 'd10', code: 'TDPL-BMO-001', name: 'Biomedical (BMO)', icon: 'engineering',
     description: 'Equipment uptime, calibration, AMC, preventive maintenance, breakdown response.',
     positions: [
       { id: 'p1', name: 'Biomedical Engineer', description: 'Daily rounds, calibration checks, breakdown fixes' },
@@ -169,7 +169,7 @@ const DEPARTMENTS_BASE = [
       { id: 'c2', order: 2, text: 'AMC vendor visit outcomes recorded', defaultTime: '19:15', positionId: 'p2' },
     ],
   },
-  { id: 'd11', code: 'TDPL-QMS-001', name: 'Quality (QMS)', icon: '🛡',
+  { id: 'd11', code: 'TDPL-QMS-001', name: 'Quality (QMS)', icon: 'quality',
     description: 'ISO 15189 compliance, NCR follow-ups, document control, internal audits, management reviews.',
     positions: [
       { id: 'p1', name: 'Quality Officer', description: 'Document control, EQAS data, IQC trend analysis' },
@@ -197,7 +197,7 @@ const DEPARTMENTS_BASE = [
       { id: 'c1', order: 1, text: 'EOD TAT dashboard refresh and share with CMD', defaultTime: '19:00', positionId: 'p1' },
     ],
   },
-  { id: 'd13', code: 'TDPL-AP-001', name: 'Accounts Payable', icon: '💸',
+  { id: 'd13', code: 'TDPL-AP-001', name: 'Accounts Payable', icon: 'money',
     description: 'Vendor invoice processing, payment runs, GST reconciliation, TDS, vendor reconciliation.',
     positions: [
       { id: 'p1', name: 'AP Executive', description: 'Invoice entry, 3-way match, payment scheduling' },
@@ -210,7 +210,7 @@ const DEPARTMENTS_BASE = [
       { id: 'c1', order: 1, text: 'Day\'s payment schedule queued for next-day approval', defaultTime: '18:00', positionId: 'p1' },
     ],
   },
-  { id: 'd14', code: 'TDPL-AR-001', name: 'Accounts Receivable', icon: '💰',
+  { id: 'd14', code: 'TDPL-AR-001', name: 'Accounts Receivable', icon: 'money',
     description: 'Corporate billing, B2B invoicing, collection follow-ups, credit control, revenue recognition.',
     positions: [
       { id: 'p1', name: 'AR Executive', description: 'Invoicing, collection calls, receipt posting' },
@@ -223,7 +223,7 @@ const DEPARTMENTS_BASE = [
       { id: 'c1', order: 1, text: 'Day\'s collection outcomes logged with next-step date', defaultTime: '18:00', positionId: 'p1' },
     ],
   },
-  { id: 'd15', code: 'TDPL-CA-001', name: 'Corporate Affairs', icon: '🏛',
+  { id: 'd15', code: 'TDPL-CA-001', name: 'Corporate Affairs', icon: 'board',
     description: 'Secretarial, statutory filings, board governance, licences, legal matters, intellectual property.',
     positions: [
       { id: 'p1', name: 'Company Secretary', description: 'ROC filings, board meetings, resolutions' },
@@ -237,7 +237,7 @@ const DEPARTMENTS_BASE = [
       { id: 'c1', order: 1, text: 'Day\'s documents sent for signature logged', defaultTime: '18:00', positionId: 'p1' },
     ],
   },
-  { id: 'd16', code: 'TDPL-CS-001', name: 'Corporate Services (Business Head)', icon: '💼',
+  { id: 'd16', code: 'TDPL-CS-001', name: 'Corporate Services (Business Head)', icon: 'briefcase',
     description: 'Cross-functional oversight — Finance, Admin, HR, Legal rollup; CFO/CAO office.',
     positions: [
       { id: 'p1', name: 'Business Head — Corporate Services', description: 'Oversight across CFO/CAO verticals' },
@@ -250,7 +250,7 @@ const DEPARTMENTS_BASE = [
       { id: 'c1', order: 1, text: 'EOD rollup to CMD of pending items', defaultTime: '19:00', positionId: 'p1' },
     ],
   },
-  { id: 'd17', code: 'TDPL-EA-001', name: 'EA to CMD', icon: '📒',
+  { id: 'd17', code: 'TDPL-EA-001', name: 'EA to CMD', icon: 'book',
     description: 'Executive support — calendar, travel, correspondence, meeting prep, follow-ups.',
     positions: [
       { id: 'p1', name: 'Executive Assistant', description: 'Full EA scope' },
@@ -264,7 +264,7 @@ const DEPARTMENTS_BASE = [
       { id: 'c1', order: 1, text: 'Tomorrow\'s calendar finalised with briefs', defaultTime: '18:30', positionId: 'p1' },
     ],
   },
-  { id: 'd18', code: 'TDPL-CMD-001', name: 'CMD Office', icon: '👑',
+  { id: 'd18', code: 'TDPL-CMD-001', name: 'CMD Office', icon: 'cmd',
     description: 'Chairman & Managing Director — approvals, governance, oversight, strategy. The apex of TrustLab.',
     positions: [
       { id: 'p1', name: 'CMD', description: 'Chairman & Managing Director' },
@@ -828,7 +828,7 @@ export function getEmployeeAssignment(name) {
 
 // ============ DEPARTMENT TEMPLATES ============
 export const DEPT_TEMPLATES = [
-  { id: 'dt-clinical', emoji: '🔬', name: 'Clinical Lab Department',
+  { id: 'dt-clinical', icon: 'lab', name: 'Clinical Lab Department',
     description: 'Standard lab processing department with Tech + In-charge + Phlebotomist positions and IQC-centric shift tasks.',
     preset: {
       positions: [
@@ -848,7 +848,7 @@ export const DEPT_TEMPLATES = [
       ],
     },
   },
-  { id: 'dt-admin', emoji: '📋', name: 'Admin / Support Department',
+  { id: 'dt-admin', icon: 'clipboard', name: 'Admin / Support Department',
     description: 'Office-based support department with Executive + Head positions and inbox/calendar-centric routines.',
     preset: {
       positions: [
@@ -865,7 +865,7 @@ export const DEPT_TEMPLATES = [
       ],
     },
   },
-  { id: 'dt-field', emoji: '🚚', name: 'Field Operations',
+  { id: 'dt-field', icon: 'logistics', name: 'Field Operations',
     description: 'Field-based operations department with Co-ordinator + Field Staff positions — routes, vehicles, equipment.',
     preset: {
       positions: [
@@ -883,7 +883,7 @@ export const DEPT_TEMPLATES = [
       ],
     },
   },
-  { id: 'dt-finance', emoji: '💰', name: 'Finance Sub-department',
+  { id: 'dt-finance', icon: 'money', name: 'Finance Sub-department',
     description: 'Finance sub-function (AP/AR/Taxation) with Executive position and ledger-centric routines.',
     preset: {
       positions: [
@@ -901,7 +901,7 @@ export const DEPT_TEMPLATES = [
       ],
     },
   },
-  { id: 'dt-tech', emoji: '⚙', name: 'Technical / Engineering',
+  { id: 'dt-tech', icon: 'engineering', name: 'Technical / Engineering',
     description: 'Equipment/engineering department with Engineer + Head positions — breakdowns, calibrations, AMC.',
     preset: {
       positions: [
@@ -918,7 +918,7 @@ export const DEPT_TEMPLATES = [
       ],
     },
   },
-  { id: 'dt-sales', emoji: '📈', name: 'Sales / Commercial Division',
+  { id: 'dt-sales', icon: 'trending', name: 'Sales / Commercial Division',
     description: 'Field sales / BD division with Sales Rep + Manager positions — pipeline, visits, forecast.',
     preset: {
       positions: [
@@ -936,7 +936,7 @@ export const DEPT_TEMPLATES = [
       ],
     },
   },
-  { id: 'dt-single-role', emoji: '👤', name: 'Single-Role Department',
+  { id: 'dt-single-role', icon: 'person', name: 'Single-Role Department',
     description: 'Lean department with one position only — e.g. a specialist role or small function.',
     preset: {
       positions: [
@@ -950,7 +950,7 @@ export const DEPT_TEMPLATES = [
       ],
     },
   },
-  { id: 'dt-blank', emoji: '📄', name: 'Blank Department',
+  { id: 'dt-blank', icon: 'document', name: 'Blank Department',
     description: 'Start from scratch — no positions or tasks pre-filled.',
     preset: { positions: [], openingTasks: [], closingTasks: [] },
   },

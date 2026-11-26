@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Box, InputBase } from '@mui/material';
 import { tokens } from '../../../theme/tokens';
 import { CHANNELS } from '../../../data/logs';
-import { EmptyState, SelectInput } from '../../../components';
+import { EmptyState, SelectInput, Icon } from '../../../components';
 import { useDebounced } from '../../../utils/useDebounced';
 import { useListLogsQuery, useLogTagsQuery } from '../../../store/api/logsApi';
 import { ApiError, Fetching, PAGE_SIZE, Pager } from '../../settings/components/listUi';
@@ -30,10 +30,10 @@ export default function LogsListView({ mine, search, setSearch, channel, setChan
 
   const filters = (
     <Box sx={{ bgcolor: tokens.card, border: `1px solid ${tokens.line}`, borderRadius: tokens.radius, p: '12px 16px', mb: '14px', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-      <InputBase value={search} onChange={e => setSearch(e.target.value)} placeholder="🔍 Search logs — person, topic, content..." sx={{ flex: 1, minWidth: { xs: '100%', sm: 200 }, '& .MuiInputBase-input': filterInputSx }} />
+      <InputBase value={search} onChange={e => setSearch(e.target.value)} placeholder="Search logs — person, topic, content..." sx={{ flex: 1, minWidth: { xs: '100%', sm: 200 }, '& .MuiInputBase-input': filterInputSx }} />
       <SelectInput value={channel} onChange={e => setChannel(e.target.value)} sx={{ width: { xs: '100%', sm: 'auto' }, p: '8px 28px 8px 10px', borderRadius: '5px', fontSize: 12, backgroundPosition: 'right 10px center' }}>
         <option value="">All channels</option>
-        {Object.entries(CHANNELS).map(([k, v]) => <option key={k} value={k}>{v.emoji} {v.label}</option>)}
+        {Object.entries(CHANNELS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
       </SelectInput>
       <SelectInput value={tag} onChange={e => setTag(e.target.value)} sx={{ width: { xs: '100%', sm: 'auto' }, p: '8px 28px 8px 10px', borderRadius: '5px', fontSize: 12, backgroundPosition: 'right 10px center' }}>
         <option value="">All tags</option>
@@ -47,7 +47,7 @@ export default function LogsListView({ mine, search, setSearch, channel, setChan
   if (error) return head;
   if (logs.length === 0) {
     if (isLoading) return head;
-    return <>{head}<EmptyState icon="💬" title="No matching logs" desc="Try broader search or clear filters." /></>;
+    return <>{head}<EmptyState icon={<Icon name="chat" />} title="No matching logs" desc="Try broader search or clear filters." /></>;
   }
   return (
     <>

@@ -1,6 +1,6 @@
 import { Box, ButtonBase } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { ModalShell, Btn, Chip, RsvpPill } from '../../../components';
+import { ModalShell, Btn, Chip, RsvpPill, Icon } from '../../../components';
 import { tokens, fonts } from '../../../theme/tokens';
 import { DIARY_CATS } from '../../../data/diary';
 import { TDPL_LOGO_FULL } from '../../../data/logos';
@@ -33,7 +33,7 @@ export default function EntryDetailModal({ entry, canEdit, onClose, onDelete }) 
   const ext = (entry.external || []).map(normExt);
   const rc = rsvpSummary(entry.external);
 
-  // "📧 Open as recipient" → RSVP preview window; the recipient's response writes back here
+  // "Open as recipient" → RSVP preview window; the recipient's response writes back here
   const openPreview = (idx) => {
     const invitee = normExt(entry.external[idx]);
     const subject = entry.title;
@@ -74,7 +74,7 @@ export default function EntryDetailModal({ entry, canEdit, onClose, onDelete }) 
     <Box sx={{ p: '20px 24px', color: head.color, position: 'relative', background: head.bg }}>
       <ButtonBase onClick={onClose} sx={{ position: 'absolute', top: 14, right: 14, width: 28, height: 28, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 16 }}>×</ButtonBase>
       <Box sx={{ fontFamily: fonts.mono, fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', fontWeight: 700, opacity: 0.85, mb: '6px', pr: 4 }}>
-        {cat.emoji} {cat.label}{entry.createdBy === 'ea' ? ' · ADDED BY EA' : ''}{entry.sourceMeetingId ? ' · FROM MEETINGS MODULE' : ''}
+        <Icon name={cat.icon} size={13} />{cat.label}{entry.createdBy === 'ea' ? ' · ADDED BY EA' : ''}{entry.sourceMeetingId ? ' · FROM MEETINGS MODULE' : ''}
       </Box>
       <Box sx={{ fontFamily: fonts.serif, fontSize: 22, fontWeight: 700, lineHeight: 1.2, letterSpacing: '-0.01em', pr: 4 }}>{entry.title}</Box>
     </Box>
@@ -84,21 +84,21 @@ export default function EntryDetailModal({ entry, canEdit, onClose, onDelete }) 
     <ModalShell open onClose={onClose} width={460} head="custom" headSlot={headSlot} bodySx={{ p: '18px 24px' }}
       footer={<Box sx={{ display: 'flex', gap: 1, ml: 'auto', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
         {entry.sourceMeetingId && <Btn variant="primary" onClick={() => { onClose(); navigate('/meetings/' + entry.sourceMeetingId); }}>Open Meeting →</Btn>}
-        {canEdit && !entry.sourceMeetingId && <Btn variant="danger" onClick={() => onDelete(entry.id)}>🗑 Delete</Btn>}
+        {canEdit && !entry.sourceMeetingId && <Btn variant="danger" onClick={() => onDelete(entry.id)}><Icon name="remove" />Delete</Btn>}
         <Btn onClick={onClose}>Close</Btn>
       </Box>}>
 
-      <Row ico="📅">
+      <Row ico="">
         <Box>
           <strong>{formatDateLong(parseDate(entry.date))}</strong>
           {entry.endDate && entry.endDate !== entry.date ? ' → ' + formatDateLong(parseDate(entry.endDate)) : ''}
           <br />{entry.allDay ? <em>All day</em> : (entry.startTime + (entry.endTime ? ' – ' + entry.endTime : ''))}
         </Box>
       </Row>
-      {entry.loc && <Row ico="📍"><Box>{entry.loc}</Box></Row>}
-      {entry.notes && <Row ico="📝"><Box sx={{ whiteSpace: 'pre-wrap' }}>{entry.notes}</Box></Row>}
+      {entry.loc && <Row ico=""><Box>{entry.loc}</Box></Row>}
+      {entry.notes && <Row ico=""><Box sx={{ whiteSpace: 'pre-wrap' }}>{entry.notes}</Box></Row>}
       {entry.attendees && entry.attendees.length > 0 && (
-        <Row ico="👥">
+        <Row ico="">
           <Box>
             <Box sx={{ fontWeight: 700, mb: '4px' }}>Internal ({entry.attendees.length})</Box>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '6px', mt: '10px' }}>{entry.attendees.map((a, i) => <Chip key={i}>{a}</Chip>)}</Box>
@@ -106,7 +106,7 @@ export default function EntryDetailModal({ entry, canEdit, onClose, onDelete }) 
         </Row>
       )}
       {ext.length > 0 && (
-        <Row ico="🌐">
+        <Row ico="">
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Box sx={{ fontWeight: 700, mb: '6px', color: tokens.blue, display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
               <span>External Invitees · {ext.length}</span>
@@ -129,7 +129,7 @@ export default function EntryDetailModal({ entry, canEdit, onClose, onDelete }) 
                     {e.respondedNote && <Box sx={{ fontSize: 11, color: tokens.slate, fontStyle: 'italic', mt: '4px', p: '4px 8px', bgcolor: tokens.cream, borderRadius: '4px' }}>"{e.respondedNote}"</Box>}
                   </Box>
                   <Box sx={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
-                    <ButtonBase onClick={() => openPreview(idx)} sx={{ fontFamily: fonts.mono, fontSize: 9, p: '4px 8px', bgcolor: tokens.creamWarm, border: `1px solid ${tokens.line}`, borderRadius: '4px', cursor: 'pointer', color: tokens.slate, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', '&:hover': { bgcolor: tokens.tealSoft, color: tokens.tealDark, borderColor: tokens.teal } }}>📧 Open as recipient</ButtonBase>
+                    <ButtonBase onClick={() => openPreview(idx)} sx={{ fontFamily: fonts.mono, fontSize: 9, p: '4px 8px', bgcolor: tokens.creamWarm, border: `1px solid ${tokens.line}`, borderRadius: '4px', cursor: 'pointer', color: tokens.slate, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', '&:hover': { bgcolor: tokens.tealSoft, color: tokens.tealDark, borderColor: tokens.teal } }}><Icon name="email" />Open as recipient</ButtonBase>
                   </Box>
                 </Box>
               ))}

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Box, Typography } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { useSearchParams } from 'react-router-dom';
-import { PageHeader, EmptyState, Btn, DateInput, Segmented } from '../../components';
+import { PageHeader, EmptyState, Btn, DateInput, Segmented, Icon } from '../../components';
 import { useDialog } from '../../components/Dialogs';
 import { tokens, fonts } from '../../theme/tokens';
 import { useViewerUser } from '../../auth/useViewerUser';
@@ -145,10 +145,10 @@ export default function LabReadinessPage() {
     <PageHeader
       code="TL-LAB-SOP-014"
       parts={['MyDiary · Personal', 'Daily Readiness Board']}
-      icon="🔬"
+      icon={<Icon name="lab" />}
       title="Lab Readiness"
       sub="The laboratory's opening and closing rounds, unit by unit. Record every activity, photograph what has to be evidenced, then sign the round off — the declaration, the time and your photograph go on the record."
-      actions={unitKey ? <Btn size="sm" onClick={() => setShowHistory((s) => !s)}>{showHistory ? 'Hide past records' : '🗂 Past records'}</Btn> : null}
+      actions={unitKey ? <Btn size="sm" onClick={() => setShowHistory((s) => !s)}>{showHistory ? 'Hide past records' : 'Past records'}</Btn> : null}
     />
   );
 
@@ -200,7 +200,7 @@ export default function LabReadinessPage() {
     return (
       <Box>
         {header}
-        <EmptyState icon="🔬" title="No units are set up yet" desc="Add the laboratory's units under Lab Readiness in Department Master, and they will appear here." />
+        <EmptyState icon={<Icon name="lab" />} title="No units are set up yet" desc="Add the laboratory's units under Lab Readiness in Department Master, and they will appear here." />
       </Box>
     );
   }
@@ -260,7 +260,7 @@ export default function LabReadinessPage() {
                   {board.unit.name}
                 </Typography>
                 <Typography sx={{ fontFamily: fonts.mono, fontSize: 10.5, opacity: 0.85, mt: '4px', letterSpacing: '0.06em' }}>
-                  {phase === 'opening' ? '🌅 OPENING ROUND' : '🌙 CLOSING ROUND'} · {prettyDate(board.date)}
+                  {phase === 'opening' ? 'OPENING ROUND' : 'CLOSING ROUND'} · {prettyDate(board.date)}
                   {board.run?.startedAt ? ` · started ${clock(board.run.startedAt)}` : ''}
                 </Typography>
                 <Typography sx={{ fontSize: 13, opacity: 0.92, mt: '8px', maxWidth: 620, lineHeight: 1.5 }}>
@@ -302,7 +302,7 @@ export default function LabReadinessPage() {
 
           {locked && (
             <Box sx={{ mb: '14px', p: '10px 14px', bgcolor: tokens.okSoft, border: `1px solid ${tokens.ok}`, borderRadius: tokens.radiusSm, fontSize: 12.5, color: tokens.ink, display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <Box component="span" sx={{ fontSize: 15 }}>🔒</Box>
+              <Box component="span" sx={{ fontSize: 15 }}><Icon name="lock" /></Box>
               <span>This round is signed off, so nothing on it can be changed. Reopen it at the foot of the page if a correction is genuinely needed.</span>
             </Box>
           )}
@@ -357,7 +357,7 @@ export default function LabReadinessPage() {
                 {(board.run?.reopenLog ?? []).length > 0 && (
                   <Box sx={{ mb: '12px', p: '10px 12px', bgcolor: tokens.card, border: `1px solid ${tokens.line}`, borderRadius: tokens.radiusSm }}>
                     <Typography sx={{ fontFamily: fonts.mono, fontSize: 9.5, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, color: tokens.amber, mb: '6px' }}>
-                      🔓 Reopened {board.run.reopenLog.length} time{board.run.reopenLog.length === 1 ? '' : 's'} after sign-off
+                      <Icon name="unlock" size={13} /> Reopened {board.run.reopenLog.length} time{board.run.reopenLog.length === 1 ? '' : 's'} after sign-off
                     </Typography>
                     {board.run.reopenLog.map((r, i) => (
                       <Typography key={i} sx={{ fontSize: 12, color: tokens.slate, lineHeight: 1.6 }}>
@@ -375,7 +375,7 @@ export default function LabReadinessPage() {
           {showHistory && (
             <Box sx={{ mt: '18px', bgcolor: tokens.card, border: `1px solid ${tokens.line}`, borderRadius: '10px', overflow: 'hidden' }}>
               <Box sx={{ p: '13px 18px', bgcolor: tokens.cream, borderBottom: `1px solid ${tokens.line}` }}>
-                <Typography sx={{ fontFamily: fonts.serif, fontSize: 15, fontWeight: 700 }}>🗂 Past records · {board.unit.name}</Typography>
+                <Typography sx={{ fontFamily: fonts.serif, fontSize: 15, fontWeight: 700 }}><Icon name="files" />Past records · {board.unit.name}</Typography>
               </Box>
               <Box sx={{ p: '10px 14px' }}>
                 {history.isLoading && <Typography sx={{ p: '10px', fontSize: 12, color: tokens.slate }}>Loading…</Typography>}
@@ -425,7 +425,7 @@ export default function LabReadinessPage() {
       {toast}
 
       <Box sx={{ mt: '20px', p: '12px 16px', bgcolor: tokens.creamWarm, border: `1px solid ${tokens.line}`, borderRadius: '8px', fontSize: 12, color: tokens.slate, display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-        <Box component="span" sx={{ fontSize: 16 }}>💡</Box>
+        <Box component="span" sx={{ fontSize: 16 }}><Icon name="tip" /></Box>
         <span>
           {unit ? `${unit.name} · ` : ''}The checklist, the units and the two cut-off times come from Lab Readiness in Department Master. A signed record keeps the wording it was signed with, so correcting the master checklist later never rewrites what was signed.
         </span>

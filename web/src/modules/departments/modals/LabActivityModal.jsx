@@ -86,7 +86,7 @@ export default function LabActivityModal({ open, dept, phase, activity, onClose 
   };
 
   const details = errorDetails(error);
-  const round = phase === 'opening' ? '🌅 Opening round' : '🌙 Closing round';
+  const round = phase === 'opening' ? 'Opening round' : 'Closing round';
 
   return (
     <ModalShell
@@ -100,7 +100,7 @@ export default function LabActivityModal({ open, dept, phase, activity, onClose 
         <FootNote>{isEdit ? 'A line already on completed records keeps the wording it was signed with' : 'It joins today’s board as soon as it is saved'}</FootNote>
         <Box sx={{ display: 'flex', gap: 1 }}>
           <Btn onClick={onClose} disabled={busy}>Cancel</Btn>
-          <Btn variant="primary" onClick={save} disabled={busy}>{busy ? 'Saving…' : isEdit ? '💾 Save changes' : '+ Add activity'}</Btn>
+          <Btn variant="primary" onClick={save} disabled={busy}>{busy ? 'Saving…' : isEdit ? 'Save changes' : '+ Add activity'}</Btn>
         </Box>
       </>}
     >
@@ -164,7 +164,7 @@ export default function LabActivityModal({ open, dept, phase, activity, onClose 
           <Switch
             on={photoRequired}
             onClick={() => setPhotoRequired((v) => !v)}
-            label="📷 Needs a photograph"
+            label="Needs a photograph"
             desc={photoRequired ? 'The round cannot be signed off until one is filed' : 'No photograph asked for'}
             colour={tokens.amber}
           />

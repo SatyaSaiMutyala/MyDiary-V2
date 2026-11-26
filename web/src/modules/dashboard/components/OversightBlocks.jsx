@@ -6,6 +6,7 @@ import { isOverdue } from '../../../utils/dates';
 import { initials, ownerAvatarColor } from '../../../utils/people';
 import HeadCard from '../../myactivity/components/HeadCard';
 import { deptRollupRows, deptPeopleRows, sortByLowest, barClassFor } from '../../myactivity/utils';
+import { Icon } from '../../../components';
 
 /* .pd-oversight shell */
 function Oversight({ icon, iconSize = 24, title, sub, right, children }) {
@@ -50,7 +51,7 @@ export function OrgOversightBlock({ departments, activityLog, state, facts }) {
   const overdueActions = state.meetings.reduce((s, m) => s + (m.actions || []).filter(a => a.status !== 'done' && isOverdue(a.deadline)).length, 0);
 
   return (
-    <Oversight icon="🌐" title="Organisation Oversight — CMD View" sub="All 17 departments · Cross-module rollup · Today"
+    <Oversight icon={<Icon name="external" />} title="Organisation Oversight — CMD View" sub="All 17 departments · Cross-module rollup · Today"
       right={<Box sx={{ fontFamily: fonts.serif, fontSize: 28, fontWeight: 700 }}>{orgPct}%</Box>}>
       <Grid container spacing={1.25} sx={{ mb: '18px' }}>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}><StatTile color={tokens.teal} label="Shift Completion" value={`${orgDone}/${orgTotal}`} sub="tasks ticked today" /></Grid>
@@ -62,7 +63,7 @@ export function OrgOversightBlock({ departments, activityLog, state, facts }) {
       <Grid container spacing={1.25}>
         {sortByLowest(rows).map(r => (
           <Grid key={r.dept.id} size={{ xs: 12, lg: 6 }}>
-            <HeadCard icon={r.dept.icon} name={r.dept.name} meta={`${r.people} people · ${r.total} task${r.total !== 1 ? 's' : ''} due today`} done={r.done} total={r.total} pct={r.pct} barClass={barClassFor(r.pct)} onClick={() => navigate(`/departments/${r.dept.id}`)} />
+            <HeadCard icon={<Icon name={r.dept.icon} size={22} />} name={r.dept.name} meta={`${r.people} people · ${r.total} task${r.total !== 1 ? 's' : ''} due today`} done={r.done} total={r.total} pct={r.pct} barClass={barClassFor(r.pct)} onClick={() => navigate(`/departments/${r.dept.id}`)} />
           </Grid>
         ))}
       </Grid>
@@ -74,7 +75,7 @@ export function OrgOversightBlock({ departments, activityLog, state, facts }) {
 export function DeptOversightBlock({ dept, activityLog, facts }) {
   const rows = deptPeopleRows(dept, activityLog, facts);
   return (
-    <Oversight icon={dept.icon} iconSize={22} title={`${dept.name} — Head View`} sub={`Your department · ${rows.length} ${rows.length === 1 ? 'person' : 'people'} · today's shift completion`}>
+    <Oversight icon={<Icon name={dept.icon} size={22} />} iconSize={22} title={`${dept.name} — Head View`} sub={`Your department · ${rows.length} ${rows.length === 1 ? 'person' : 'people'} · today's shift completion`}>
       <Grid container spacing={1.25}>
         {sortByLowest(rows).map(r => (
           <Grid key={r.name} size={{ xs: 12, md: 6 }}>

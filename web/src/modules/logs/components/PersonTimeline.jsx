@@ -1,7 +1,7 @@
 import { Box } from '@mui/material';
 import { tokens, fonts } from '../../../theme/tokens';
 import { initials, ownerAvatarColor } from '../../../utils/people';
-import { EmptyState, TextLink } from '../../../components';
+import { EmptyState, TextLink, Icon } from '../../../components';
 import { useListLogsQuery } from '../../../store/api/logsApi';
 import { useListMeetingsQuery } from '../../../store/api/meetingsApi';
 import { ApiError, Fetching } from '../../settings/components/listUi';
@@ -31,7 +31,7 @@ export default function PersonTimeline({ name, mine, onBack, onOpen, onFocusPers
         <Box sx={{ width: 68, height: 68, borderRadius: '50%', bgcolor: person.type === 'external' ? tokens.blue : ownerAvatarColor(name), color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 22, flexShrink: 0, border: '3px solid rgba(255,255,255,0.3)' }}>{initials(name)}</Box>
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Box sx={{ fontFamily: fonts.serif, fontSize: 24, fontWeight: 700, letterSpacing: '-0.01em' }}>{name}</Box>
-          <Box sx={{ fontFamily: fonts.mono, fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', opacity: 0.85, mt: '4px' }}>{person.type === 'external' ? '🌐 External' : '👤 TrustLab'}{person.email ? ' · ' + person.email : ''}</Box>
+          <Box sx={{ fontFamily: fonts.mono, fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', opacity: 0.85, mt: '4px' }}>{person.type === 'external' ? 'External' : 'TrustLab'}{person.email ? ' · ' + person.email : ''}</Box>
         </Box>
         <Box sx={{ display: 'flex', gap: '20px', ml: { xs: 0, sm: 'auto' } }}>
           {stats.map(([val, lbl]) => (
@@ -48,7 +48,7 @@ export default function PersonTimeline({ name, mine, onBack, onOpen, onFocusPers
       {error || isLoading
         ? null
         : logs.length === 0
-          ? <EmptyState icon="💬" title={`No logs with ${name} yet`} />
+          ? <EmptyState icon={<Icon name="chat" />} title={`No logs with ${name} yet`} />
           : <DayGroups groups={groupLogsByDay(logs)} onOpen={onOpen} onFocusPerson={onFocusPerson} />}
     </>
   );

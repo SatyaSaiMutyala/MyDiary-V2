@@ -54,7 +54,7 @@ export default function StandaloneTaskModal({ open, onClose, onSubmit, me, task 
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
           <Btn onClick={onClose}>Cancel</Btn>
-          <Btn variant="primary" onClick={submit}>{editing ? '💾 Save changes' : 'Create & Notify'}</Btn>
+          <Btn variant="primary" onClick={submit}>{editing ? 'Save changes' : 'Create & Notify'}</Btn>
         </Box>
       </>}>
       <Box sx={{ mb: '14px' }}>

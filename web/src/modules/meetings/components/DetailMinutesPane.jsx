@@ -1,6 +1,6 @@
 import { Box, Typography } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { Btn, QuickLinkBtn, TypePill } from '../../../components';
+import { Btn, QuickLinkBtn, TypePill, Icon } from '../../../components';
 import { tokens, fonts } from '../../../theme/tokens';
 import { TYPES } from '../../../data/meetings';
 import { TDPL_LOGO_FULL } from '../../../data/logos';
@@ -53,7 +53,7 @@ export default function DetailMinutesPane({ m, onUpdateMinutes, onConvertToActio
             <Box component="span" sx={{ display: 'block', fontSize: 13, color: tokens.ink, letterSpacing: '0.1em', mt: '3px' }}>MINUTES OF MEETING</Box>
           </Box>
         </Box>
-        <TypePill type={m.type} sx={{ p: '4px 10px', borderRadius: '12px', gap: '6px', mb: '10px' }}>{TYPES[m.type].icon} {TYPES[m.type].name}{m.subBadge ? ' · ' + m.subBadge : ''}</TypePill>
+        <TypePill type={m.type} sx={{ p: '4px 10px', borderRadius: '12px', gap: '6px', mb: '10px' }}><Icon name={TYPES[m.type].icon} size={12} />{TYPES[m.type].name}{m.subBadge ? ' · ' + m.subBadge : ''}</TypePill>
         <Typography component="h1" sx={{ fontFamily: fonts.serif, fontSize: { xs: 24, md: 30 }, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.15, m: '10px 0 14px', color: tokens.ink }}>{m.title}</Typography>
         <Box sx={{ pt: '16px', borderTop: `1px solid ${tokens.line}` }}>
           <Grid container spacing="12px">
@@ -93,7 +93,7 @@ export default function DetailMinutesPane({ m, onUpdateMinutes, onConvertToActio
       </Box>
 
       <Box sx={{ fontFamily: fonts.mono, fontSize: 10, color: tokens.slate, letterSpacing: '0.12em', textTransform: 'uppercase', mb: '12px', fontWeight: 700, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-        <span>💾 Auto-saves as you type · Last saved <span>just now</span></span>
+        <span><Icon name="save" />Auto-saves as you type · Last saved <span>just now</span></span>
         <span>{m.agenda.length} agenda item{m.agenda.length > 1 ? 's' : ''}</span>
       </Box>
 
@@ -102,9 +102,9 @@ export default function DetailMinutesPane({ m, onUpdateMinutes, onConvertToActio
         const mins = (m.minutes && m.minutes[ag]) || { disc: '', dec: '' };
         return (
           <MinutesBlock key={ag} num={String(i + 1).padStart(2, '0')} title={a} time={m.agendaTimes[i] || '—'}>
-            <SectionLabel>💬 Discussion Notes</SectionLabel>
+            <SectionLabel><Icon name="chat" />Discussion Notes</SectionLabel>
             <MinutesTextarea variant="discussion" placeholder="Key points raised, who said what, data cited, questions asked..." value={mins.disc || ''} onChange={(e) => onUpdateMinutes(ag, 'disc', e.target.value)} />
-            <SectionLabel>🎯 Decisions & Outcomes</SectionLabel>
+            <SectionLabel><Icon name="target" />Decisions & Outcomes</SectionLabel>
             <MinutesTextarea variant="decisions" placeholder="What was decided · what the room agreed on..." value={mins.dec || ''} onChange={(e) => onUpdateMinutes(ag, 'dec', e.target.value)} />
             <Box sx={{ display: 'flex', gap: '6px', mt: 1, flexWrap: 'wrap' }}>
               <QuickLinkBtn onClick={() => onConvertToAction(a)}>+ Convert to Action Item</QuickLinkBtn>
@@ -124,8 +124,8 @@ export default function DetailMinutesPane({ m, onUpdateMinutes, onConvertToActio
           Minutes draft · <strong>{m.agenda.length} agenda items</strong> · Chair: <strong>{m.chair}</strong>{m.minutesFinalised ? <> · <Box component="span" sx={{ color: tokens.tealDark, fontWeight: 700 }}>✓ FINALISED</Box></> : null}
         </Box>
         <Box sx={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          <Btn onClick={onPreview}>👁 Preview</Btn>
-          <Btn onClick={onExport}>📄 Export</Btn>
+          <Btn onClick={onPreview}><Icon name="view" />Preview</Btn>
+          <Btn onClick={onExport}><Icon name="document" />Export</Btn>
           <Btn variant="primary" onClick={onFinalise}>✓ Finalise &amp; Circulate</Btn>
         </Box>
       </Box>

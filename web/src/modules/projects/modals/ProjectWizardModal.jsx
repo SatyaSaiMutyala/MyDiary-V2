@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { Box, Modal, Typography } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { Btn, TextLink, VSection, Field, TextInput, TextArea, SelectInput, DelBtn } from '../../../components';
+import { Btn, TextLink, VSection, Field, TextInput, TextArea, SelectInput, DelBtn, Icon } from '../../../components';
 import { tokens, fonts } from '../../../theme/tokens';
 import { errorMessage } from '../../../store/api/baseApi';
 import { useCreateProjectMutation, useUpdateProjectMutation } from '../../../store/api/projectsApi';
@@ -71,12 +71,12 @@ export default function ProjectWizardModal({ draft: initialDraft, onClose, onSav
     }
   };
 
-  const msOpts = [<option key="" value="">— None (project-wide) —</option>, ...(d.milestones || []).map(m => <option key={m.id} value={m.id}>🏁 {m.name || '(unnamed)'}</option>)];
+  const msOpts = [<option key="" value="">— None (project-wide) —</option>, ...(d.milestones || []).map(m => <option key={m.id} value={m.id}><Icon name="milestone" />{m.name || '(unnamed)'}</option>)];
 
-  const footNote = step === 1 ? '📋 Fill the basics — name & description required'
-    : step === 2 ? `👥 ${d.team.length} internal + ${d.external.length} external will be notified`
-    : step === 3 ? `🏁 ${d.milestones.length} milestone${d.milestones.length !== 1 ? 's' : ''} planned (can add more later)`
-    : `✓ ${d.tasks.length} tasks · 📈 ${d.kpis.length} KPIs · ⚠ ${d.risks.length} risks — all optional`;
+  const footNote = step === 1 ? 'Fill the basics — name & description required'
+    : step === 2 ? `${d.team.length} internal + ${d.external.length} external will be notified`
+    : step === 3 ? `${d.milestones.length} milestone${d.milestones.length !== 1 ? 's' : ''} planned (can add more later)`
+    : `✓ ${d.tasks.length} tasks · ${d.kpis.length} KPIs · ⚠ ${d.risks.length} risks — all optional`;
 
   return (
     <Modal open onClose={onClose} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: { xs: 1.5, md: 2.5 } }} slotProps={{ backdrop: { sx: { bgcolor: 'rgba(26,58,47,0.6)', backdropFilter: 'blur(4px)' } } }}>
@@ -85,7 +85,7 @@ export default function ProjectWizardModal({ draft: initialDraft, onClose, onSav
 
         {/* .visit-modal-head */}
         <Box sx={{ p: { xs: '16px 18px', md: '20px 28px' }, background: `linear-gradient(135deg, ${tokens.greenDeep}, ${tokens.tealDark})`, color: '#fff', display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Box sx={{ width: 46, height: 46, borderRadius: '10px', bgcolor: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>📁</Box>
+          <Box sx={{ width: 46, height: 46, borderRadius: '10px', bgcolor: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}><Icon name="folder" /></Box>
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography component="h2" sx={{ fontFamily: fonts.serif, fontSize: 22, fontWeight: 700, m: 0, letterSpacing: '-0.01em' }}>{isEdit ? 'Edit Project' : 'New Project'}</Typography>
             <Box sx={{ fontSize: 12, opacity: 0.85, mt: '3px', fontFamily: fonts.mono, letterSpacing: '0.05em', textTransform: 'uppercase' }}>{d.code} · Step {step} of 4 — {WIZ_STEPS[step - 1].label}</Box>
@@ -110,7 +110,7 @@ export default function ProjectWizardModal({ draft: initialDraft, onClose, onSav
         {/* .visit-modal-body */}
         <Box sx={{ p: { xs: '16px', md: '20px 28px' }, overflowY: 'auto', flex: 1, bgcolor: tokens.creamWarm }}>
           {step === 1 && (
-            <VSection head="📋 Project Details">
+            <VSection head="Project Details">
               <Grid container spacing="12px" sx={{ mb: '12px' }}>
                 <Grid size={{ xs: 12, sm: 6 }}><Field label="Project Code"><TextInput value={d.code} onChange={e => ed(x => { x.code = e.target.value; })} /></Field></Grid>
                 <Grid size={{ xs: 12, sm: 6 }}><Field label="Owner"><TextInput value={d.owner} onChange={e => ed(x => { x.owner = e.target.value; })} {...listProps} /></Field></Grid>
@@ -118,7 +118,7 @@ export default function ProjectWizardModal({ draft: initialDraft, onClose, onSav
               <Field label="Project Name" req sx={{ mb: '12px' }}><TextInput value={d.name} onChange={e => ed(x => { x.name = e.target.value; })} placeholder="e.g. NABL Surveillance Audit — Dec 2026 Prep" /></Field>
               <Field label="Description" req sx={{ mb: '12px' }}><TextArea value={d.description} onChange={e => ed(x => { x.description = e.target.value; })} placeholder="What is this project about? Scope, objectives, success criteria..." sx={{ '& textarea.MuiInputBase-input': { minHeight: 80, resize: 'vertical', lineHeight: 1.5 } }} /></Field>
               <Grid container spacing="12px" sx={{ mb: '12px' }}>
-                <Grid size={{ xs: 12, sm: 4 }}><Field label="Category"><SelectInput value={d.category} onChange={e => ed(x => { x.category = e.target.value; })}>{Object.entries(PROJ_CATEGORIES).map(([k, v]) => <option key={k} value={k}>{v.emoji} {v.label}</option>)}</SelectInput></Field></Grid>
+                <Grid size={{ xs: 12, sm: 4 }}><Field label="Category"><SelectInput value={d.category} onChange={e => ed(x => { x.category = e.target.value; })}>{Object.entries(PROJ_CATEGORIES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}</SelectInput></Field></Grid>
                 <Grid size={{ xs: 6, sm: 4 }}><Field label="Priority"><SelectInput value={d.priority} onChange={e => ed(x => { x.priority = e.target.value; })}><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option></SelectInput></Field></Grid>
                 <Grid size={{ xs: 6, sm: 4 }}><Field label="Status"><SelectInput value={d.status} onChange={e => ed(x => { x.status = e.target.value; })}>{Object.entries(PROJ_STATUSES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}</SelectInput></Field></Grid>
               </Grid>
@@ -131,7 +131,7 @@ export default function ProjectWizardModal({ draft: initialDraft, onClose, onSav
 
           {step === 2 && (
             <>
-              <VSection head="👥 Internal Team" meta={`${d.team.length} member${d.team.length !== 1 ? 's' : ''}`}>
+              <VSection head="Internal Team" meta={`${d.team.length} member${d.team.length !== 1 ? 's' : ''}`}>
                 {hint('TDPL staff who will be part of this project — assign a role each.')}
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: '5px', m: '8px 0' }}>
                   {d.team.map((t, i) => (
@@ -144,7 +144,7 @@ export default function ProjectWizardModal({ draft: initialDraft, onClose, onSav
                 </Box>
                 <TextLink onClick={() => ed(x => { x.team.push({ name: '', role: '' }); })}>+ Add Team Member</TextLink>
               </VSection>
-              <VSection head="🌐 External Collaborators" meta={d.external.length}>
+              <VSection head="External Collaborators" meta={d.external.length}>
                 {hint("Consultants, vendors, auditors, partners — they'll receive updates by email.")}
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: '5px', m: '8px 0' }}>
                   {d.external.map((e, i) => (
@@ -162,7 +162,7 @@ export default function ProjectWizardModal({ draft: initialDraft, onClose, onSav
           )}
 
           {step === 3 && (
-            <VSection head="🏁 Project Milestones" meta={`${d.milestones.length} planned`}>
+            <VSection head="Project Milestones" meta={`${d.milestones.length} planned`}>
               {hint('Major checkpoints or gates for this project. You can set acceptance criteria later.')}
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: '5px', m: '8px 0' }}>
                 {d.milestones.map((m, i) => (
@@ -175,14 +175,14 @@ export default function ProjectWizardModal({ draft: initialDraft, onClose, onSav
                 ))}
               </Box>
               <TextLink onClick={() => ed(x => { x.milestones.push({ id: newId('m'), name: '', dueDate: '', status: 'todo', owner: x.owner, description: '', acceptanceCriteria: [] }); })}>+ Add Milestone</TextLink>
-              {d.milestones.length === 0 && <Box sx={{ mt: '12px', p: '10px 12px', bgcolor: tokens.creamWarm, border: `1px dashed ${tokens.slateSoft}`, borderRadius: '6px', fontSize: 12, color: tokens.slate }}>💡 No milestones yet. Skip this step and add them later from the project detail view, or add at least one now so tasks and risks in the next step can link to it.</Box>}
+              {d.milestones.length === 0 && <Box sx={{ mt: '12px', p: '10px 12px', bgcolor: tokens.creamWarm, border: `1px dashed ${tokens.slateSoft}`, borderRadius: '6px', fontSize: 12, color: tokens.slate }}><Icon name="tip" />No milestones yet. Skip this step and add them later from the project detail view, or add at least one now so tasks and risks in the next step can link to it.</Box>}
             </VSection>
           )}
 
           {step === 4 && (
             <>
               <Box sx={{ fontSize: 12, color: tokens.slate, mb: '14px', p: '10px 12px', bgcolor: tokens.creamWarm, border: `1px solid ${tokens.line}`, borderRadius: '6px' }}>
-                💡 This step is entirely optional — all three sections can be added or edited later from the project detail view. Fill in whatever you already know.
+                <Icon name="tip" />This step is entirely optional — all three sections can be added or edited later from the project detail view. Fill in whatever you already know.
               </Box>
 
               <VSection head="✓ Initial Tasks" meta={`${d.tasks.length} task${d.tasks.length !== 1 ? 's' : ''}`}>
@@ -202,7 +202,7 @@ export default function ProjectWizardModal({ draft: initialDraft, onClose, onSav
                 <TextLink onClick={() => ed(x => { x.tasks.push({ id: newId('t'), title: '', assignee: x.owner, status: 'todo', dueDate: '', priority: 'medium', milestoneId: null }); })}>+ Add Task</TextLink>
               </VSection>
 
-              <VSection head="📈 Target KPIs" meta={`${d.kpis.length} KPI${d.kpis.length !== 1 ? 's' : ''}`}>
+              <VSection head="Target KPIs" meta={`${d.kpis.length} KPI${d.kpis.length !== 1 ? 's' : ''}`}>
                 {hint('Outcome measures that define success. Project-level only.')}
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: '5px', m: '8px 0' }}>
                   {d.kpis.map((k, i) => (
@@ -245,7 +245,7 @@ export default function ProjectWizardModal({ draft: initialDraft, onClose, onSav
             <Btn onClick={onClose}>Cancel</Btn>
             {step > 1 && <Btn onClick={wizPrev}>← Back</Btn>}
             {step < 4 && <Btn variant="primary" onClick={wizNext}>Next →</Btn>}
-            {(step === 4 || isEdit) && <Btn variant="primary" onClick={saveProject} disabled={saving}>{saving ? 'Saving…' : '💾 Save Project'}</Btn>}
+            {(step === 4 || isEdit) && <Btn variant="primary" onClick={saveProject} disabled={saving}>{saving ? 'Saving…' : 'Save Project'}</Btn>}
           </Box>
         </Box>
       </Box>

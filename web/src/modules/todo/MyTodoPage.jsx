@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../../store/AppStore';
 import { useAuth } from '../../auth/AuthContext';
 import { tokens, fonts } from '../../theme/tokens';
-import { PageHeader, Btn, Avatar, EmptyState, MonoHeading, TabBar, FilterPill } from '../../components';
+import { PageHeader, Btn, Avatar, EmptyState, MonoHeading, TabBar, FilterPill, Icon } from '../../components';
 import { isOverdue } from '../../utils/dates';
 import { errorMessage } from '../../store/api/baseApi';
 import { useAllocateTaskMutation, useLazyListActionItemsQuery, useListActionItemsQuery, useUpdateActionItemMutation } from '../../store/api/actionItemsApi';
@@ -155,8 +155,8 @@ export default function MyTodoPage() {
     }
   };
   const nudgeOwner = async (owner) => {
-    notify({ type: 'action', icon: '🔔', text: `Nudge sent to <strong>${owner}</strong> re: a task you delegated.` });
-    await dlg.alert('🔔 Nudge sent to ' + owner + ". They'll see it in their inbox and get a push notification.");
+    notify({ type: 'action', icon: '', text: `Nudge sent to <strong>${owner}</strong> re: a task you delegated.` });
+    await dlg.alert('Nudge sent to ' + owner + ". They'll see it in their inbox and get a push notification.");
   };
   /** Hand a task to somebody else — the picker chooses the name, so it is always one that exists. */
   const reassignTo = async (t, name) => {
@@ -224,7 +224,7 @@ export default function MyTodoPage() {
 
   let body;
   if (scoped.length === 0) {
-    body = <EmptyState icon="✅" title="Clean inbox" desc="Nothing in this view." />;
+    body = <EmptyState icon={<Icon name="approved" />} title="Clean inbox" desc="Nothing in this view." />;
   } else if (roleFilter === 'owed' || roleFilter === 'all') {
     const overdueGroup = scoped.filter(t => t.status !== 'done' && isOverdue(t.deadline));
     const openGroup = scoped.filter(t => t.status !== 'done' && !isOverdue(t.deadline));
@@ -240,7 +240,7 @@ export default function MyTodoPage() {
 
   return (
     <Box>
-      <PageHeader code="TL-OPS-DRM-001" parts={['MyDiary · Unified Inbox', 'Personal Queue']} icon="✅" title="My To-Do"
+      <PageHeader code="TL-OPS-DRM-001" parts={['MyDiary · Unified Inbox', 'Personal Queue']} icon={<Icon name="approved" />} title="My To-Do"
         sub="Every action owed by you or delegated by you — from meetings, visits, workflows or ad-hoc — in one deadline-sorted inbox. Complete here and the source updates automatically."
         actions={<Btn variant="primary" size="lg" onClick={() => setStandaloneOpen(true)}>+ New Task</Btn>} />
 
@@ -262,17 +262,17 @@ export default function MyTodoPage() {
       {/* .my-actions-tabs → shared GateBook TabBar */}
       <TabBar value={roleFilter} onChange={setRoleFilter} sx={{ mb: '16px' }} tabs={[
         { key: 'owed', icon: '⚡', label: 'Owed by Me', count: owedByMe.length },
-        { key: 'delegated', icon: '🔁', label: 'Delegated by Me', count: delegatedByMe.length },
+        { key: 'delegated', icon: '', label: 'Delegated by Me', count: delegatedByMe.length },
         { key: 'overdue', icon: '⚠', label: 'Overdue', count: overdueCt },
         { key: 'done', icon: '✓', label: 'Done', count: doneCt },
-        { key: 'all', icon: '📋', label: 'Everything', count: [...owedByMe, ...delegatedByMe.filter(x => !owedByMe.some(o => o.id === x.id))].length },
+        { key: 'all', icon: '', label: 'Everything', count: [...owedByMe, ...delegatedByMe.filter(x => !owedByMe.some(o => o.id === x.id))].length },
       ]} />
 
       <Box sx={{ display: 'flex', gap: 1, m: '12px 0 18px', p: '10px 14px', bgcolor: tokens.creamWarm, border: `1px solid ${tokens.line}`, borderRadius: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
         <Box component="span" sx={{ fontFamily: fonts.mono, fontSize: 10, letterSpacing: '0.1em', color: tokens.slate, fontWeight: 700, mr: '4px' }}>SOURCE:</Box>
         <FilterPill active={srcFilter === 'all'} onClick={() => setSrcFilter('all')} count={roleScope.length}>All</FilterPill>
-        <FilterPill active={srcFilter === 'meetings'} onClick={() => setSrcFilter('meetings')} count={srcCt('meetings')}>📅 From Meetings</FilterPill>
-        <FilterPill active={srcFilter === 'visits'} onClick={() => setSrcFilter('visits')} count={srcCt('visits')}>📝 From Visits</FilterPill>
+        <FilterPill active={srcFilter === 'meetings'} onClick={() => setSrcFilter('meetings')} count={srcCt('meetings')}><Icon name="weekly" />From Meetings</FilterPill>
+        <FilterPill active={srcFilter === 'visits'} onClick={() => setSrcFilter('visits')} count={srcCt('visits')}><Icon name="note" />From Visits</FilterPill>
         <FilterPill active={srcFilter === 'standalone'} onClick={() => setSrcFilter('standalone')} count={srcCt('standalone')}>⚡ Standalone</FilterPill>
       </Box>
 
@@ -296,7 +296,7 @@ export default function MyTodoPage() {
 
       {scoped.length > 0 && (
         <Box sx={{ mt: '20px', p: '14px 18px', bgcolor: tokens.creamWarm, border: `1px solid ${tokens.line}`, borderRadius: tokens.radius, fontSize: 12, color: tokens.slate, display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <Box component="span" sx={{ fontSize: 16 }}>🔁</Box>
+          <Box component="span" sx={{ fontSize: 16 }}><Icon name="repeat" /></Box>
           <span><strong style={{ color: tokens.ink }}>Round-trip:</strong> When you complete, defer or block a task here, the source meeting / visit updates automatically with your comment, status change, and timestamp — logged in the action's history and visible to the originator.</span>
         </Box>
       )}

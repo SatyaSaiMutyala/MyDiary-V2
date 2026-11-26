@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Box, ButtonBase, Typography } from '@mui/material';
 import { tokens, fonts } from '../../../theme/tokens';
-import { TextArea } from '../../../components';
+import { TextArea, Icon } from '../../../components';
 import PhotoThumb from './PhotoThumb';
 import { STATUSES, checkPhoto, statusStyle, whatIsMissing } from '../utils';
 
@@ -27,7 +27,7 @@ function StatusPicker({ value, locked, onPick }) {
               '&:hover': active ? {} : { bgcolor: s.soft, color: s.color },
             }}
           >
-            <Box component="span" sx={{ fontSize: 12 }}>{s.icon}</Box>
+            <Icon name={s.icon} size={12} />
             <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>{s.label}</Box>
           </ButtonBase>
         );
@@ -121,7 +121,7 @@ export default function ActivityRow({
             )}
             {activity.photoRequired && (
               <Box sx={{ fontFamily: fonts.mono, fontSize: 9.5, p: '3px 8px', borderRadius: '10px', bgcolor: photos.length ? tokens.okSoft : tokens.yellowSoft, color: photos.length ? tokens.ok : tokens.amber, fontWeight: 700, letterSpacing: '0.04em' }}>
-                📷 {photos.length ? `${photos.length} photo${photos.length === 1 ? '' : 's'}` : 'Photo required'}
+                <Icon name="photo" />{photos.length ? `${photos.length} photo${photos.length === 1 ? '' : 's'}` : 'Photo required'}
               </Box>
             )}
             {/* Whose line this is. No chip at all means everyone's, exactly as an untagged
@@ -197,7 +197,7 @@ export default function ActivityRow({
                       '&:hover': { borderColor: tokens.teal, color: tokens.tealDark, bgcolor: tokens.tealSofter },
                     }}
                   >
-                    <Box sx={{ fontSize: 16 }}>📷</Box>
+                    <Box sx={{ fontSize: 16 }}><Icon name="photo" /></Box>
                     <Box sx={{ fontFamily: fonts.mono, fontSize: 8, fontWeight: 700, letterSpacing: '0.06em' }}>ADD</Box>
                   </ButtonBase>
                 </>

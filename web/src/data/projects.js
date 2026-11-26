@@ -1,13 +1,13 @@
 export const PROJ_CATEGORIES = {
-  operations: { label: 'Operations', emoji: '⚙', color: '#0F8F76' },
-  clinical: { label: 'Clinical', emoji: '🔬', color: '#D53F8C' },
-  quality: { label: 'Quality / NABL', emoji: '🛡', color: '#F0B429' },
-  technology: { label: 'Technology', emoji: '💻', color: '#2563EB' },
-  commercial: { label: 'Commercial', emoji: '📈', color: '#DD6B20' },
-  hr: { label: 'HR / People', emoji: '👥', color: '#7C3AED' },
-  finance: { label: 'Finance', emoji: '💰', color: '#059669' },
-  strategic: { label: 'Strategic', emoji: '♟', color: '#1A3A2F' },
-  compliance: { label: 'Compliance', emoji: '⚖', color: '#B7791F' },
+  operations: { label: 'Operations', icon: 'engineering', color: '#0F8F76' },
+  clinical: { label: 'Clinical', icon: 'lab', color: '#D53F8C' },
+  quality: { label: 'Quality / NABL', icon: 'quality', color: '#F0B429' },
+  technology: { label: 'Technology', icon: 'computer', color: '#2563EB' },
+  commercial: { label: 'Commercial', icon: 'trending', color: '#DD6B20' },
+  hr: { label: 'HR / People', icon: 'people', color: '#7C3AED' },
+  finance: { label: 'Finance', icon: 'money', color: '#059669' },
+  strategic: { label: 'Strategic', icon: 'strategy', color: '#1A3A2F' },
+  compliance: { label: 'Compliance', icon: 'decision', color: '#B7791F' },
 };
 
 export const PROJ_STATUSES = {
@@ -26,7 +26,7 @@ export const PROJ_STATUSES = {
 
 export const PROJ_TEMPLATES = [
   {
-    id: 'tpl-nabl', emoji: '🛡', category: 'quality',
+    id: 'tpl-nabl', icon: 'quality', category: 'quality',
     name: 'NABL Surveillance Audit Prep',
     description: 'End-to-end preparation for NABL surveillance / reassessment audit — document review, gap closure, mock audits, staff refresh, physical readiness across all branches.',
     suggestedDurationDays: 90, usedCount: 7,
@@ -64,7 +64,7 @@ export const PROJ_TEMPLATES = [
     ],
   },
   {
-    id: 'tpl-branch', emoji: '🏥', category: 'operations',
+    id: 'tpl-branch', icon: 'hospital', category: 'operations',
     name: 'New Branch Launch',
     description: 'Open a new diagnostic branch from site identification through soft-launch and NABL inclusion — premises, licences, equipment, hiring, systems, marketing.',
     suggestedDurationDays: 120, usedCount: 4,
@@ -106,7 +106,7 @@ export const PROJ_TEMPLATES = [
     ],
   },
   {
-    id: 'tpl-supplier-audit', emoji: '🔍', category: 'quality',
+    id: 'tpl-supplier-audit', icon: 'search', category: 'quality',
     name: 'Annual Supplier / Vendor Audit',
     description: 'Scheduled audit of a critical supplier — reagents, equipment OEM, or reference-lab partner — covering quality systems, delivery, pricing, and compliance.',
     suggestedDurationDays: 30, usedCount: 9,
@@ -139,7 +139,7 @@ export const PROJ_TEMPLATES = [
     ],
   },
   {
-    id: 'tpl-software', emoji: '💻', category: 'technology',
+    id: 'tpl-software', icon: 'computer', category: 'technology',
     name: 'Software Module Build',
     description: 'Scope → design → build → UAT → go-live for a new internal software module (LIS, HIS, portal, workflow tool). Follows TrustLab in-house build cadence.',
     suggestedDurationDays: 75, usedCount: 6,
@@ -176,7 +176,7 @@ export const PROJ_TEMPLATES = [
     ],
   },
   {
-    id: 'tpl-contract', emoji: '📝', category: 'commercial',
+    id: 'tpl-contract', icon: 'note', category: 'commercial',
     name: 'Contract Renegotiation',
     description: 'Renegotiate a major commercial contract — corporate AHC client, supplier, reference-lab partner, or lease — with structured prep, negotiation rounds, and closure.',
     suggestedDurationDays: 45, usedCount: 5,
@@ -210,7 +210,7 @@ export const PROJ_TEMPLATES = [
     ],
   },
   {
-    id: 'tpl-ahc', emoji: '🏢', category: 'commercial',
+    id: 'tpl-ahc', icon: 'department', category: 'commercial',
     name: 'Corporate AHC Rollout',
     description: 'Deploy an Annual Health Check programme at a corporate client — tie-up, package design, onboarding sessions, camps, delivery, reports, renewal.',
     suggestedDurationDays: 60, usedCount: 3,
@@ -245,7 +245,7 @@ export const PROJ_TEMPLATES = [
     ],
   },
   {
-    id: 'tpl-equipment', emoji: '🔬', category: 'operations',
+    id: 'tpl-equipment', icon: 'lab', category: 'operations',
     name: 'Equipment Replacement / Upgrade',
     description: 'Replace or upgrade a major analyser — tender, selection, installation, validation, parallel run, cutover, and old-unit decommissioning.',
     suggestedDurationDays: 90, usedCount: 4,
@@ -283,7 +283,7 @@ export const PROJ_TEMPLATES = [
     ],
   },
   {
-    id: 'tpl-investor', emoji: '💼', category: 'strategic',
+    id: 'tpl-investor', icon: 'briefcase', category: 'strategic',
     name: 'Investor Readiness',
     description: 'Prepare for institutional investor diligence — data room, financials cleanup, legal, pitch deck, management interviews, teaser/CIM.',
     suggestedDurationDays: 60, usedCount: 2,
@@ -320,7 +320,7 @@ export const PROJ_TEMPLATES = [
     ],
   },
   {
-    id: 'tpl-cme', emoji: '🎓', category: 'commercial',
+    id: 'tpl-cme', icon: 'consultant', category: 'commercial',
     name: 'CME / Marketing Event',
     description: 'Plan and execute a CME programme or marketing event for referring doctors — venue, speaker, invites, delivery, follow-up.',
     suggestedDurationDays: 40, usedCount: 8,
@@ -357,7 +357,7 @@ export const PROJ_TEMPLATES = [
     ],
   },
   {
-    id: 'tpl-hr', emoji: '👥', category: 'hr',
+    id: 'tpl-hr', icon: 'people', category: 'hr',
     name: 'HR Programme Launch',
     description: 'Launch a new people programme — Trustian Induction, L&D curriculum, performance review cycle, employee wellness, or culture initiative.',
     suggestedDurationDays: 60, usedCount: 3,
@@ -390,7 +390,7 @@ export const PROJ_TEMPLATES = [
     ],
   },
   {
-    id: 'tpl-regulatory', emoji: '⚖', category: 'compliance',
+    id: 'tpl-regulatory', icon: 'decision', category: 'compliance',
     name: 'Regulatory Filing / Renewal',
     description: 'Annual or periodic statutory filing — PCPNDT, Clinical Establishment, Fire, Pollution, Biomedical Waste, PF/ESI, GST, TDS, etc.',
     suggestedDurationDays: 30, usedCount: 12,
@@ -421,7 +421,7 @@ export const PROJ_TEMPLATES = [
     ],
   },
   {
-    id: 'tpl-blank', emoji: '📄', category: 'strategic',
+    id: 'tpl-blank', icon: 'document', category: 'strategic',
     name: 'Blank Project',
     description: 'Start from scratch — no pre-filled milestones, tasks, KPIs, or risks. Choose this when the project does not fit any template.',
     suggestedDurationDays: 60, usedCount: 15,

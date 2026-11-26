@@ -17,12 +17,12 @@ export default function ActivityPane({ p, actions }) {
   };
   return (
     <>
-      <VSection head="💬 Activity Timeline" meta={`${feed.length} events`}>
+      <VSection head="Activity Timeline" meta={`${feed.length} events`}>
         {feed.length
           ? feed.map((a, i) => <ActivityEntry key={i} a={a} />)
           : <Box sx={{ color: tokens.slate, fontSize: 12, fontStyle: 'italic' }}>Nothing has happened on this project yet.</Box>}
       </VSection>
-      <VSection head="💭 Add a Comment">
+      <VSection head="Add a Comment">
         <TextArea value={txt} onChange={e => setTxt(e.target.value)} placeholder="Add an update, note, or comment on this project..." sx={{ '& textarea.MuiInputBase-input': { minHeight: 60, resize: 'vertical', lineHeight: 1.5 } }} />
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
           <Btn variant="primary" size="sm" disabled={posting} onClick={post}>+ Post Comment</Btn>

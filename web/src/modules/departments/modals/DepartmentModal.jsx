@@ -8,7 +8,7 @@ import { useCreateDepartmentMutation, useUpdateDepartmentMutation } from '../../
 import { tokens, fonts } from '../../../theme/tokens';
 
 /** A handful of sensible department icons; anything else can be typed straight into the box. */
-const ICONS = ['🏢', '🔬', '🚚', '👥', '🛒', '🛡', '📦', '💻', '☎', '🏠', '⚙', '⏱', '💸', '💰', '🏛', '💼', '📒', '👑', '📊', '🧪', '🩺', '📋'];
+const ICONS = ['', '', '', '', '', '', '', '', '☎', '', '⚙', '⏱', '', '', '', '', '', '', '', '', '', ''];
 
 /**
  * Add or edit a department — name, code, icon and description in one form.
@@ -32,7 +32,7 @@ export default function DepartmentModal({ open, department, template, onClose, o
   const saving = creating || updating;
   const isEdit = Boolean(department);
 
-  const [icon, setIcon] = useState('🏢');
+  const [icon, setIcon] = useState('');
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
   const [desc, setDesc] = useState('');
@@ -42,7 +42,7 @@ export default function DepartmentModal({ open, department, template, onClose, o
   useEffect(() => {
     if (!open) return;
     setError(null);
-    setIcon(department?.icon || template?.emoji || '🏢');
+    setIcon(department?.icon || template?.icon || 'department');
     setName(department?.name ?? '');
     setCode(department?.code ?? '');
     setDesc(department?.description ?? (template ? template.description.split('.')[0] : ''));
@@ -56,7 +56,7 @@ export default function DepartmentModal({ open, department, template, onClose, o
     // The code is optional — the API gives a new department one when it is left blank.
     const body = {
       name: n,
-      icon: icon.trim() || '🏢',
+      icon: icon.trim() || '',
       description: desc.trim(),
       ...(code.trim() ? { code: code.trim() } : {}),
     };
@@ -99,14 +99,14 @@ export default function DepartmentModal({ open, department, template, onClose, o
       open={open}
       onClose={saving ? () => {} : onClose}
       width={620}
-      icon={isEdit ? '✎' : '🏢'}
+      icon={isEdit ? '✎' : ''}
       title={isEdit ? `Edit ${department.name}` : template ? `New department from "${template.name}"` : 'New department'}
       sub={isEdit ? department.code : 'Department Master'}
       footer={<>
         <FootNote>{isEdit ? 'Positions and shift tasks are edited on the department page' : 'Positions and tasks come next, on the department page'}</FootNote>
         <Box sx={{ display: 'flex', gap: 1 }}>
           <Btn onClick={onClose} disabled={saving}>Cancel</Btn>
-          <Btn variant="primary" onClick={save} disabled={saving}>{saving ? 'Saving…' : isEdit ? '💾 Save changes' : '+ Create department'}</Btn>
+          <Btn variant="primary" onClick={save} disabled={saving}>{saving ? 'Saving…' : isEdit ? 'Save changes' : '+ Create department'}</Btn>
         </Box>
       </>}
     >

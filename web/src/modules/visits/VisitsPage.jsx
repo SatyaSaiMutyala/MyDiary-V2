@@ -4,7 +4,7 @@ import Grid from '@mui/material/Grid';
 import { useAppStore } from '../../store/AppStore';
 import { useAuth } from '../../auth/AuthContext';
 import { VISIT_TYPES, VISIT_TEMPLATES } from '../../data/visits';
-import { PageHeader, Btn, DmsCard, EmptyState, TabBar } from '../../components';
+import { PageHeader, Btn, DmsCard, EmptyState, TabBar, Icon } from '../../components';
 import { errorMessage } from '../../store/api/baseApi';
 import { useCreateVisitMutation, useListVisitsQuery, useUpdateVisitMutation } from '../../store/api/visitsApi';
 import { ApiError, Fetching, PAGE_SIZE, Pager } from '../settings/components/listUi';
@@ -69,7 +69,7 @@ export default function VisitsPage() {
   };
 
   const pickVisitTemplate = async () => {
-    const menu = VISIT_TEMPLATES.map((t, i) => (i + 1) + '. ' + t.emoji + ' ' + t.name).join('\n');
+    const menu = VISIT_TEMPLATES.map((t, i) => (i + 1) + '. ' + t.name).join('\n');
     const pick = await dlg.prompt('Which visit template?\n\n' + menu + '\n\nEnter a number, or blank to cancel.');
     if (!pick) return;
     const idx = parseInt(pick.trim(), 10) - 1;
@@ -101,23 +101,23 @@ export default function VisitsPage() {
       return;
     }
     setDraft(null);
-    setTimeout(() => dlg.alert(targetStatus === 'submitted' ? '✓ Visit report submitted. Action items dispatched to owners.' : '💾 Draft saved.'), 100);
+    setTimeout(() => dlg.alert(targetStatus === 'submitted' ? '✓ Visit report submitted. Action items dispatched to owners.' : 'Draft saved.'), 100);
   };
 
   // Every type is offered, with no count on it: counting each one would mean a query per type on
   // every load, and the number beside a tab is not worth that. The chosen tab's own total is on
   // the strip above, and in the pager below the list.
   const tabs = [
-    { key: 'all', icon: '📝', label: 'All Visits', count: totalCt },
-    ...Object.entries(VISIT_TYPES).map(([k, t]) => ({ key: k, icon: t.emoji, label: t.label })),
+    { key: 'all', icon: '', label: 'All Visits', count: totalCt },
+    ...Object.entries(VISIT_TYPES).map(([k, t]) => ({ key: k, icon: <Icon name={t.icon} />, label: t.label })),
   ];
 
   return (
     <Box>
-      <PageHeader parts={['MyDiary · Field Log', 'Site Observations']} icon="📝" title="My Visit Observations"
+      <PageHeader parts={['MyDiary · Field Log', 'Site Observations']} icon={<Icon name="note" />} title="My Visit Observations"
         sub="Log any site visit — supplier audits, branch inspections, new premises walks, customer sites, regulatory visits. Structured observations, ratings, photos, action items that flow to My To-Do."
         actions={<>
-          <Btn size="lg" onClick={pickVisitTemplate}>📋 Use Template</Btn>
+          <Btn size="lg" onClick={pickVisitTemplate}><Icon name="clipboard" />Use Template</Btn>
           <Btn variant="primary" size="lg" onClick={() => openVisitModal()}>+ New Visit</Btn>
         </>} />
 
@@ -137,7 +137,7 @@ export default function VisitsPage() {
       {isLoading
         ? <EmptyState icon="⏳" title="Loading your visits…" desc="Fetching your visit observations from the server." />
         : filtered.length === 0
-          ? !error && <EmptyState icon="📝" title="No visits logged" desc="Click + New Visit above to log your first site observation." />
+          ? !error && <EmptyState icon={<Icon name="note" />} title="No visits logged" desc="Click + New Visit above to log your first site observation." />
           : <>
             {filtered.map(v => <VisitCard key={v.id} visit={v} onOpen={openVisitDetail} />)}
             <Pager data={data} page={page} onPage={setPage} loading={isFetching} />

@@ -1,26 +1,32 @@
 import { useEffect, useState } from 'react';
 import { Box, ButtonBase } from '@mui/material';
-import { ModalShell, Btn } from '../../../components';
+import { ModalShell, Btn, Icon } from '../../../components';
 import { TimeInput } from '../../../components/DateTimeInput';
 import { tokens, fonts } from '../../../theme/tokens';
 
-/** The lanes a logged activity can go into, and how each one reads in the header. */
+/**
+ * The lanes a logged activity can go into, and the eight tags it can carry.
+ *
+ * The prototype drew these with emoji; `icon` is a name from components/Icon.jsx instead, so they
+ * are painted in the chip's own colour at the chip's own weight — which is what an emoji, drawn by
+ * the operating system, can never do.
+ */
 export const LOG_LANES = [
-  { key: 'daily', label: 'Daily', icon: '☀️' },
-  { key: 'weekly', label: 'Weekly', icon: '📅' },
-  { key: 'monthly', label: 'Monthly', icon: '📆' },
+  { key: 'daily', label: 'Daily', icon: 'daily' },
+  { key: 'weekly', label: 'Weekly', icon: 'weekly' },
+  { key: 'monthly', label: 'Monthly', icon: 'monthly' },
 ];
 
-/** The eight chips of the prototype's modal. A blank tag is allowed too — nobody is made to pick. */
+/** A blank tag is allowed too — nobody is made to pick one. */
 export const LOG_TAGS = [
-  { id: 'approval', label: '✅ Approval', colour: '#059669' },
-  { id: 'meeting', label: '👥 Meeting', colour: '#2563EB' },
-  { id: 'review', label: '🔍 Review', colour: '#7C3AED' },
-  { id: 'call', label: '📞 Call', colour: '#DB2777' },
-  { id: 'decision', label: '⚖️ Decision', colour: '#D97706' },
-  { id: 'visit', label: '🚗 Visit', colour: '#0891B2' },
-  { id: 'task', label: '📝 Task', colour: '#64748B' },
-  { id: 'other', label: '💡 Other', colour: '#92400E' },
+  { id: 'approval', label: 'Approval', icon: 'approved', colour: '#059669' },
+  { id: 'meeting', label: 'Meeting', icon: 'meeting', colour: '#2563EB' },
+  { id: 'review', label: 'Review', icon: 'search', colour: '#7C3AED' },
+  { id: 'call', label: 'Call', icon: 'call', colour: '#DB2777' },
+  { id: 'decision', label: 'Decision', icon: 'decision', colour: '#D97706' },
+  { id: 'visit', label: 'Visit', icon: 'visit', colour: '#0891B2' },
+  { id: 'task', label: 'Task', icon: 'task', colour: '#64748B' },
+  { id: 'other', label: 'Other', icon: 'tip', colour: '#92400E' },
 ];
 
 const PLACEHOLDER = {
@@ -38,6 +44,7 @@ function PickChip({ on, onClick, colour = tokens.tealDark, children, sx }) {
       p: '6px 12px', borderRadius: '14px', fontSize: 12, fontWeight: 700, transition: 'all 0.15s',
       bgcolor: on ? colour : tokens.card, color: on ? '#fff' : tokens.slate,
       border: `1px solid ${on ? colour : tokens.line}`,
+      display: 'inline-flex', alignItems: 'center', gap: '6px',
       '&:hover': { borderColor: colour, color: on ? '#fff' : colour },
       ...sx,
     }}>{children}</ButtonBase>
@@ -85,7 +92,7 @@ export default function LogActivityModal({ open, lane, entry, dateLabel, person,
   const current = LOG_LANES.find(l => l.key === kind) ?? LOG_LANES[0];
 
   return (
-    <ModalShell open={open} onClose={onClose} width={580} icon={editing ? '✎' : current.icon}
+    <ModalShell open={open} onClose={onClose} width={580} icon={<Icon name={editing ? 'edit' : current.icon} size={20} />}
       title={editing ? 'Edit logged activity' : `Log ${current.label.toLowerCase()} activity`}
       sub={`${dateLabel} · ${person}`}
       bodySx={{ p: { xs: '16px', md: '20px 24px' } }}
@@ -95,7 +102,7 @@ export default function LogActivityModal({ open, lane, entry, dateLabel, person,
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
           <Btn onClick={onClose}>Cancel</Btn>
-          <Btn variant="primary" onClick={submit} disabled={busy}>{editing ? '💾 Save changes' : "+ Add to today's log"}</Btn>
+          <Btn variant="primary" onClick={submit} disabled={busy}>{editing ? 'Save changes' : "Add to today's log"}</Btn>
         </Box>
       </>}>
 
@@ -103,12 +110,12 @@ export default function LogActivityModal({ open, lane, entry, dateLabel, person,
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', pb: '14px', mb: '14px', borderBottom: `1px solid ${tokens.line}` }}>
         <Box component="span" sx={{ ...labelSx, mr: '4px' }}>Lane:</Box>
         {LOG_LANES.map(l => (
-          <PickChip key={l.key} on={kind === l.key} onClick={() => setKind(l.key)}>{l.icon} {l.label}</PickChip>
+          <PickChip key={l.key} on={kind === l.key} onClick={() => setKind(l.key)}><Icon name={l.icon} />{l.label}</PickChip>
         ))}
       </Box>
 
       <Box sx={{ mb: '16px' }}>
-        <Box component="label" sx={labelSx}>What did you do? <Box component="span" sx={{ color: tokens.red }}>✱</Box></Box>
+        <Box component="label" sx={labelSx}>What did you do? <Box component="span" sx={{ color: tokens.red }}>*</Box></Box>
         <Box component="textarea" autoFocus rows={4} value={text}
           onChange={e => { setText(e.target.value); if (problem) setProblem(''); }}
           placeholder={PLACEHOLDER[kind]}
@@ -125,7 +132,7 @@ export default function LogActivityModal({ open, lane, entry, dateLabel, person,
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '6px', mt: '6px' }}>
           {LOG_TAGS.map(t => (
             // Pressing the chip that is already on clears it, so a wrong tag needs no "none" option.
-            <PickChip key={t.id} on={tag === t.id} colour={t.colour} onClick={() => setTag(tag === t.id ? '' : t.id)} sx={{ p: '5px 11px', fontSize: 11, borderRadius: '12px' }}>{t.label}</PickChip>
+            <PickChip key={t.id} on={tag === t.id} colour={t.colour} onClick={() => setTag(tag === t.id ? '' : t.id)} sx={{ p: '5px 11px', fontSize: 11, borderRadius: '12px' }}><Icon name={t.icon} size={14} />{t.label}</PickChip>
           ))}
         </Box>
       </Box>

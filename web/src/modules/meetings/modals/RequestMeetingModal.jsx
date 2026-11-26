@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Box, Typography } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { tokens, fonts } from '../../../theme/tokens';
-import { Btn, ModalShell, FootNote, TextInput, TextArea, SelectInput } from '../../../components';
+import { Btn, ModalShell, FootNote, TextInput, TextArea, SelectInput, Icon } from '../../../components';
 import { useAuth } from '../../../auth/AuthContext';
 import { useAppStore } from '../../../store/AppStore';
 import { errorMessage } from '../../../store/api/baseApi';
@@ -56,20 +56,20 @@ export default function RequestMeetingModal({ open, onClose }) {
       const req = await createRequest({ to, proposedDate: date, proposedTime: time, durationMin: +dur || 30, topic: tp, notes: nt }).unwrap();
       const recipient = req.routedTo || req.to;
       onClose();
-      setTimeout(() => dlg.alert('📨 Request sent to ' + recipient + (req.routedTo ? ' (EA — coordinating on behalf of ' + req.onBehalfOf + ')' : '') + '. They\'ll see it in their Requests tab.'), 100);
+      setTimeout(() => dlg.alert('Request sent to ' + recipient + (req.routedTo ? ' (EA — coordinating on behalf of ' + req.onBehalfOf + ')' : '') + '. They\'ll see it in their Requests tab.'), 100);
     } catch (err) {
       await dlg.alert(errorMessage(err));
     }
   };
 
   return (
-    <ModalShell open={open} onClose={onClose} width={580} head="gradient" icon="📨" title="Request a Meeting" sub={`From ${me} · peer-to-peer internal request`}
+    <ModalShell open={open} onClose={onClose} width={580} head="gradient" icon={<Icon name="request" />} title="Request a Meeting" sub={`From ${me} · peer-to-peer internal request`}
       bodySx={{ bgcolor: tokens.creamWarm, p: { xs: '16px', md: '20px 28px' } }}
       footer={<>
         <FootNote>↻ The recipient gets a notification and can Accept or Decline</FootNote>
         <Box sx={{ display: 'flex', gap: 1 }}>
           <Btn onClick={onClose}>Cancel</Btn>
-          <Btn variant="primary" onClick={submit} disabled={sending}>{sending ? 'Sending…' : '📨 Send Request'}</Btn>
+          <Btn variant="primary" onClick={submit} disabled={sending}>{sending ? 'Sending…' : 'Send Request'}</Btn>
         </Box>
       </>}>
       <Box sx={{ mb: '14px' }}>
@@ -80,7 +80,7 @@ export default function RequestMeetingModal({ open, onClose }) {
         </SelectInput>
         {routesViaEA && (
           <Typography sx={{ mt: '8px', fontSize: 11, color: tokens.amber, fontFamily: fonts.mono, letterSpacing: '0.04em', fontWeight: 700 }}>
-            🔀 Routed through EA — your request will go to <strong>Pallavi Elisetti (EA)</strong> who coordinates the CMD's calendar.
+            <Icon name="hybrid" />Routed through EA — your request will go to <strong>Pallavi Elisetti (EA)</strong> who coordinates the CMD's calendar.
           </Typography>
         )}
       </Box>

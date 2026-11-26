@@ -21,7 +21,7 @@ export default function EaBanner({ viewer, owner, canEdit, onSwitchOwner }) {
     body = <><strong>Pallavi Elisetti (EA)</strong> has edit access to this diary. Entries she adds for you are marked <EA />.</>;
     action = <Btn size="sm" sx={{ ml: 'auto' }} onClick={() => dlg.alert('Delegation settings → manage who can view/edit your diary, set visibility for different categories (e.g., Personal always private).')}>⚙ Delegation Settings</Btn>;
   }
-  const ico = isDelegated ? '👁' : '💼';
+  const ico = isDelegated ? '' : '';
   return (
     <Box sx={{ background: `linear-gradient(90deg, ${tokens.yellowSoft}, ${tokens.tealSofter})`, border: `1px solid ${tokens.yellow}`, borderLeft: `4px solid ${tokens.yellow}`, borderRadius: '6px', p: '10px 14px', mb: '14px', display: 'flex', alignItems: 'center', gap: '10px', fontSize: 12, flexWrap: 'wrap', '& strong': { color: tokens.ink } }}>
       <Box component="span" sx={{ fontSize: 18 }}>{ico}</Box>

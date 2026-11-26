@@ -4,6 +4,7 @@ import { TODAY, parseDate, isOverdue, MONTHS_FULL, DAYS } from '../../../utils/d
 import { initials } from '../../../utils/people';
 import { projectAvgProgress, daysBetween, GANTT_ZOOM_CFG } from '../utils';
 import { useDialog } from '../../../components/Dialogs';
+import { Icon } from '../../../components';
 
 const pulseBar = keyframes`0%,100% { box-shadow: 0 1px 3px rgba(0,0,0,0.1); } 50% { box-shadow: 0 0 0 4px rgba(197,48,48,0.3); }`;
 
@@ -68,11 +69,11 @@ export default function GanttPane({ p, actions, zoom, setZoom }) {
   const rowOwner = (n) => <Box sx={{ fontSize: 9, color: tokens.slate, fontFamily: fonts.mono, letterSpacing: '0.04em' }}>{initials(n)}</Box>;
 
   const leftRows = [
-    <Box key="sh-p" sx={sectionLabelSx}><span>📊 Project Overview</span></Box>,
+    <Box key="sh-p" sx={sectionLabelSx}><span><Icon name="chart" />Project Overview</span></Box>,
     <Box key="p" sx={labelSx} onClick={() => dlg.alert(`Project spans ${p.startDate} to ${p.endDate}`)}>{rowIco(tokens.greenDeep, 'P')}{rowName(p.name)}</Box>,
   ];
   if (milestones.length) {
-    leftRows.push(<Box key="sh-m" sx={sectionLabelSx}><span>🏁 Milestones ({milestones.length})</span></Box>);
+    leftRows.push(<Box key="sh-m" sx={sectionLabelSx}><span><Icon name="milestone" />Milestones ({milestones.length})</span></Box>);
     milestones.forEach((m, i) => leftRows.push(
       <Box key={m.id} sx={labelSx} onClick={() => actions.updateMilestoneStatus(p.id, m.id, m.status === 'done' ? 'todo' : 'done')}>{rowIco(tokens.tealDark, i + 1)}{rowName(m.name)}{rowOwner(m.owner)}</Box>
     ));
@@ -180,7 +181,7 @@ export default function GanttPane({ p, actions, zoom, setZoom }) {
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: `180px ${totalWidth}px`, sm: `260px ${totalWidth}px` }, minWidth: '100%' }}>
           {/* sticky left */}
           <Box sx={{ bgcolor: tokens.creamWarm, borderRight: `2px solid ${tokens.line}`, position: 'sticky', left: 0, zIndex: 30 }}>
-            <Box sx={{ height: 44, p: '12px 14px', background: `linear-gradient(135deg, ${tokens.greenDeep}, ${tokens.tealDark})`, color: '#fff', fontFamily: fonts.mono, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, borderBottom: `2px solid ${tokens.line}`, position: 'sticky', top: 0, zIndex: 10, boxSizing: 'border-box' }}>📋 Item · Owner</Box>
+            <Box sx={{ height: 44, p: '12px 14px', background: `linear-gradient(135deg, ${tokens.greenDeep}, ${tokens.tealDark})`, color: '#fff', fontFamily: fonts.mono, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, borderBottom: `2px solid ${tokens.line}`, position: 'sticky', top: 0, zIndex: 10, boxSizing: 'border-box' }}><Icon name="clipboard" />Item · Owner</Box>
             {leftRows}
           </Box>
           {/* timeline */}
@@ -218,7 +219,7 @@ export default function GanttPane({ p, actions, zoom, setZoom }) {
       {/* footer stats */}
       <Box sx={{ p: '12px 18px', bgcolor: tokens.creamWarm, borderTop: `1px solid ${tokens.line}`, fontSize: 11, color: tokens.slate, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
         <Box component="span" sx={{ fontFamily: fonts.mono, letterSpacing: '0.04em', '& strong': { color: tokens.ink } }}><strong>{totalDays}</strong> days · <strong>{milestones.length}</strong> milestones · <strong>{tasks.length}</strong> tasks · Project <Box component="strong" sx={{ color: `${tokens.tealDark} !important` }}>{projectAvgProgress(p)}%</Box> complete</Box>
-        <Box component="span" sx={{ fontFamily: fonts.mono, letterSpacing: '0.04em' }}>💡 Click any bar to toggle done ↔ to do</Box>
+        <Box component="span" sx={{ fontFamily: fonts.mono, letterSpacing: '0.04em' }}><Icon name="tip" />Click any bar to toggle done ↔ to do</Box>
       </Box>
     </Box>
   );

@@ -2,8 +2,8 @@ import { tokens } from '../../theme/tokens';
 
 /** The two rounds of a readiness day, as the board labels them. */
 export const PHASES = [
-  { key: 'opening', label: '🌅 Opening round', short: 'Opening' },
-  { key: 'closing', label: '🌙 Closing round', short: 'Closing' },
+  { key: 'opening', label: 'Opening round', short: 'Opening' },
+  { key: 'closing', label: 'Closing round', short: 'Closing' },
 ];
 
 /** What a person can say about an activity, and how each answer looks. */

@@ -1,12 +1,13 @@
 import { Box, ButtonBase, Typography } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { tokens, fonts, TYPE_COLORS } from '../../../theme/tokens';
+import { Icon } from '../../../components';
 
 const CARDS = [
-  { type: 'internal', icon: '🏢', name: 'Internal', desc: 'Team · Dept · Cross-func' },
-  { type: 'customer', icon: '🤝', name: 'Customer', desc: 'B2B · Hospital · Corporate' },
-  { type: 'supplier', icon: '📦', name: 'Supplier', desc: 'Vendor · Equipment · Reagent' },
-  { type: 'consultants', icon: '🎓', name: 'Consultants', desc: 'QMS · Legal · Tax · Advisory' },
+  { type: 'internal', icon: '', name: 'Internal', desc: 'Team · Dept · Cross-func' },
+  { type: 'customer', icon: '', name: 'Customer', desc: 'B2B · Hospital · Corporate' },
+  { type: 'supplier', icon: '', name: 'Supplier', desc: 'Vendor · Equipment · Reagent' },
+  { type: 'consultants', icon: '', name: 'Consultants', desc: 'QMS · Legal · Tax · Advisory' },
   { type: 'board', icon: '⚖️', name: 'Board', desc: 'Directors · Committees' },
   { type: 'other', icon: '◦', name: 'Other', desc: 'Anything else' },
 ];
@@ -25,10 +26,10 @@ export default function ScheduleTypePicker({ selected, onSelect }) {
       <Box sx={{ position: 'relative' }}>
         <Box component="select" value={selected} onChange={e => onSelect(e.target.value)} sx={{ width: '100%', p: { xs: '14px 44px 14px 14px', md: '18px 48px 18px 20px' }, fontSize: { xs: 14, md: 16 }, fontWeight: 600, bgcolor: '#fff', border: `2px solid ${tokens.line}`, borderRadius: '10px', appearance: 'none', cursor: 'pointer', transition: 'all 0.2s', color: tokens.ink, fontFamily: 'inherit', '&:hover': { borderColor: tokens.teal }, '&:focus': { outline: 'none', borderColor: tokens.teal, boxShadow: `0 0 0 4px ${tokens.tealSoft}` } }}>
           <option value="">— Choose meeting type —</option>
-          <option value="internal">🏢  Internal Meeting (team / dept / cross-functional)</option>
-          <option value="customer">🤝  Customer Meeting (B2B client, hospital, corporate)</option>
-          <option value="supplier">📦  Supplier Meeting (vendor, equipment, reagent)</option>
-          <option value="consultants">🎓  Consultants Meeting (QMS, legal, tax, advisory)</option>
+          <option value="internal"><Icon name="department" /> Internal Meeting (team / dept / cross-functional)</option>
+          <option value="customer"><Icon name="handshake" /> Customer Meeting (B2B client, hospital, corporate)</option>
+          <option value="supplier"><Icon name="package" /> Supplier Meeting (vendor, equipment, reagent)</option>
+          <option value="consultants"><Icon name="consultant" /> Consultants Meeting (QMS, legal, tax, advisory)</option>
           <option value="board">⚖️  Board Meeting (directors, committees, statutory)</option>
           <option value="other">◦  Other Meeting</option>
         </Box>
@@ -43,7 +44,7 @@ export default function ScheduleTypePicker({ selected, onSelect }) {
           return (
             <Grid key={c.type} size={{ xs: 12, sm: 6, lg: 4 }}>
               <ButtonBase onClick={() => onSelect(c.type)} sx={{ width: '100%', p: '14px 14px 14px 16px', border: `1.5px solid ${sel ? tokens.teal : tokens.line}`, borderRadius: '10px', bgcolor: sel ? tokens.tealSofter : tokens.card, cursor: 'pointer', transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '12px', textAlign: 'left', position: 'relative', fontFamily: 'inherit', boxShadow: sel ? `0 0 0 3px ${tokens.tealSoft}` : 'none', '&:hover': { borderColor: tokens.teal, bgcolor: tokens.tealSofter, transform: 'translateY(-1px)' } }}>
-                <Box sx={{ width: 38, height: 38, borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0, bgcolor: tc.soft, color: tc.color }}>{c.icon}</Box>
+                <Box sx={{ width: 38, height: 38, borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0, bgcolor: tc.soft, color: tc.color }}><Icon name={c.icon} size={18} /></Box>
                 <Box sx={{ minWidth: 0 }}>
                   <Typography sx={{ fontSize: 13, fontWeight: 700, lineHeight: 1.1, mb: '3px', color: tokens.ink }}>{c.name}</Typography>
                   <Typography sx={{ fontSize: 10, color: tokens.slate, lineHeight: 1.3, fontFamily: fonts.mono, letterSpacing: '0.02em', textTransform: 'uppercase' }}>{c.desc}</Typography>

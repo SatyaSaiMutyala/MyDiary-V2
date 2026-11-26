@@ -3,6 +3,7 @@ import { tokens, fonts } from '../../../theme/tokens';
 import { initials, ownerAvatarColor } from '../../../utils/people';
 import { ProjStatusPill, ProjPriorityPill } from './Pills';
 import { projectAvgProgress, overdueMilestones, fmtRange, catOf, STATUS_BORDER } from '../utils';
+import { Icon } from '../../../components';
 
 const pctColor = { '': tokens.tealDark, amber: tokens.amber, red: tokens.red };
 const fillBg = {
@@ -38,7 +39,7 @@ export default function ProjectCard({ p, onOpen, onEdit, onDuplicate, onDelete }
         <ProjStatusPill status={p.status} />
       </Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, fontSize: 11, color: tokens.slate, fontFamily: fonts.mono, letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700, mb: '10px', flexWrap: 'wrap' }}>
-        <Box component="span" sx={{ fontSize: 12 }}>{cat.emoji}</Box>{cat.label}
+        <Icon name={cat.icon} size={12} />{cat.label}
         <Box component="span" sx={{ color: tokens.slateSofter }}>·</Box>
         <ProjPriorityPill priority={p.priority}>{p.priority} priority</ProjPriorityPill>
       </Box>
@@ -54,10 +55,10 @@ export default function ProjectCard({ p, onOpen, onEdit, onDuplicate, onDelete }
       </Box>
 
       <Box sx={{ fontSize: 11, color: tokens.slate, mb: '10px', borderTop: `1px dashed ${tokens.line}`, pt: '10px' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px', p: '3px 0' }}><Box component="span" sx={{ color: tokens.slateSoft, fontSize: 11 }}>📅</Box>{fmtRange(p.startDate, p.endDate)}</Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px', p: '3px 0' }}><Box component="span" sx={{ color: tokens.slateSoft, fontSize: 11 }}>👤</Box>{p.owner}</Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px', p: '3px 0' }}><Box component="span" sx={{ color: tokens.slateSoft, fontSize: 11 }}><Icon name="weekly" /></Box>{fmtRange(p.startDate, p.endDate)}</Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px', p: '3px 0' }}><Box component="span" sx={{ color: tokens.slateSoft, fontSize: 11 }}><Icon name="person" /></Box>{p.owner}</Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px', p: '3px 0' }}>
-          <Box component="span" sx={{ color: tokens.slateSoft, fontSize: 11 }}>🏁</Box>
+          <Box component="span" sx={{ color: tokens.slateSoft, fontSize: 11 }}><Icon name="milestone" /></Box>
           <span>{totalMs} milestone{totalMs !== 1 ? 's' : ''}{ovMilestones ? <> · <Box component="strong" sx={{ color: tokens.red }}>{ovMilestones} overdue</Box></> : null}</span>
         </Box>
       </Box>
@@ -72,7 +73,7 @@ export default function ProjectCard({ p, onOpen, onEdit, onDuplicate, onDelete }
         <Box sx={{ display: 'flex', gap: '6px' }}>
           <ActionBtn title="Edit" onClick={stop(onEdit)}>✎</ActionBtn>
           <ActionBtn title="Duplicate" onClick={stop(onDuplicate)}>⧉</ActionBtn>
-          <ActionBtn title="Delete" danger onClick={stop(onDelete)}>🗑</ActionBtn>
+          <ActionBtn title="Delete" danger onClick={stop(onDelete)}><Icon name="remove" /></ActionBtn>
           <ButtonBase onClick={stop(onOpen)} sx={{ p: '7px 14px', bgcolor: tokens.greenDeep, color: '#fff', border: 'none', borderRadius: '6px', fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', fontFamily: 'inherit', '&:hover': { bgcolor: tokens.tealDark } }}>Open →</ButtonBase>
         </Box>
       </Box>

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Box, ButtonBase } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { ModalShell, Btn } from '../../../components';
+import { ModalShell, Btn, Icon } from '../../../components';
 import { tokens, fonts } from '../../../theme/tokens';
 import { useAppStore } from '../../../store/AppStore';
 import { useListProjectTemplatesQuery } from '../../../store/api/projectsApi';
@@ -38,9 +38,9 @@ export default function ProjectTemplatesModal({ open, onClose, onUse, projectCou
 
   // ---------- PREVIEW VIEW ----------
   if (t) {
-    const cat = PROJ_CATEGORIES[t.category] || { label: t.category, emoji: '📁', color: '#6B6B6B' };
+    const cat = PROJ_CATEGORIES[t.category] || { label: t.category, emoji: '', color: '#6B6B6B' };
     return (
-      <ModalShell open={open} onClose={onClose} width={1000} head="gradient" icon={t.emoji} title={t.name} sub={`${cat.emoji} ${cat.label} · ~${t.suggestedDurationDays} days · used ${t.usedCount}×`}
+      <ModalShell open={open} onClose={onClose} width={1000} head="gradient" icon={<Icon name={t.icon} size={22} />} title={t.name} sub={`${cat.label} · ~${t.suggestedDurationDays} days · used ${t.usedCount}×`}
         headSlot={<Btn size="sm" onClick={() => setPreviewId(null)} sx={{ bgcolor: 'rgba(255,255,255,0.18)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', '&:hover': { borderColor: '#fff' } }}>← Back to Library</Btn>}
         bodySx={{ bgcolor: tokens.creamWarm, p: { xs: '16px', md: '20px 28px' } }}>
         <Box sx={{ bgcolor: tokens.card, border: `1px solid ${tokens.line}`, borderRadius: '10px', p: { xs: '18px', md: '24px 28px' }, boxShadow: tokens.shadow }}>
@@ -48,7 +48,7 @@ export default function ProjectTemplatesModal({ open, onClose, onUse, projectCou
 
           {t.milestones.length > 0 && (
             <Box sx={{ mb: 2 }}>
-              <Box component="h4" sx={h4Sx}>🎯 Milestones ({t.milestones.length})</Box>
+              <Box component="h4" sx={h4Sx}><Icon name="target" />Milestones ({t.milestones.length})</Box>
               {t.milestones.map((m, i) => <Box key={i} sx={itemSx}><span>{m.name}</span><Box component="span" sx={dayOffSx}>Day {m.dayOffset}</Box></Box>)}
             </Box>
           )}
@@ -60,7 +60,7 @@ export default function ProjectTemplatesModal({ open, onClose, onUse, projectCou
           )}
           {t.kpis.length > 0 && (
             <Box sx={{ mb: 2 }}>
-              <Box component="h4" sx={h4Sx}>📊 KPIs ({t.kpis.length})</Box>
+              <Box component="h4" sx={h4Sx}><Icon name="chart" />KPIs ({t.kpis.length})</Box>
               <Grid container spacing="10px">
                 {t.kpis.map((k, i) => (
                   <Grid key={i} size={{ xs: 12, sm: 4 }}>
@@ -86,7 +86,7 @@ export default function ProjectTemplatesModal({ open, onClose, onUse, projectCou
           )}
           {t.teamRoles.length > 0 && (
             <Box sx={{ mb: 2 }}>
-              <Box component="h4" sx={h4Sx}>👥 Suggested Team Roles</Box>
+              <Box component="h4" sx={h4Sx}><Icon name="people" />Suggested Team Roles</Box>
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                 {t.teamRoles.map((r, i) => <Box key={i} component="span" sx={{ p: '6px 12px', bgcolor: tokens.cream, border: `1px solid ${tokens.line}`, borderRadius: '12px', fontSize: 11, fontWeight: 600, color: tokens.ink }}>{r}</Box>)}
               </Box>
@@ -107,11 +107,11 @@ export default function ProjectTemplatesModal({ open, onClose, onUse, projectCou
   const filtered = catFilter === 'all' ? templates : templates.filter(x => x.category === catFilter);
 
   return (
-    <ModalShell open={open} onClose={onClose} width={1000} head="gradient" icon="📋" title="Project Templates Library" sub={`${templates.length} ready-to-use TrustLab project kits — milestones, tasks, KPIs & risks pre-wired`} bodySx={{ bgcolor: tokens.creamWarm, p: { xs: '16px', md: '20px 28px' } }}>
+    <ModalShell open={open} onClose={onClose} width={1000} head="gradient" icon={<Icon name="clipboard" />} title="Project Templates Library" sub={`${templates.length} ready-to-use TrustLab project kits — milestones, tasks, KPIs & risks pre-wired`} bodySx={{ bgcolor: tokens.creamWarm, p: { xs: '16px', md: '20px 28px' } }}>
       <Box sx={{ display: 'flex', gap: 1, mb: '18px', flexWrap: 'wrap', p: '10px 12px', bgcolor: tokens.card, border: `1px solid ${tokens.line}`, borderRadius: '8px', alignItems: 'center' }}>
         <Box component="span" sx={{ fontFamily: fonts.mono, fontSize: 10, letterSpacing: '0.08em', color: tokens.slate, fontWeight: 700, mr: '6px', alignSelf: 'center' }}>FILTER:</Box>
         {cats.map(c => {
-          const label = c === 'all' ? 'All Templates' : (PROJ_CATEGORIES[c].emoji + ' ' + PROJ_CATEGORIES[c].label);
+          const label = c === 'all' ? 'All Templates' : PROJ_CATEGORIES[c].label;
           const count = c === 'all' ? templates.length : templates.filter(x => x.category === c).length;
           if (c !== 'all' && count === 0) return null;
           return <TplCatPill key={c} active={catFilter === c} onClick={() => setCatFilter(c)} count={count}>{label}</TplCatPill>;
@@ -122,24 +122,24 @@ export default function ProjectTemplatesModal({ open, onClose, onUse, projectCou
 
       {isLoading ? (
         <Box sx={{ p: '60px 20px', textAlign: 'center', color: tokens.slate, bgcolor: tokens.card, border: `1px dashed ${tokens.line}`, borderRadius: '10px' }}>
-          <Box sx={{ fontSize: 40, mb: '10px' }}>📋</Box>
+          <Box sx={{ fontSize: 40, mb: '10px' }}><Icon name="clipboard" /></Box>
           <Box sx={{ fontSize: 14, fontWeight: 700, mb: '6px' }}>Loading templates…</Box>
         </Box>
       ) : filtered.length === 0 ? (
         <Box sx={{ p: '60px 20px', textAlign: 'center', color: tokens.slate, bgcolor: tokens.card, border: `1px dashed ${tokens.line}`, borderRadius: '10px' }}>
-          <Box sx={{ fontSize: 40, mb: '10px' }}>📋</Box>
+          <Box sx={{ fontSize: 40, mb: '10px' }}><Icon name="clipboard" /></Box>
           <Box sx={{ fontSize: 14, fontWeight: 700, mb: '6px' }}>No templates in this category</Box>
           <Box sx={{ fontSize: 12 }}>Try a different category or the full library.</Box>
         </Box>
       ) : (
         <Grid container spacing="12px">
           {filtered.map(tp => {
-            const cat = PROJ_CATEGORIES[tp.category] || { label: tp.category, emoji: '📁' };
+            const cat = PROJ_CATEGORIES[tp.category] || { label: tp.category, emoji: '' };
             return (
               <Grid key={tp.id} size={{ xs: 12, sm: 6, lg: 4 }}>
                 <Box onClick={() => setPreviewId(tp.id)} sx={{ bgcolor: tokens.card, border: `1px solid ${tokens.line}`, borderTop: `4px solid ${tokens.teal}`, borderRadius: '8px', p: '16px 18px', cursor: 'pointer', transition: 'all 0.15s', boxShadow: tokens.shadowSm, display: 'flex', flexDirection: 'column', height: '100%', '&:hover': { boxShadow: tokens.shadowLg, transform: 'translateY(-2px)', borderColor: tokens.slateSoft, borderTopColor: tokens.teal } }}>
-                  <Box sx={{ fontSize: 32, mb: 1, lineHeight: 1.2 }}>{tp.emoji}</Box>
-                  <Box sx={{ fontFamily: fonts.mono, fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, color: tokens.slate, mb: '4px' }}>{cat.emoji} {cat.label}</Box>
+                  <Box sx={{ mb: 1, lineHeight: 1.2 }}><Icon name={tp.icon} size={32} /></Box>
+                  <Box sx={{ fontFamily: fonts.mono, fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, color: tokens.slate, mb: '4px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}><Icon name={cat.icon} size={11} />{cat.label}</Box>
                   <Box sx={{ fontSize: 14, fontWeight: 700, mb: '6px', lineHeight: 1.3 }}>{tp.name}</Box>
                   <Box sx={{ fontSize: 11, color: tokens.slate, lineHeight: 1.5, mb: '12px', minHeight: 48 }}>{tp.description}</Box>
                   <Grid container spacing="4px" sx={{ mb: '10px', py: 1, borderTop: `1px dashed ${tokens.line}`, borderBottom: `1px dashed ${tokens.line}` }}>

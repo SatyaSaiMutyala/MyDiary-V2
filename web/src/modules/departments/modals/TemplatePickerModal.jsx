@@ -1,6 +1,6 @@
 import { Box, Typography } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { ModalShell, FootNote, Btn } from '../../../components';
+import { ModalShell, FootNote, Btn, Icon } from '../../../components';
 import { tokens, fonts } from '../../../theme/tokens';
 
 /**
@@ -17,7 +17,7 @@ export default function TemplatePickerModal({ open, templates, onClose, onPick }
       open={open}
       onClose={onClose}
       width={840}
-      icon="📋"
+      icon={<Icon name="clipboard" />}
       title="Start from a template"
       sub={`${templates.length} ready-made departments`}
       bodySx={{ bgcolor: tokens.creamWarm }}
@@ -44,7 +44,7 @@ export default function TemplatePickerModal({ open, templates, onClose, onPick }
                   '&:hover': { boxShadow: tokens.shadowLg, transform: 'translateY(-2px)', borderColor: tokens.slateSoft, borderTopColor: tokens.teal },
                 }}
               >
-                <Box sx={{ fontSize: 26, mb: '6px' }}>{t.emoji}</Box>
+                <Box sx={{ mb: '6px' }}><Icon name={t.icon} size={26} /></Box>
                 <Typography sx={{ fontSize: 14, fontWeight: 700, color: tokens.ink, mb: '4px' }}>{t.name}</Typography>
                 <Typography sx={{ fontSize: 12, color: tokens.slate, lineHeight: 1.5, mb: '10px', flex: 1 }}>{t.description}</Typography>
                 <Box sx={{ display: 'flex', gap: '6px', flexWrap: 'wrap', pt: '10px', borderTop: `1px dashed ${tokens.line}` }}>

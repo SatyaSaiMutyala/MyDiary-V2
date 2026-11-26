@@ -52,7 +52,7 @@ export default function WeekView({ date, entries, onOpenEntry, onNewEntry, loadi
                   return (
                     <EventBlock key={e.id} e={e} top={g.top} height={g.height} onClick={() => onOpenEntry(e.id)}>
                       <Box sx={evtTimeSx}>{e.startTime}{e.endTime ? ' – ' + e.endTime : ''}</Box>
-                      {g.height > 50 && e.loc ? <Box sx={evtLocSx}>📍 {e.loc}</Box> : null}
+                      {g.height > 50 && e.loc ? <Box sx={evtLocSx}><Icon name="place" />{e.loc}</Box> : null}
                     </EventBlock>
                   );
                 })}

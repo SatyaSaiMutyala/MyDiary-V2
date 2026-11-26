@@ -1,11 +1,11 @@
 export const VISIT_TYPES = {
-  'supplier-audit':   { label: 'Supplier Audit',       emoji: '🏭', color: '#DD6B20' },
-  'branch-office':    { label: 'Branch Office Visit',  emoji: '🏢', color: '#0F8F76' },
-  'new-premises':     { label: 'New Premises',         emoji: '🔍', color: '#7C3AED' },
-  'regulatory':       { label: 'Regulatory / Govt',    emoji: '🛡',  color: '#F0B429' },
-  'customer-site':    { label: 'Customer Site',        emoji: '🤝', color: '#2563EB' },
-  'partner-lab':      { label: 'Partner Lab',          emoji: '🔬', color: '#D53F8C' },
-  'other':            { label: 'Other Site Visit',     emoji: '📍', color: '#6B6B6B' },
+  'supplier-audit':   { label: 'Supplier Audit',       icon: 'factory', color: '#DD6B20' },
+  'branch-office':    { label: 'Branch Office Visit',  icon: 'department', color: '#0F8F76' },
+  'new-premises':     { label: 'New Premises',         icon: 'search', color: '#7C3AED' },
+  'regulatory':       { label: 'Regulatory / Govt',    icon: 'quality',  color: '#F0B429' },
+  'customer-site':    { label: 'Customer Site',        icon: 'handshake', color: '#2563EB' },
+  'partner-lab':      { label: 'Partner Lab',          icon: 'lab', color: '#D53F8C' },
+  'other':            { label: 'Other Site Visit',     icon: 'place', color: '#6B6B6B' },
 };
 
 export const RATING_AREAS = [
@@ -163,7 +163,7 @@ export const VISIT_OBSERVATIONS = [
 
 // ============ VISIT OBSERVATION TEMPLATES ============
 export const VISIT_TEMPLATES = [
-  { id: 'vt-supplier', emoji: '🏭', name: 'Supplier / Vendor Audit',
+  { id: 'vt-supplier', icon: 'factory', name: 'Supplier / Vendor Audit',
     description: 'Annual or periodic audit of a reagent, equipment or consumable supplier — QMS, delivery, pricing, compliance.',
     preset: {
       type: 'supplier-audit',
@@ -179,7 +179,7 @@ export const VISIT_TEMPLATES = [
       ],
     },
   },
-  { id: 'vt-branch', emoji: '🏥', name: 'Branch Inspection',
+  { id: 'vt-branch', icon: 'hospital', name: 'Branch Inspection',
     description: 'Routine operations & readiness check at one of TDPL\'s 14 branches — hygiene, workflow, staff, patient experience.',
     preset: {
       type: 'branch-office',
@@ -195,7 +195,7 @@ export const VISIT_TEMPLATES = [
       ],
     },
   },
-  { id: 'vt-newpremise', emoji: '🏗', name: 'New Premises Walk',
+  { id: 'vt-newpremise', icon: 'engineering', name: 'New Premises Walk',
     description: 'Site evaluation for a potential new branch — space, visibility, catchment, utilities, landlord discussion.',
     preset: {
       type: 'new-premises',
@@ -211,7 +211,7 @@ export const VISIT_TEMPLATES = [
       ],
     },
   },
-  { id: 'vt-customer', emoji: '🏢', name: 'Customer / Corporate Site Visit',
+  { id: 'vt-customer', icon: 'department', name: 'Customer / Corporate Site Visit',
     description: 'B2B corporate client site visit — AHC planning, pitch follow-up, delivery review, relationship catch-up.',
     preset: {
       type: 'customer-site',
@@ -227,7 +227,7 @@ export const VISIT_TEMPLATES = [
       ],
     },
   },
-  { id: 'vt-regulator', emoji: '⚖', name: 'Regulatory / Authority Visit',
+  { id: 'vt-regulator', icon: 'decision', name: 'Regulatory / Authority Visit',
     description: 'NABL, CGHS, PCPNDT, Fire or pollution authority visit — readiness, documentation presentation, response.',
     preset: {
       type: 'regulatory',
@@ -243,7 +243,7 @@ export const VISIT_TEMPLATES = [
       ],
     },
   },
-  { id: 'vt-consultant', emoji: '🧑‍💼', name: 'Consultant Walk-through',
+  { id: 'vt-consultant', icon: 'consultant', name: 'Consultant Walk-through',
     description: 'QMS / strategy / sales consultant on-site review — findings, recommendations, action items.',
     preset: {
       type: 'consultant-review',
@@ -258,7 +258,7 @@ export const VISIT_TEMPLATES = [
       ],
     },
   },
-  { id: 'vt-reflab', emoji: '🔬', name: 'Reference / Outsource Lab Audit',
+  { id: 'vt-reflab', icon: 'lab', name: 'Reference / Outsource Lab Audit',
     description: 'Audit of partner lab TDPL outsources specialty tests to — quality, TAT, reporting integrity.',
     preset: {
       type: 'supplier-audit',
@@ -273,7 +273,7 @@ export const VISIT_TEMPLATES = [
       ],
     },
   },
-  { id: 'vt-blank', emoji: '📝', name: 'Blank Visit',
+  { id: 'vt-blank', icon: 'note', name: 'Blank Visit',
     description: 'Start from scratch with no pre-filled fields.',
     preset: {},
   },

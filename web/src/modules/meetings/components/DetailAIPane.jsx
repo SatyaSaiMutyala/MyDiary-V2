@@ -45,7 +45,7 @@ function AiChip({ kind, onClick, children }) {
 export default function DetailAIPane({ m, loading, onGoLive, onGenerate, onLogDecisions, onApplyActions }) {
   const transcriptLen = (m.transcript || []).length;
   if (!m.aiSummary && !transcriptLen) {
-    return <GenerateCta title="AI Summary — not yet generated" sub="Record the meeting first (Live tab) so Claude has a transcript to work with. Once recorded, AI will summarise the discussion, extract action items, and detect decisions." btn="🎙 Go to Live Tab" onClick={onGoLive} />;
+    return <GenerateCta title="AI Summary — not yet generated" sub="Record the meeting first (Live tab) so Claude has a transcript to work with. Once recorded, AI will summarise the discussion, extract action items, and detect decisions." btn="Go to Live Tab" onClick={onGoLive} />;
   }
   if (!m.aiSummary) {
     return (
@@ -59,8 +59,8 @@ export default function DetailAIPane({ m, loading, onGoLive, onGenerate, onLogDe
   const s = m.aiSummary;
   return (
     <Box>
-      <AiBlock head="📝 Overview">{s.overview}</AiBlock>
-      <AiBlock head={`🎯 Decisions Detected (${s.decisions.length})`}>
+      <AiBlock head="Overview">{s.overview}</AiBlock>
+      <AiBlock head={`Decisions Detected (${s.decisions.length})`}>
         <ul>{s.decisions.map((d, i) => <li key={i}><strong>{d.text}</strong><br /><Box component="span" sx={{ fontSize: 12, color: tokens.slate }}>Owner: {d.owner} · Deadline: {d.deadline}</Box></li>)}</ul>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '6px', mt: '10px' }}><AiChip kind="decision" onClick={onLogDecisions}>+ Log all to Decisions Registry</AiChip></Box>
       </AiBlock>

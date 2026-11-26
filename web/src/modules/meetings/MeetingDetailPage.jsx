@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Box } from '@mui/material';
-import { Btn, EmptyState, TabBar } from '../../components';
+import { Btn, EmptyState, TabBar, Icon } from '../../components';
 import { useAppStore } from '../../store/AppStore';
 import { useCrumbs } from '../../store/CrumbsContext';
 import { errorCode } from '../../store/api/baseApi';
@@ -156,7 +156,7 @@ function MeetingDetail({ id }) {
   if (error && errorCode(error) === 'not_found') {
     return (
       <Box>
-        <EmptyState icon="📅" title="Meeting not found" desc={<>This meeting does not exist (or was removed).<Box sx={{ mt: 2 }}><Btn onClick={() => navigate('/meetings')}>← Back to My Meetings</Btn></Box></>} />
+        <EmptyState icon={<Icon name="weekly" />} title="Meeting not found" desc={<>This meeting does not exist (or was removed).<Box sx={{ mt: 2 }}><Btn onClick={() => navigate('/meetings')}>← Back to My Meetings</Btn></Box></>} />
       </Box>
     );
   }
@@ -165,7 +165,7 @@ function MeetingDetail({ id }) {
       <Box>
         <Fetching on={isLoading || isFetching} />
         <ApiError error={error} onRetry={refetch} sx={{ mb: 1.5 }} />
-        {!error && <EmptyState icon="📅" title="Loading meeting…" desc="Fetching the meeting from the server." />}
+        {!error && <EmptyState icon={<Icon name="weekly" />} title="Loading meeting…" desc="Fetching the meeting from the server." />}
       </Box>
     );
   }
@@ -358,9 +358,9 @@ function MeetingDetail({ id }) {
   (m.actions || []).forEach(a => { actionExtras[a.id] = { subtasks: a.subtasks || [], dependencies: a.dependencies || [], comments: a.comments || [], history: a.history || [] }; });
 
   const tabs = [
-    { key: 'agenda', icon: '📋', label: 'Agenda', count: m.agenda.length },
-    { key: 'live', icon: '🎙️', label: 'Live', count: transcriptLen ? transcriptLen : undefined },
-    { key: 'minutes', icon: '📝', label: 'Minutes' },
+    { key: 'agenda', icon: '', label: 'Agenda', count: m.agenda.length },
+    { key: 'live', icon: '', label: 'Live', count: transcriptLen ? transcriptLen : undefined },
+    { key: 'minutes', icon: '', label: 'Minutes' },
     { key: 'ai', icon: '✨', label: 'AI Summary', count: m.aiSummary ? 'Ready' : undefined },
     { key: 'actions', icon: '✓', label: 'Actions', count: `${openActions}/${totalActions}` },
     { key: 'decisions', icon: '⚖️', label: 'Decisions', count: myDecisions.length ? myDecisions.length : undefined },

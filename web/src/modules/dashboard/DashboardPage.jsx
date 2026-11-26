@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../../store/AppStore';
 import { useViewerUser } from '../../auth/useViewerUser';
 import { tokens, fonts } from '../../theme/tokens';
-import { Avatar } from '../../components';
+import { Avatar, Icon } from '../../components';
 import { todayFacts } from '../../utils/departments';
 import { daysUntil, isOverdue, formatDate, parseDate, MONTHS } from '../../utils/dates';
 import { DAYS_OF_WEEK_FULL } from '../../data/departments';
@@ -48,7 +48,7 @@ function ModuleCard({ c, onClick }) {
   return (
     <Box onClick={onClick} sx={{ bgcolor: tokens.card, border: `1px solid ${tokens.line}`, borderRadius: '10px', p: '16px 18px', cursor: 'pointer', transition: 'all 0.15s', display: 'flex', flexDirection: 'column', minHeight: 160, height: '100%', '&:hover': { boxShadow: tokens.shadowLg, borderColor: tokens.slateSoft, transform: 'translateY(-2px)' } }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', mb: 1 }}>
-        <Box sx={{ width: 36, height: 36, borderRadius: '8px', bgcolor: tokens.tealSofter, color: tokens.tealDark, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>{c.icon}</Box>
+        <Box sx={{ width: 36, height: 36, borderRadius: '8px', bgcolor: tokens.tealSofter, color: tokens.tealDark, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Icon name={c.icon} size={18} /></Box>
         <Box sx={{ fontFamily: fonts.serif, fontSize: 16, fontWeight: 700, color: tokens.ink }}>{c.title}</Box>
       </Box>
       <Box sx={{ fontSize: 12, color: tokens.slate, lineHeight: 1.5, mt: '4px', flex: 1 }}>{c.snippet}</Box>
@@ -124,9 +124,9 @@ export default function DashboardPage() {
   // ===== Priority tile =====
   const priorityTile = (() => {
     if (myOverdueTodos > 0) return { lbl: '⚠ Attention', val: myOverdueTodos, sub: 'task' + (myOverdueTodos > 1 ? 's' : '') + ' overdue right now', color: 'red', target: 'mytodo' };
-    if (maTotal > 0 && maPct < 50) return { lbl: '🌅 Your Shift', val: maDone + '/' + maTotal, sub: maPct + '% done — keep going', color: 'amber', target: 'myactivity', ring: maPct };
-    if (myMeetingsToday.length) return { lbl: '📅 Today', val: myMeetingsToday.length, sub: 'meeting' + (myMeetingsToday.length > 1 ? 's' : '') + ' on your calendar', color: 'blue', target: 'list' };
-    if (maTotal > 0 && maPct === 100) return { lbl: '🎉 Clean close', val: 'Done', sub: 'all shift tasks ticked for today', color: 'teal', target: 'myactivity' };
+    if (maTotal > 0 && maPct < 50) return { lbl: 'Your Shift', val: maDone + '/' + maTotal, sub: maPct + '% done — keep going', color: 'amber', target: 'myactivity', ring: maPct };
+    if (myMeetingsToday.length) return { lbl: 'Today', val: myMeetingsToday.length, sub: 'meeting' + (myMeetingsToday.length > 1 ? 's' : '') + ' on your calendar', color: 'blue', target: 'list' };
+    if (maTotal > 0 && maPct === 100) return { lbl: 'Clean close', val: 'Done', sub: 'all shift tasks ticked for today', color: 'teal', target: 'myactivity' };
     return { lbl: '✓ Clear slate', val: '—', sub: 'no priority items flagged', color: 'teal', target: null };
   })();
 
@@ -141,23 +141,23 @@ export default function DashboardPage() {
       snippet: myOpenTodos ? (myOpenTodos + ' task' + (myOpenTodos > 1 ? 's' : '') + ' assigned to you across meetings, visits & ad-hoc.') : 'Clean inbox — no open tasks owed by you.',
       stats: [{ n: myOpenTodos, l: 'Open', cls: '' }, { n: myOverdueTodos, l: 'Overdue', cls: myOverdueTodos ? 'red' : '' }],
       foot: 'Open My To-Do →' },
-    { icon: '👥', title: 'My Meetings', view: 'list',
+    { icon: '', title: 'My Meetings', view: 'list',
       snippet: nextMeeting ? ('Next: ' + (nextMeeting.title.length > 44 ? nextMeeting.title.slice(0, 44) + '…' : nextMeeting.title) + ' — ' + formatDate(parseDate(nextMeeting.date))) : 'No upcoming meetings scheduled.',
       stats: [{ n: myMeetingsToday.length, l: 'Today', cls: myMeetingsToday.length ? 'teal' : '' }, { n: myMeetingsWeek, l: '7 days', cls: '' }],
       foot: 'Open My Meetings →' },
-    { icon: '📅', title: 'My Diary', view: 'diary',
+    { icon: '', title: 'My Diary', view: 'diary',
       snippet: diaryTodayCt ? (diaryTodayCt + ' event' + (diaryTodayCt > 1 ? 's' : '') + ' on your calendar today.') : 'Open your calendar to plan the day.',
       stats: [{ n: diaryTodayCt, l: 'Today', cls: '' }],
       foot: 'Open My Diary →' },
-    { icon: '📁', title: 'My Projects', view: 'projects',
+    { icon: '', title: 'My Projects', view: 'projects',
       snippet: myActiveProjects ? (myActiveProjects + ' active project' + (myActiveProjects > 1 ? 's' : '') + ' you own or are on the team.') : 'No active projects assigned to you.',
       stats: [{ n: myActiveProjects, l: 'Active', cls: 'teal' }, { n: myAtRiskProjects, l: 'At risk', cls: myAtRiskProjects ? 'red' : '' }],
       foot: 'Open My Projects →' },
-    { icon: '💬', title: 'My Discussion Logs', view: 'logs',
+    { icon: '', title: 'My Discussion Logs', view: 'logs',
       snippet: myLogsCt ? (myLogsCt + ' informal log' + (myLogsCt > 1 ? 's' : '') + ' captured by you — searchable by person & topic.') : 'Capture informal chats, calls, WhatsApp exchanges.',
       stats: [{ n: myLogsCt, l: 'Total', cls: '' }],
       foot: 'Open My Discussion Logs →' },
-    { icon: '📝', title: 'My Visit Observations', view: 'visits',
+    { icon: '', title: 'My Visit Observations', view: 'visits',
       snippet: myVisitsCt ? (myVisitsCt + ' visit' + (myVisitsCt > 1 ? 's' : '') + ' logged — supplier audits, branch inspections, premises walks.') : 'Log site visits — audits, inspections, walks.',
       stats: [{ n: myVisitsCt, l: 'Logged', cls: '' }],
       foot: 'Open My Visit Observations →' },
@@ -165,11 +165,11 @@ export default function DashboardPage() {
       snippet: decisionsCt + ' decision' + (decisionsCt !== 1 ? 's' : '') + ' on record across all TrustLab meetings.',
       stats: [{ n: decisionsCt, l: 'Total', cls: '' }],
       foot: 'Open Decisions Registry →' },
-    { icon: '📋', title: 'Templates', view: 'templates',
+    { icon: '', title: 'Templates', view: 'templates',
       snippet: 'Agenda templates for recurring meetings — load into any new meeting.',
       stats: [{ n: state.templates.length, l: 'Agendas', cls: '' }],
       foot: 'Open Templates →' },
-    { icon: '🏢', title: 'Department Master', view: 'departments',
+    { icon: '', title: 'Department Master', view: 'departments',
       snippet: D.length + ' departments · ' + D.reduce((s, d) => s + d.positions.length, 0) + ' positions · ' + D.reduce((s, d) => s + d.openingTasks.length + d.closingTasks.length + (d.weeklyTasks || []).length + (d.monthlyTasks || []).length, 0) + ' total shift tasks configured.',
       stats: [{ n: D.length, l: 'Depts', cls: '' }],
       foot: isHead ? 'Open Department Master →' : 'View Department Master →' },
@@ -183,7 +183,7 @@ export default function DashboardPage() {
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Box sx={{ fontFamily: fonts.mono, fontSize: 11, opacity: 0.85, letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700 }}>{greeting}</Box>
           <Box component="h1" sx={{ fontFamily: fonts.serif, fontSize: { xs: 26, md: 32 }, fontWeight: 700, m: '6px 0 0', letterSpacing: '-0.01em' }}>{me === 'Venkata Cherukuri' ? me.split(' ')[0] : me}</Box>
-          <Box sx={{ fontFamily: fonts.mono, fontSize: 12, opacity: 0.85, mt: '6px', letterSpacing: '0.04em' }}>{dept ? (dept.icon + ' ' + dept.name + (position ? ' · ' + position.name : '')) : 'No department assigned'}{isCMD ? ' · 👑 CMD · Super Admin' : ''}</Box>
+          <Box sx={{ fontFamily: fonts.mono, fontSize: 12, opacity: 0.85, mt: '6px', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' }}>{dept ? <><Icon name={dept.icon} size={13} />{dept.name}{position ? ' · ' + position.name : ''}</> : 'No department assigned'}{isCMD ? <> · <Icon name="cmd" size={13} />CMD · Super Admin</> : ''}</Box>
         </Box>
         <Box sx={{ ml: { xs: 0, sm: 'auto' }, p: '10px 16px', bgcolor: 'rgba(255,255,255,0.14)', borderRadius: '10px', fontFamily: fonts.mono, fontSize: 12, letterSpacing: '0.04em', fontWeight: 700, textAlign: 'center' }}>
           {DAYS_OF_WEEK_FULL[dow]}
@@ -211,7 +211,7 @@ export default function DashboardPage() {
         </Grid>
       </Grid>
 
-      <SectionLabel>📚 Modules</SectionLabel>
+      <SectionLabel><Icon name="library" />Modules</SectionLabel>
       <Grid container spacing={1.5}>
         {moduleCards.map(c => (
           <Grid key={c.view} size={{ xs: 12, sm: 6, lg: 4 }}>

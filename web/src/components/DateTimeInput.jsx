@@ -142,7 +142,7 @@ export function DateInput({ value, onChange, min, max, disabled = false, placeho
         <PickerField
           open={open}
           disabled={disabled}
-          glyph="📅"
+          glyph=""
           text={prettyDate(value)}
           placeholder={placeholder}
           anchorRef={setAnchor}
@@ -246,7 +246,7 @@ export function TimeInput({ value, onChange, disabled = false, placeholder = 'Se
         <PickerField
           open={open}
           disabled={disabled}
-          glyph="🕑"
+          glyph=""
           text={prettyTime(value)}
           placeholder={placeholder}
           anchorRef={setAnchor}

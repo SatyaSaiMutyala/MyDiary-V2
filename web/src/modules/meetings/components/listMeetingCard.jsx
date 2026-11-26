@@ -1,7 +1,7 @@
 import { Box, Typography } from '@mui/material';
 import { tokens, fonts, TYPE_COLORS } from '../../../theme/tokens';
 import { TYPES } from '../../../data/meetings';
-import { TypePill } from '../../../components';
+import { TypePill, Icon } from '../../../components';
 import { parseDate, formatTime, daysUntil, isToday, DAYS, MONTHS } from '../../../utils/dates';
 
 // .mtg-status variants
@@ -69,13 +69,13 @@ export default function ListMeetingCard({ m, onClick }) {
         <Typography sx={{ fontSize: 10, color: tokens.slate, textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600 }}>{MONTHS[dt.getMonth()]}</Typography>
       </Box>
       <Box sx={{ minWidth: 0 }}>
-        <TypePill type={m.type} sx={{ mb: '7px' }}>{TYPES[m.type].icon} {TYPES[m.type].name.replace(' Meeting', '')}</TypePill>
+        <TypePill type={m.type} sx={{ mb: '7px' }}><Icon name={TYPES[m.type].icon} size={11} />{TYPES[m.type].name.replace(' Meeting', '')}</TypePill>
         <Typography component="h3" sx={{ fontSize: 15, fontWeight: 700, m: '0 0 6px', letterSpacing: '-0.01em', textDecoration: cancelled ? 'line-through' : 'none', color: tokens.ink }}>{m.title}</Typography>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '14px', fontSize: 12, color: tokens.slate }}>
-          <MetaItem ico="🕐">{formatTime(m.time)} · {m.dur}</MetaItem>
+          <MetaItem ico="">{formatTime(m.time)} · {m.dur}</MetaItem>
           <MetaItem ico={modeIcon}>{m.loc}</MetaItem>
-          <MetaItem ico="👥">{(m.attendees || []).length} internal</MetaItem>
-          {extCount > 0 && <>{' · '}<MetaItem ico="👤">+{extCount} external</MetaItem></>}
+          <MetaItem ico="">{(m.attendees || []).length} internal</MetaItem>
+          {extCount > 0 && <>{' · '}<MetaItem ico="">+{extCount} external</MetaItem></>}
         </Box>
       </Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px', gridColumn: { xs: '1 / -1', lg: 'auto' }, justifyContent: { xs: 'flex-start', lg: 'flex-end' }, mt: { xs: '10px', lg: 0 }, pt: { xs: '10px', lg: 0 }, borderTop: { xs: `1px dashed ${tokens.line}`, lg: 'none' } }}>

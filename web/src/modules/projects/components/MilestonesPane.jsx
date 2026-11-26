@@ -1,5 +1,5 @@
 import { Box } from '@mui/material';
-import { Btn, TextLink, EmptyState } from '../../../components';
+import { Btn, TextLink, EmptyState, Icon } from '../../../components';
 import { tokens, fonts } from '../../../theme/tokens';
 import { isOverdue } from '../../../utils/dates';
 import { KpiBar, MiniSelect, MonoNote } from './Pills';
@@ -68,7 +68,7 @@ export default function MilestonesPane({ p, actions }) {
           </Box>
         );
       })}
-      {sorted.length === 0 && <EmptyState icon="🏁" title="No milestones yet" desc="Add project milestones to track progress." />}
+      {sorted.length === 0 && <EmptyState icon={<Icon name="milestone" />} title="No milestones yet" desc="Add project milestones to track progress." />}
     </>
   );
 }

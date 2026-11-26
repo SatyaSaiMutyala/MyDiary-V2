@@ -3,14 +3,14 @@ import Grid from '@mui/material/Grid';
 import { tokens, fonts } from '../../../theme/tokens';
 import { VISIT_TYPES } from '../../../data/visits';
 import { parseDate, DAYS, MONTHS } from '../../../utils/dates';
-import { Pill } from '../../../components';
+import { Pill, Icon } from '../../../components';
 import { avgRating, TYPE_PILL, TYPE_BORDER, OVERALL_PILL } from '../utils';
 
 /** .visit-type-pill */
 export function VisitTypePill({ type, sx }) {
   const t = VISIT_TYPES[type] || VISIT_TYPES.other;
   const c = TYPE_PILL[type] || TYPE_PILL.other;
-  return <Pill bg={c.bg} color={c.color} size={9} sx={{ p: '3px 8px', borderRadius: '10px', letterSpacing: '0.1em', gap: '5px', ...sx }}>{t.emoji} {t.label}</Pill>;
+  return <Pill bg={c.bg} color={c.color} size={9} sx={{ p: '3px 8px', borderRadius: '10px', letterSpacing: '0.1em', gap: '5px', ...sx }}><Icon name={t.icon} size={11} />{t.label}</Pill>;
 }
 /** .visit-overall-pill */
 export function OverallPill({ value, label, sx }) {
@@ -38,14 +38,14 @@ export default function VisitCard({ visit: v, onOpen }) {
         <VisitTypePill type={v.type} sx={{ mb: '6px' }} />
         <Box component="h3" sx={{ fontSize: 15, fontWeight: 700, m: '0 0 5px', letterSpacing: '-0.01em' }}>{v.title}</Box>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '14px', fontSize: 12, color: tokens.slate }}>
-          <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>🏢 {v.org.name}{v.org.branch ? ' · ' + v.org.branch : ''}</Box>
-          <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>📍 {v.org.city || 'TBD'}</Box>
-          {v.timeIn && <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>🕐 {v.timeIn}{v.timeOut ? ' – ' + v.timeOut : ''}</Box>}
-          {v.team && v.team.length > 0 && <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>👥 {v.team.length} on team</Box>}
+          <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}><Icon name="department" />{v.org.name}{v.org.branch ? ' · ' + v.org.branch : ''}</Box>
+          <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}><Icon name="place" />{v.org.city || 'TBD'}</Box>
+          {v.timeIn && <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}><Icon name="clock" />{v.timeIn}{v.timeOut ? ' – ' + v.timeOut : ''}</Box>}
+          {v.team && v.team.length > 0 && <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}><Icon name="people" />{v.team.length} on team</Box>}
         </Box>
       </Grid>
       <Grid size={{ xs: 12, md: 'auto' }} sx={{ display: 'flex', flexDirection: { xs: 'row', md: 'column' }, flexWrap: 'wrap', gap: '5px', alignItems: { xs: 'center', md: 'flex-end' } }}>
-        <Pill bg={draft ? tokens.yellowSoft : tokens.tealSoft} color={draft ? tokens.amber : tokens.tealDark} size={10} sx={{ p: '4px 10px', borderRadius: '12px', letterSpacing: '0.08em' }}>{draft ? '📝 Draft' : '✓ Submitted'}</Pill>
+        <Pill bg={draft ? tokens.yellowSoft : tokens.tealSoft} color={draft ? tokens.amber : tokens.tealDark} size={10} sx={{ p: '4px 10px', borderRadius: '12px', letterSpacing: '0.08em' }}>{draft ? 'Draft' : '✓ Submitted'}</Pill>
         {v.overallAssessment && <OverallPill value={v.overallAssessment} />}
         {hasRatings && <Box component="span" sx={{ fontFamily: fonts.mono, fontSize: 10, color: tokens.amber, fontWeight: 700, letterSpacing: '0.04em' }}>★ {avgRating(v)} / 5</Box>}
         {openActions > 0 && <Box component="span" sx={{ fontFamily: fonts.mono, fontSize: 10, color: tokens.amber, bgcolor: tokens.yellowSoft, p: '2px 7px', borderRadius: '10px', fontWeight: 700, letterSpacing: '0.04em' }}>⚡ {openActions} action{openActions > 1 ? 's' : ''}</Box>}

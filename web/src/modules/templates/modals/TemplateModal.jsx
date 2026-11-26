@@ -9,7 +9,7 @@ import { TYPES } from '../../../data/meetings';
 import { tokens, fonts } from '../../../theme/tokens';
 
 const TYPE_KEYS = ['internal', 'customer', 'supplier', 'consultants', 'board', 'other'];
-const ICONS = ['📋', '📊', '🏢', '🤝', '📦', '🎓', '⚖️', '🔬', '💰', '📈', '🧪', '🩺', '🗂', '⚙️', '🎯', '📝'];
+const ICONS = ['', '', '', '', '', '', '⚖️', '', '', '', '', '', '', '⚙️', '', ''];
 const blankItem = () => ({ text: '', time: '10m' });
 
 /** One editable agenda row: number · text · duration · remove */
@@ -42,7 +42,7 @@ export default function TemplateModal({ open, template, onClose, onSaved }) {
 
   const [name, setName] = useState('');
   const [type, setType] = useState('internal');
-  const [ico, setIco] = useState('📋');
+  const [ico, setIco] = useState('');
   const [desc, setDesc] = useState('');
   const [agenda, setAgenda] = useState([blankItem()]);
   const [focusIdx, setFocusIdx] = useState(-1);
@@ -52,7 +52,7 @@ export default function TemplateModal({ open, template, onClose, onSaved }) {
     if (!open) return;
     setName(template?.name ?? '');
     setType(template?.type ?? 'internal');
-    setIco(template?.ico || '📋');
+    setIco(template?.ico || 'clipboard');
     setDesc(template?.desc ?? '');
     const items = template?.agenda ?? [];
     setAgenda(items.length ? items.map((a) => ({ text: a.text, time: a.time || '10m' })) : [blankItem()]);
@@ -68,7 +68,7 @@ export default function TemplateModal({ open, template, onClose, onSaved }) {
     if (!name.trim()) { await dlg.alert('Enter a name for this template.'); return; }
     if (!items.length) { await dlg.alert('Add at least one agenda item — a template with an empty agenda saves nothing.'); return; }
 
-    const body = { name: name.trim(), type, ico: ico || '📋', desc: desc.trim(), agenda: items };
+    const body = { name: name.trim(), type, ico: ico || '', desc: desc.trim(), agenda: items };
     try {
       const saved = isEdit
         ? await updateTemplate({ id: template.id, ...body }).unwrap()
@@ -88,7 +88,7 @@ export default function TemplateModal({ open, template, onClose, onSaved }) {
       open={open}
       onClose={onClose}
       width={660}
-      icon={ico || '📋'}
+      icon={ico || ''}
       title={isEdit ? 'Edit template' : 'New agenda template'}
       sub={isEdit ? 'Changes apply to future meetings only' : 'Reusable agenda for a recurring meeting'}
       footer={

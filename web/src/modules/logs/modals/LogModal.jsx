@@ -3,7 +3,7 @@ import { Box, ButtonBase, InputBase } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { tokens, fonts } from '../../../theme/tokens';
 import { CHANNELS } from '../../../data/logs';
-import { ModalShell, FootNote, Btn, TextLink, AddBtn, Chip, FieldLabel, Field, TextInput, TextArea } from '../../../components';
+import { ModalShell, FootNote, Btn, TextLink, AddBtn, Chip, FieldLabel, Field, TextInput, TextArea, Icon } from '../../../components';
 import { useListUsersQuery } from '../../../store/api/usersApi';
 import { EMPLOYEE_OPTIONS } from '../utils';
 import { useDialog } from '../../../components/Dialogs';
@@ -64,16 +64,16 @@ export default function LogModal({ open, draft, setDraft, viewer, onClose, onSav
 
   const footer = (
     <>
-      <FootNote>💾 Auto-saved privately · only {viewer} can see this log</FootNote>
+      <FootNote><Icon name="save" />Auto-saved privately · only {viewer} can see this log</FootNote>
       <Box sx={{ display: 'flex', gap: 1 }}>
         <Btn onClick={onClose}>Cancel</Btn>
-        <Btn variant="primary" onClick={() => onSave(d)}>💾 Save Log</Btn>
+        <Btn variant="primary" onClick={() => onSave(d)}><Icon name="save" />Save Log</Btn>
       </Box>
     </>
   );
 
   return (
-    <ModalShell open={open} onClose={onClose} width={640} head="light" title="New Discussion Log" sub={`🔒 Private to you · ${viewer}`} footer={footer}>
+    <ModalShell open={open} onClose={onClose} width={640} head="light" title="New Discussion Log" sub={`Private to you · ${viewer}`} footer={footer}>
       <Box sx={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: tokens.slate, mb: 1 }}>Channel · How did you speak?</Box>
       <Grid container spacing="5px" columns={{ xs: 4, sm: 7 }} sx={{ mb: '14px' }}>
         {Object.entries(CHANNELS).map(([k, v]) => {
@@ -81,7 +81,7 @@ export default function LogModal({ open, draft, setDraft, viewer, onClose, onSav
           return (
             <Grid key={k} size={1}>
               <ButtonBase onClick={() => upd(c => { c.channel = k; })} sx={{ width: '100%', p: '10px 4px', border: `1.5px solid ${sel ? tokens.teal : tokens.line}`, borderRadius: '7px', bgcolor: sel ? tokens.tealSoft : tokens.card, textAlign: 'center', fontSize: 9, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: sel ? tokens.tealDark : tokens.slate, fontFamily: fonts.mono, display: 'block', '&:hover': { borderColor: tokens.teal } }}>
-                <Box component="span" sx={{ fontSize: 18, display: 'block', mb: '3px' }}>{v.emoji}</Box>{v.label}
+                <Box component="span" sx={{ display: 'block', mb: '3px' }}><Icon name={v.icon} size={18} /></Box>{v.label}
               </ButtonBase>
             </Grid>
           );

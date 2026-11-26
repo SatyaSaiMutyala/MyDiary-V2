@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { PageHeader, TabBar } from '../../components';
+import { PageHeader, TabBar, Icon } from '../../components';
 import { useListUsersQuery } from '../../store/api/usersApi';
 import { useListAuditQuery } from '../../store/api/auditApi';
 import UsersTab from './components/UsersTab';
@@ -17,12 +17,12 @@ export default function SettingsPage() {
   const { data: audit } = useListAuditQuery({ limit: 1 });
   return (
     <>
-      <PageHeader code="TL-OPS-ADM-001" parts={['Settings', 'Administration']} icon="⚙" title="Settings"
+      <PageHeader code="TL-OPS-ADM-001" parts={['Settings', 'Administration']} icon={<Icon name="engineering" />} title="Settings"
         sub="Who can use MyDiary and what they can open, plus the server's log of every action taken in the workspace." />
       <TabBar value={tab} onChange={change} tabs={[
-        { key: 'users', icon: '👥', label: 'Users & Permissions', count: activeUsers?.total },
-        { key: 'activity', icon: '🧾', label: 'Activity Log', count: audit?.total },
-        { key: 'account', icon: '👤', label: 'My account' },
+        { key: 'users', icon: '', label: 'Users & Permissions', count: activeUsers?.total },
+        { key: 'activity', icon: '', label: 'Activity Log', count: audit?.total },
+        { key: 'account', icon: '', label: 'My account' },
       ]} />
       {tab === 'users' && <UsersTab />}
       {tab === 'activity' && <ActivityLogTab />}

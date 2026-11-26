@@ -1,6 +1,6 @@
 import { Box } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { Btn, EmptyState } from '../../../components';
+import { Btn, EmptyState, Icon } from '../../../components';
 import { tokens, fonts } from '../../../theme/tokens';
 import { KpiBar, MonoNote } from './Pills';
 
@@ -32,7 +32,7 @@ export default function KpisPane({ p, actions }) {
             );
           })}
         </Grid>
-      ) : <EmptyState icon="📈" title="No KPIs set" desc="Define key performance indicators to track success." />}
+      ) : <EmptyState icon={<Icon name="trending" />} title="No KPIs set" desc="Define key performance indicators to track success." />}
     </>
   );
 }

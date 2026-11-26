@@ -134,7 +134,7 @@ describe('My Activity and the logged lane', () => {
     const all = texts().join(' | ');
     expect(all).toContain('Signed the Apollo MoU');
     expect(all).toContain('15:30');
-    expect(all).toContain('✅ Approval');
+    expect(all).toContain('Approval');
     expect(all).toContain('Added by you');
     expect(all).toContain('LOGGED TODAY · 1');
     expect(byAccessibilityLabel(/Log activity/)).not.toHaveLength(0);

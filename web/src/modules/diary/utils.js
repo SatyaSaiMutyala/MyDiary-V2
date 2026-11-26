@@ -110,7 +110,7 @@ export function requestToEntry(r, forOwner) {
   return {
     id: 'req-' + r.id + '-' + forOwner.replace(/\s/g, '-'),
     owner: forOwner,
-    title: '📨 ' + r.topic,
+    title: '' + r.topic,
     cat: 'tentative',
     date: r.proposedDate,
     startTime: r.proposedTime,

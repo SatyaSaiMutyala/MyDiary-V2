@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Box } from '@mui/material';
-import { Btn, TextLink } from '../../../components';
+import { Btn, TextLink, Icon } from '../../../components';
 import { tokens, fonts } from '../../../theme/tokens';
 import { ownerAvatarColor } from '../../../utils/people';
 import { relativeTime } from '../../../utils/dates';
@@ -28,8 +28,8 @@ export default function DetailActionExpand({ extras: ex, tab, onTab, onToggleSub
       <Box sx={{ display: 'flex', gap: '6px', mb: '14px', flexWrap: 'wrap' }}>
         <AeTab active={tab === 'subtasks'} onClick={() => onTab('subtasks')} badge={`${subtasks.filter(s => s.done).length}/${subtasks.length}`}>☐ Sub-tasks</AeTab>
         <AeTab active={tab === 'deps'} onClick={() => onTab('deps')} badge={deps.length}>⚡ Dependencies</AeTab>
-        <AeTab active={tab === 'comments'} onClick={() => onTab('comments')} badge={comments.length}>💬 Comments</AeTab>
-        <AeTab active={tab === 'history'} onClick={() => onTab('history')} badge={history.length}>🕐 History</AeTab>
+        <AeTab active={tab === 'comments'} onClick={() => onTab('comments')} badge={comments.length}><Icon name="chat" />Comments</AeTab>
+        <AeTab active={tab === 'history'} onClick={() => onTab('history')} badge={history.length}><Icon name="clock" />History</AeTab>
       </Box>
 
       {tab === 'subtasks' && (

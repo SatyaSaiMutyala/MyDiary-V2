@@ -97,7 +97,7 @@ export function openRsvpPreview({ subject, dateStr, timeStr, dur = '', location,
 
       .simulator-badge { position: fixed; top: 12px; left: 12px; background: rgba(240,180,41,0.95); color: #1A3A2F; padding: 6px 12px; border-radius: 6px; font-family: 'Space Mono', monospace; font-size: 9pt; letter-spacing: 0.08em; font-weight: 700; z-index: 100; }
     </style></head><body>
-      <div class="simulator-badge">🎭 SIMULATED EMAIL · DEMO</div>
+      <div class="simulator-badge">SIMULATED EMAIL · DEMO</div>
       <div class="email-wrap">
         <div class="band"></div>
         <div class="email-head">
@@ -124,14 +124,14 @@ export function openRsvpPreview({ subject, dateStr, timeStr, dur = '', location,
           <h1 class="subj">${subject}</h1>
 
           <div class="details">
-            <div class="row"><div class="ico">📅</div><div><strong>${dateStr}</strong></div></div>
-            <div class="row"><div class="ico">🕐</div><div><strong>${timeStr}</strong>${dur ? ' · ' + dur : ''}</div></div>
-            <div class="row"><div class="ico">📍</div><div>${location}${modeStr ? ' · ' + modeStr : ''}</div></div>
-            <div class="row"><div class="ico">👤</div><div>Organiser: <strong>${organizer}</strong></div></div>
+            <div class="row"><div class="ico"></div><div><strong>${dateStr}</strong></div></div>
+            <div class="row"><div class="ico"></div><div><strong>${timeStr}</strong>${dur ? ' · ' + dur : ''}</div></div>
+            <div class="row"><div class="ico"></div><div>${location}${modeStr ? ' · ' + modeStr : ''}</div></div>
+            <div class="row"><div class="ico"></div><div>Organiser: <strong>${organizer}</strong></div></div>
           </div>
 
-          ${agenda.length ? '<div class="agenda-box"><h3>📋 Agenda</h3><ol>' + agenda.map(a => '<li>' + a + '</li>').join('') + '</ol></div>' : ''}
-          ${notes ? '<div class="notes-box"><h3>📝 Notes from Organiser</h3>' + notes + '</div>' : ''}
+          ${agenda.length ? '<div class="agenda-box"><h3>Agenda</h3><ol>' + agenda.map(a => '<li>' + a + '</li>').join('') + '</ol></div>' : ''}
+          ${notes ? '<div class="notes-box"><h3>Notes from Organiser</h3>' + notes + '</div>' : ''}
 
           <div class="rsvp-ask">
             <h2>Will you attend?</h2>

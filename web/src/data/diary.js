@@ -1,11 +1,11 @@
 export const DIARY_CATS = {
-  meeting:   { label: 'Meeting',   emoji: '🤝', color: '#0F8F76' },
-  focus:     { label: 'Focus',     emoji: '🎯', color: '#7C3AED' },
-  personal:  { label: 'Personal',  emoji: '💛', color: '#D53F8C' },
-  travel:    { label: 'Travel',    emoji: '✈', color: '#DD6B20' },
-  ooo:       { label: 'OOO',       emoji: '🌴', color: '#6B6B6B' },
-  reminder:  { label: 'Reminder',  emoji: '🔔', color: '#F0B429' },
-  tentative: { label: 'Tentative · pending meeting request', emoji: '📨', color: '#DD6B20' },
+  meeting:   { label: 'Meeting',   icon: 'handshake', color: '#0F8F76' },
+  focus:     { label: 'Focus',     icon: 'target', color: '#7C3AED' },
+  personal:  { label: 'Personal',  icon: 'personal', color: '#D53F8C' },
+  travel:    { label: 'Travel',    icon: 'travel', color: '#DD6B20' },
+  ooo:       { label: 'OOO',       icon: 'ooo', color: '#6B6B6B' },
+  reminder:  { label: 'Reminder',  icon: 'bell', color: '#F0B429' },
+  tentative: { label: 'Tentative · pending meeting request', icon: 'request', color: '#DD6B20' },
 };
 
 // Sample diary entries (non-meeting ones; meetings are pulled in auto)

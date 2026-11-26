@@ -1,5 +1,5 @@
 import { Box } from '@mui/material';
-import { Btn, ModalShell } from '../../../components';
+import { Btn, ModalShell, Icon } from '../../../components';
 import { tokens, fonts } from '../../../theme/tokens';
 import { initials, normExt, ownerAvatarColor, tdplEmail } from '../../../utils/people';
 
@@ -31,7 +31,7 @@ export default function DetailCirculateModal({ open, m, onClose, onConfirm, onAd
     <ModalShell open={open} onClose={onClose} width={560} head="custom"
       headSlot={
         <Box sx={{ p: { xs: '16px 18px', md: '22px 26px' }, borderBottom: `1px solid ${tokens.line}`, display: 'flex', alignItems: 'center', gap: '14px', background: `linear-gradient(135deg, ${tokens.card}, ${tokens.creamWarm})` }}>
-          <Box sx={{ width: 44, height: 44, borderRadius: '10px', bgcolor: tokens.tealSoft, color: tokens.tealDark, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>📧</Box>
+          <Box sx={{ width: 44, height: 44, borderRadius: '10px', bgcolor: tokens.tealSoft, color: tokens.tealDark, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}><Icon name="email" /></Box>
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Box sx={{ fontSize: 17, fontWeight: 700, lineHeight: 1.2 }}>Circulate Minutes</Box>
             <Box sx={{ fontSize: 12, color: tokens.slate, mt: '3px' }}>{m.title}</Box>
@@ -50,7 +50,7 @@ export default function DetailCirculateModal({ open, m, onClose, onConfirm, onAd
       </>}>
       <Box sx={{ mb: '18px' }}>
         <GroupHead l="Internal · TrustLab" r={m.attendees.length} />
-        {m.attendees.map((a, i) => <Recipient key={i} name={a} bg={ownerAvatarColor(a)} email={tdplEmail(a)} right={<><Channel>✉ Email</Channel><Channel>🔔 In-app</Channel></>} />)}
+        {m.attendees.map((a, i) => <Recipient key={i} name={a} bg={ownerAvatarColor(a)} email={tdplEmail(a)} right={<><Channel>✉ Email</Channel><Channel><Icon name="bell" />In-app</Channel></>} />)}
       </Box>
       {externals.length > 0 && (
         <Box sx={{ mb: '18px' }}>
@@ -62,9 +62,9 @@ export default function DetailCirculateModal({ open, m, onClose, onConfirm, onAd
         </Box>
       )}
       <Box sx={{ p: '12px 14px', bgcolor: tokens.tealSofter, borderRadius: '6px', fontSize: 12, color: tokens.slate, lineHeight: 1.5, '& strong': { color: tokens.tealDark } }}>
-        📎 <strong>Attached:</strong> Minutes PDF · Action Items summary · Pre-reads<br />
-        📧 <strong>Reply-To:</strong> {tdplEmail(m.chair)}<br />
-        🔒 <strong>Confidentiality:</strong> Internal · Not for onward distribution without permission
+        <Icon name="attach" /><strong>Attached:</strong> Minutes PDF · Action Items summary · Pre-reads<br />
+        <Icon name="email" /><strong>Reply-To:</strong> {tdplEmail(m.chair)}<br />
+        <Icon name="lock" /><strong>Confidentiality:</strong> Internal · Not for onward distribution without permission
       </Box>
     </ModalShell>
   );

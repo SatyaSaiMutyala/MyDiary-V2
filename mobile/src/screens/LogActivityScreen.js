@@ -1,7 +1,20 @@
 import React, { useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { Check } from 'lucide-react-native';
+import {
+  Calendar,
+  CalendarRange,
+  Car,
+  Check,
+  CircleCheckBig,
+  Lightbulb,
+  NotebookPen,
+  Phone,
+  Scale,
+  Search,
+  Sun,
+  Users,
+} from 'lucide-react-native';
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
 import { ChoiceGroup } from '../components/ChoiceGroup';
@@ -18,23 +31,29 @@ import {
 import { longDate, realToday } from '../utils/dates';
 import { colors, vs } from '../theme';
 
-/** The three lanes the website offers, in the same order and with the same words. */
+/**
+ * The three lanes and eight tags the website offers, in the same order and with the same words.
+ *
+ * The website draws them with the prototype's emoji; the phone draws the same meanings with its own
+ * icon set, because every other row, chip and button in this app is a lucide icon and an emoji
+ * beside them renders at the wrong weight, colour and baseline on both platforms. The keys are what
+ * travel to the server, so the two agree on the data and differ only in how they are drawn.
+ */
 export const LOG_LANES = [
-  { key: 'daily', label: '☀️ Daily' },
-  { key: 'weekly', label: '📅 Weekly' },
-  { key: 'monthly', label: '📆 Monthly' },
+  { key: 'daily', label: 'Daily', icon: Sun },
+  { key: 'weekly', label: 'Weekly', icon: Calendar },
+  { key: 'monthly', label: 'Monthly', icon: CalendarRange },
 ];
 
-/** The eight tags of the website's modal. Nobody is made to pick one. */
 export const LOG_TAGS = [
-  { key: 'approval', label: '✅ Approval', tone: 'green' },
-  { key: 'meeting', label: '👥 Meeting', tone: 'teal' },
-  { key: 'review', label: '🔍 Review', tone: 'slate' },
-  { key: 'call', label: '📞 Call', tone: 'red' },
-  { key: 'decision', label: '⚖️ Decision', tone: 'amber' },
-  { key: 'visit', label: '🚗 Visit', tone: 'teal' },
-  { key: 'task', label: '📝 Task', tone: 'slate' },
-  { key: 'other', label: '💡 Other', tone: 'amber' },
+  { key: 'approval', label: 'Approval', tone: 'green', icon: CircleCheckBig },
+  { key: 'meeting', label: 'Meeting', tone: 'teal', icon: Users },
+  { key: 'review', label: 'Review', tone: 'slate', icon: Search },
+  { key: 'call', label: 'Call', tone: 'red', icon: Phone },
+  { key: 'decision', label: 'Decision', tone: 'amber', icon: Scale },
+  { key: 'visit', label: 'Visit', tone: 'teal', icon: Car },
+  { key: 'task', label: 'Task', tone: 'slate', icon: NotebookPen },
+  { key: 'other', label: 'Other', tone: 'amber', icon: Lightbulb },
 ];
 
 const PLACEHOLDER = {

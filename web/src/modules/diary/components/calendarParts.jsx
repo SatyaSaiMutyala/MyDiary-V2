@@ -3,6 +3,7 @@ import { Box } from '@mui/material';
 import { tokens, fonts } from '../../../theme/tokens';
 import { DIARY_CATS } from '../../../data/diary';
 import { START_HOUR, END_HOUR, PX_PER_MIN, NOW_MINS, hourLabel, eventStyle } from '../utils';
+import { Icon } from '../../../components';
 
 export const HOURS = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR + i);
 
@@ -68,7 +69,7 @@ export function NowLine() {
 export function AllDayEvent({ e, onClick }) {
   const c = DIARY_CATS[e.cat] || DIARY_CATS.meeting;
   return (
-    <Box onClick={onClick} sx={{ p: '3px 7px', fontSize: 10, fontWeight: 700, borderRadius: '4px', cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', letterSpacing: '0.03em', bgcolor: c.color + '22', color: c.color }}>{c.emoji} {e.title}</Box>
+    <Box onClick={onClick} sx={{ p: '3px 7px', fontSize: 10, fontWeight: 700, borderRadius: '4px', cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', letterSpacing: '0.03em', bgcolor: c.color + '22', color: c.color }}><Icon name={c.icon} size={10} />{e.title}</Box>
   );
 }
 /** .all-day-label */

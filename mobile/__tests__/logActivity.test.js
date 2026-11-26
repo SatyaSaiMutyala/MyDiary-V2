@@ -211,4 +211,14 @@ describe('the Log Activity form', () => {
       'approval', 'meeting', 'review', 'call', 'decision', 'visit', 'task', 'other',
     ]);
   });
+
+  it('draws them as icons, never as emoji', () => {
+    // The website uses the prototype's emoji; every chip, row and button on the phone is a lucide
+    // icon, and an emoji among them lands at the wrong weight, colour and baseline.
+    const emoji = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u;
+    for (const o of [...LOG_LANES, ...LOG_TAGS]) {
+      expect(o.label).not.toMatch(emoji);
+      expect(typeof o.icon).toBe('object');
+    }
+  });
 });

@@ -1,11 +1,11 @@
 import { Box } from '@mui/material';
-import { Btn, EmptyState, Tag } from '../../../components';
+import { Btn, EmptyState, Tag, Icon } from '../../../components';
 import { tokens, fonts } from '../../../theme/tokens';
 
 /** renderDecisionsPane — decisions logged from this meeting, "View in Registry →" */
 export default function DetailDecisionsPane({ m, decisions, onViewRegistry }) {
   if (decisions.length === 0) {
-    return <EmptyState icon="⚖" title="No decisions logged yet" desc="Log a decision via the Minutes tab (+ Link Decision button) or from AI Summary once generated." />;
+    return <EmptyState icon={<Icon name="decision" />} title="No decisions logged yet" desc="Log a decision via the Minutes tab (+ Link Decision button) or from AI Summary once generated." />;
   }
   return (
     <Box>

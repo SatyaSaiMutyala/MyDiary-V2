@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Box } from '@mui/material';
-import { ModalShell, Btn } from '../../../components';
+import { ModalShell, Btn, Icon } from '../../../components';
 import { tokens, fonts } from '../../../theme/tokens';
 import { errorMessage } from '../../../store/api/baseApi';
 import { useAddCommentMutation, useUpdateActionItemMutation } from '../../../store/api/actionItemsApi';
@@ -52,7 +52,7 @@ export default function CompleteDialog({ ctx, onClose }) {
 
   const headSlot = (
     <Box sx={{ p: '22px 26px', borderBottom: `1px solid ${tokens.line}`, display: 'flex', alignItems: 'center', gap: '14px', background: `linear-gradient(135deg, ${tokens.tealSofter}, ${tokens.card})` }}>
-      <Box sx={{ width: 44, height: 44, borderRadius: '10px', bgcolor: icoColors.bg, color: icoColors.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>{c.ico}</Box>
+      <Box sx={{ width: 44, height: 44, borderRadius: '10px', bgcolor: icoColors.bg, color: icoColors.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Icon name={c.ico} size={22} /></Box>
       <Box sx={{ flex: 1 }}>
         <Box sx={{ fontSize: 17, fontWeight: 700, lineHeight: 1.2 }}>{c.label}</Box>
         <Box sx={{ fontSize: 12, color: tokens.slate, mt: '3px' }}>{c.sub}</Box>

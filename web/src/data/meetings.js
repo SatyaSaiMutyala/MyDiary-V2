@@ -1,9 +1,9 @@
 // Meeting types + sample meetings (exact copy of the prototype data).
 export const TYPES = {
-  internal: { icon: '🏢', name: 'Internal Meeting', desc: 'Team, department or cross-functional meeting with TrustLab colleagues' },
-  customer: { icon: '🤝', name: 'Customer Meeting', desc: 'B2B client, hospital, corporate or referral partner meeting' },
-  supplier: { icon: '📦', name: 'Supplier Meeting', desc: 'Vendor, equipment, reagent or service provider meeting' },
-  consultants: { icon: '🎓', name: 'Consultants Meeting', desc: 'External advisor, consultant or professional services engagement' },
+  internal: { icon: 'department', name: 'Internal Meeting', desc: 'Team, department or cross-functional meeting with TrustLab colleagues' },
+  customer: { icon: 'handshake', name: 'Customer Meeting', desc: 'B2B client, hospital, corporate or referral partner meeting' },
+  supplier: { icon: 'package', name: 'Supplier Meeting', desc: 'Vendor, equipment, reagent or service provider meeting' },
+  consultants: { icon: 'consultant', name: 'Consultants Meeting', desc: 'External advisor, consultant or professional services engagement' },
   board: { icon: '⚖️', name: 'Board Meeting', desc: 'Directors, board committee or statutory governance meeting' },
   other: { icon: '◦', name: 'Other Meeting', desc: 'Meeting type not fitting standard categories' }
 };

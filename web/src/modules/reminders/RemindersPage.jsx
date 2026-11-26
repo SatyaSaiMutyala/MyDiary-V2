@@ -29,7 +29,7 @@ function ReminderCard({ r, onEdit, onDelete }) {
             <Box component="span" sx={{ fontWeight: 700, color: r.status === 'scheduled' ? tokens.tealDark : tokens.slate }}>
               ⏰ {whenLabel(r)}
             </Box>
-            <Box component="span">👥 {forLabel(r)}</Box>
+            <Box component="span"><Icon name="people" />{forLabel(r)}</Box>
             {!r.mine && <Box component="span">Set by <strong>{r.creator}</strong></Box>}
           </Box>
         </Box>
@@ -96,7 +96,7 @@ export default function RemindersPage() {
   const tabs = [
     { key: 'upcoming', icon: '⏰', label: 'Upcoming', count: counts.upcoming },
     { key: 'sent', icon: '✓', label: 'Sent', count: counts.sent },
-    { key: 'all', icon: '📋', label: 'All' },
+    { key: 'all', icon: '', label: 'All' },
   ];
 
   return (
