@@ -72,11 +72,26 @@ function indexParam(v) {
 }
 
 /** GET /api/action-items @type {import('express').RequestHandler} */
+/**
+ * GET /api/action-items — My To-Do's two lists.
+ *
+ * `mine=true` is what this person owes; `delegated=true` is what they handed to somebody else.
+ * Both are narrowed here rather than in the app, which used to fetch every action item in the
+ * company and sift out its own: that put other people's tasks on the wire for anybody to read,
+ * and it lost rows, because a list capped at 200 ran out long before it reached the ones that
+ * belonged to the person asking.
+ * @type {import('express').RequestHandler}
+ */
 export const list = async (req, res) => {
   const me = currentUser(req);
-  const { query, flags } = extractFlags(req.query, { mine: ['true', 'false'] });
+  const { query, flags } = extractFlags(req.query, { mine: ['true', 'false'], delegated: ['true', 'false'] });
   const lq = buildListQuery(query, ACTIONS_LIST);
   if (flags.mine === 'true') andClause(lq, nameClause('owner', me.name), 'mine', true);
+  if (flags.delegated === 'true') {
+    andClause(lq, nameClause('createdBy.name', me.name), 'delegated', true);
+    // Something you gave yourself is not delegated; it is simply yours.
+    andClause(lq, { $nor: [nameClause('owner', me.name)] }, 'delegated', true);
+  }
   res.json(await runList(ActionItem, lq, serializeAction));
 };
 
@@ -124,7 +139,9 @@ export const update = async (req, res) => {
   const a = await actions.findActionOr404(req.params.id);
   const before = await actions.patchAction(a, req.body, me);
   const details = describeChanges(before, actions.actionSnapshot(a), actions.ACTION_CHANGE_FIELDS);
-  res.locals.audit = details ? { entity: a.desc || '(untitled action)', entityId: a._id.toString(), details: `${details} · in "${a.meetingTitle}"` } : false;
+  // A task allocated from My To-Do has no meeting to name, so the log says where it does belong.
+  const where = a.meetingTitle ? `in "${a.meetingTitle}"` : `on ${a.owner || 'nobody'}'s To-Do`;
+  res.locals.audit = details ? { entity: a.desc || '(untitled action)', entityId: a._id.toString(), details: `${details} · ${where}` } : false;
   res.json({ action: serializeAction(a) });
 };
 

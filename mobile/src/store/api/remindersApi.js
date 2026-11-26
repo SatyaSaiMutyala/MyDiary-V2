@@ -60,6 +60,7 @@ export const remindersApi = baseApi.injectEndpoints({
 
 export const {
   useListRemindersQuery,
+  useLazyListRemindersQuery,
   useGetReminderQuery,
   useCreateReminderMutation,
   useUpdateReminderMutation,

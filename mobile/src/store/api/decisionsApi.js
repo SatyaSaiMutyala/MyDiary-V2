@@ -39,6 +39,7 @@ export const decisionsApi = baseApi.injectEndpoints({
 
 export const {
   useListDecisionsQuery,
+  useLazyListDecisionsQuery,
   useGetDecisionQuery,
   useRemoveDecisionMutation,
 } = decisionsApi;

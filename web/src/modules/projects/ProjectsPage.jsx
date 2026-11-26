@@ -6,7 +6,7 @@ import { PageHeader, Btn, FilterPill, SearchBox, FilterSelect, EmptyState } from
 import { tokens, fonts } from '../../theme/tokens';
 import { useAppStore } from '../../store/AppStore';
 import { useListProjectsQuery } from '../../store/api/projectsApi';
-import { ApiError, Fetching } from '../settings/components/listUi';
+import { ApiError, Fetching, PAGE_SIZE, Pager } from '../settings/components/listUi';
 import { useDebounced } from '../../utils/useDebounced';
 import { PROJ_CATEGORIES } from '../../data/projects';
 import ProjectCard from './components/ProjectCard';
@@ -68,7 +68,12 @@ export default function ProjectsPage() {
 
   // The grid itself is filtered by the server (search, category and the pills are all query params).
   const debounced = useDebounced(search.trim(), 300);
-  const listArgs = { limit: PORTFOLIO_LIMIT, sort: '-createdAt', search: debounced, category: catFilter, ...FILTER_PARAMS[filter] };
+  // A page at a time. Changing a filter or the search starts again from the first page.
+  const sig = `${debounced}|${catFilter}|${filter}`;
+  const [pageState, setPageState] = useState({ sig, page: 1 });
+  const page = pageState.sig === sig ? pageState.page : 1;
+  const setPage = (p) => setPageState({ sig, page: p });
+  const listArgs = { page, limit: PAGE_SIZE, sort: '-createdAt', search: debounced, category: catFilter, ...FILTER_PARAMS[filter] };
   const { data, error, isLoading, isFetching, refetch } = useListProjectsQuery(listArgs);
   const filtered = data?.items || [];
 
@@ -134,13 +139,16 @@ export default function ProjectsPage() {
       ) : error ? null : filtered.length === 0 ? (
         <EmptyState icon="📁" title="No projects match" desc="Clear filters or create a new project." />
       ) : (
-        <Grid container spacing="14px">
-          {filtered.map(p => (
-            <Grid key={p.id} size={{ xs: 12, sm: 6, lg: 4 }}>
-              <ProjectCard p={p} onOpen={() => navigate(`/projects/${p.id}`)} onEdit={() => openProjectModal(p.id)} onDuplicate={() => actions.duplicateProject(p)} onDelete={() => actions.deleteProject(p)} />
-            </Grid>
-          ))}
-        </Grid>
+        <>
+          <Grid container spacing="14px">
+            {filtered.map(p => (
+              <Grid key={p.id} size={{ xs: 12, sm: 6, lg: 4 }}>
+                <ProjectCard p={p} onOpen={() => navigate(`/projects/${p.id}`)} onEdit={() => openProjectModal(p.id)} onDuplicate={() => actions.duplicateProject(p)} onDelete={() => actions.deleteProject(p)} />
+              </Grid>
+            ))}
+          </Grid>
+          <Pager data={data} page={page} onPage={setPage} loading={isFetching} />
+        </>
       )}
 
       {tplOpen && <ProjectTemplatesModal open onClose={() => setTplOpen(false)} onUse={(draft) => setWizDraft(draft)} projectCount={total} />}

@@ -1,7 +1,8 @@
 import { Box, Typography } from '@mui/material';
 import { tokens, fonts } from '../../../theme/tokens';
 import { Btn, EmptyState } from '../../../components';
-import { useListRequestsQuery } from '../../../store/api/meetingRequestsApi';
+import { useLazyListRequestsQuery, useListRequestsQuery } from '../../../store/api/meetingRequestsApi';
+import { usePagedQuery } from '../../../store/usePagedQuery';
 import { ApiError, Fetching } from '../../settings/components/listUi';
 import { useRequestActions } from './requestActions';
 
@@ -56,12 +57,13 @@ function RequestCard({ r, direction, busy, onAccept, onPropose, onDecline }) {
  * Accept / decline / counter all go through the API.
  */
 export default function ListRequestsTab({ me, onRequestMeeting }) {
-  const inboxQ = useListRequestsQuery({ box: 'inbox', limit: 100, sort: '-createdAt' });
-  const sentQ = useListRequestsQuery({ box: 'sent', limit: 100, sort: '-createdAt' });
+  // A page at a time from each box, rather than a hundred of each on every load.
+  const inboxQ = usePagedQuery(useListRequestsQuery, useLazyListRequestsQuery, { box: 'inbox', sort: '-createdAt' });
+  const sentQ = usePagedQuery(useListRequestsQuery, useLazyListRequestsQuery, { box: 'sent', sort: '-createdAt' });
   const { accept, decline, propose, busy } = useRequestActions();
 
-  const received = inboxQ.data?.items || [];
-  const sent = sentQ.data?.items || [];
+  const received = inboxQ.items;
+  const sent = sentQ.items;
   const pendingRcv = received.filter(r => r.status === 'pending');
   const sentPending = sent.filter(r => r.status === 'pending');
   const history = [...received, ...sent].filter(r => r.status !== 'pending')
@@ -97,6 +99,18 @@ export default function ListRequestsTab({ me, onRequestMeeting }) {
           <Typography sx={{ ...monoLabel, color: tokens.slate, m: '20px 0 10px' }}>📤 Sent by you · awaiting their reply · {sentPending.length}</Typography>
           {sentPending.map(r => <RequestCard key={r.id} r={r} direction="out" {...cardProps} />)}
         </>
+      )}
+
+      {(inboxQ.more > 0 || sentQ.more > 0) && (
+        <Box sx={{ textAlign: 'center', mt: '14px' }}>
+          <Btn size="sm" disabled={inboxQ.loadingMore || sentQ.loadingMore}
+            onClick={() => { if (inboxQ.more) inboxQ.loadMore(); if (sentQ.more) sentQ.loadMore(); }}>
+            {inboxQ.loadingMore || sentQ.loadingMore ? 'Loading…' : `Load ${inboxQ.nextBatch + sentQ.nextBatch} more`}
+          </Btn>
+          <Box sx={{ ...monoLabel, color: tokens.slate, mt: '6px' }}>
+            SHOWING {received.length + sent.length} OF {inboxQ.total + sentQ.total}
+          </Box>
+        </Box>
       )}
 
       {history.length > 0 && (

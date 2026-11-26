@@ -7,7 +7,7 @@ import { VISIT_TYPES, VISIT_TEMPLATES } from '../../data/visits';
 import { PageHeader, Btn, DmsCard, EmptyState, TabBar } from '../../components';
 import { errorMessage } from '../../store/api/baseApi';
 import { useCreateVisitMutation, useListVisitsQuery, useUpdateVisitMutation } from '../../store/api/visitsApi';
-import { ApiError, Fetching } from '../settings/components/listUi';
+import { ApiError, Fetching, PAGE_SIZE, Pager } from '../settings/components/listUi';
 import { newVisitDraft, applyVisitTemplate, samePerson, visitBody } from './utils';
 import VisitCard from './components/VisitCard';
 import VisitModal from './modals/VisitModal';
@@ -15,7 +15,6 @@ import VisitDetailModal from './modals/VisitDetailModal';
 import { useDialog } from '../../components/Dialogs';
 
 /** One page of reports is plenty for the type tabs and the four summary cards, which count the whole list. */
-const LIMIT = 200;
 
 export default function VisitsPage() {
   const dlg = useDialog();
@@ -29,19 +28,34 @@ export default function VisitsPage() {
   // GET /api/visits — my reports only. `mine=true` is relative to the signed-in person, so a "View as"
   // demo switch falls back to filtering by that person's name.
   const viewingSelf = !!user && samePerson(user.name, viewer);
+  /**
+   * One page of visits at a time, filtered by the server.
+   *
+   * The tab used to be applied here, over every visit ever logged, which meant the whole history
+   * travelled on every load just to draw one tab of it.
+   */
+  const whose = viewingSelf ? { mine: 'true' } : { owner: viewer };
+  const sig = `${tab}|${viewingSelf}|${viewer}`;
+  const [pageState, setPageState] = useState({ sig, page: 1 });
+  const page = pageState.sig === sig ? pageState.page : 1;
+  const setPage = (p) => setPageState({ sig, page: p });
+
   const { data, error, isLoading, isFetching, refetch } = useListVisitsQuery({
-    ...(viewingSelf ? { mine: 'true' } : { owner: viewer }),
-    limit: LIMIT, sort: '-date',
+    ...whose, ...(tab === 'all' ? null : { type: tab }),
+    page, limit: PAGE_SIZE, sort: '-date',
   });
+
+  // The strip above the list counts everything, not just this page: one `limit=1` call each, so
+  // only the totals travel.
+  const totalCt = useListVisitsQuery({ ...whose, limit: 1, fields: 'title' }).data?.total ?? 0;
+  const submittedCt = useListVisitsQuery({ ...whose, status: 'submitted', limit: 1, fields: 'title' }).data?.total ?? 0;
+  const draftCt = useListVisitsQuery({ ...whose, status: 'draft', limit: 1, fields: 'title' }).data?.total ?? 0;
+  const followUpCt = useListVisitsQuery({ ...whose, status: 'submitted', followUpRequired: 'true', limit: 1, fields: 'title' }).data?.total ?? 0;
   const [createVisit] = useCreateVisitMutation();
   const [updateVisit] = useUpdateVisitMutation();
 
   const visits = data?.items || [];
-  const submitted = visits.filter(v => v.status === 'submitted');
-  const drafts = visits.filter(v => v.status === 'draft');
-  const counts = {};
-  Object.keys(VISIT_TYPES).forEach(k => { counts[k] = visits.filter(v => v.type === k).length; });
-  const filtered = (tab === 'all' ? visits : visits.filter(v => v.type === tab)).slice().sort((a, b) => b.date.localeCompare(a.date));
+  const filtered = visits;
   const detailVisit = detailId ? visits.find(v => v.id === detailId) : null;
 
   const openVisitModal = (editId) => {
@@ -90,9 +104,12 @@ export default function VisitsPage() {
     setTimeout(() => dlg.alert(targetStatus === 'submitted' ? '✓ Visit report submitted. Action items dispatched to owners.' : '💾 Draft saved.'), 100);
   };
 
+  // Every type is offered, with no count on it: counting each one would mean a query per type on
+  // every load, and the number beside a tab is not worth that. The chosen tab's own total is on
+  // the strip above, and in the pager below the list.
   const tabs = [
-    { key: 'all', icon: '📝', label: 'All Visits', count: visits.length },
-    ...Object.entries(VISIT_TYPES).filter(([k]) => counts[k] > 0).map(([k, t]) => ({ key: k, icon: t.emoji, label: t.label, count: counts[k] })),
+    { key: 'all', icon: '📝', label: 'All Visits', count: totalCt },
+    ...Object.entries(VISIT_TYPES).map(([k, t]) => ({ key: k, icon: t.emoji, label: t.label })),
   ];
 
   return (
@@ -106,10 +123,10 @@ export default function VisitsPage() {
 
       {/* .visits-meta-strip */}
       <Grid container spacing="12px" sx={{ mb: '20px' }}>
-        <Grid size={{ xs: 6, lg: 3 }}><DmsCard label="Total Visits" value={visits.length} sub="All time · all types" /></Grid>
-        <Grid size={{ xs: 6, lg: 3 }}><DmsCard label="Submitted" value={submitted.length} sub="Signed off" /></Grid>
-        <Grid size={{ xs: 6, lg: 3 }}><DmsCard accent="yellow" label="Drafts" value={drafts.length} sub="Waiting to submit" /></Grid>
-        <Grid size={{ xs: 6, lg: 3 }}><DmsCard accent="red" label="Follow-ups Open" value={submitted.filter(v => v.followUpRequired).length} sub="Next visits scheduled" /></Grid>
+        <Grid size={{ xs: 6, lg: 3 }}><DmsCard label="Total Visits" value={totalCt} sub="All time · all types" /></Grid>
+        <Grid size={{ xs: 6, lg: 3 }}><DmsCard label="Submitted" value={submittedCt} sub="Signed off" /></Grid>
+        <Grid size={{ xs: 6, lg: 3 }}><DmsCard accent="yellow" label="Drafts" value={draftCt} sub="Waiting to submit" /></Grid>
+        <Grid size={{ xs: 6, lg: 3 }}><DmsCard accent="red" label="Follow-ups Open" value={followUpCt} sub="Next visits scheduled" /></Grid>
       </Grid>
 
       <ApiError error={error} onRetry={refetch} sx={{ mb: 1.5 }} />
@@ -121,7 +138,10 @@ export default function VisitsPage() {
         ? <EmptyState icon="⏳" title="Loading your visits…" desc="Fetching your visit observations from the server." />
         : filtered.length === 0
           ? !error && <EmptyState icon="📝" title="No visits logged" desc="Click + New Visit above to log your first site observation." />
-          : filtered.map(v => <VisitCard key={v.id} visit={v} onOpen={openVisitDetail} />)}
+          : <>
+            {filtered.map(v => <VisitCard key={v.id} visit={v} onOpen={openVisitDetail} />)}
+            <Pager data={data} page={page} onPage={setPage} loading={isFetching} />
+          </>}
 
       <VisitModal open={!!draft} draft={draft} setDraft={setDraft} onClose={() => setDraft(null)} onSave={saveVisit} />
       <VisitDetailModal visit={detailVisit} onClose={() => setDetailId(null)} onEdit={(id) => { setDetailId(null); openVisitModal(id); }} />

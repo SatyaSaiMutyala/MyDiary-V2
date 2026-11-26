@@ -60,6 +60,7 @@ export const diaryApi = baseApi.injectEndpoints({
 
 export const {
   useListDiaryQuery,
+  useLazyListDiaryQuery,
   useGetDiaryEntryQuery,
   useCreateDiaryEntryMutation,
   useUpdateDiaryEntryMutation,

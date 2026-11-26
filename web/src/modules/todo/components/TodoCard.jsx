@@ -21,9 +21,10 @@ function SecBtn({ blocker, onClick, children }) {
 
 /**
  * renderTodoCard(t, isOverdueFlag) — one .mt-task card.
- *  handlers: onOpenSource(), onComplete(mode), onSimple(status), onNudge(), onReassign()
+ *  handlers: onOpenSource(), onComplete(mode), onSimple(status), onNudge(), onReassign(), onEdit()
+ *  onEdit is only passed when this person may change the task — whoever wrote it, or an admin.
  */
-export default function TodoCard({ t, isOverdueFlag, me, extras = {}, onOpenSource, onComplete, onSimple, onNudge, onReassign }) {
+export default function TodoCard({ t, isOverdueFlag, me, extras = {}, onOpenSource, onComplete, onSimple, onNudge, onReassign, onEdit }) {
   const srcIco = t.source === 'meetings' ? '📅' : t.source === 'visits' ? '📝' : '⚡';
   const srcLabel = t.source === 'meetings' ? 'From Meeting' : t.source === 'visits' ? 'From Visit' : 'Standalone';
   const comments = extras.comments || [];
@@ -54,7 +55,10 @@ export default function TodoCard({ t, isOverdueFlag, me, extras = {}, onOpenSour
   } else if (!isMine) {
     actionBtns = <>
       <PrimaryBtn onClick={onNudge}>🔔 Nudge Owner</PrimaryBtn>
-      <Box sx={{ display: 'flex', gap: '4px', width: '100%' }}><SecBtn onClick={onReassign}>↺ Reassign</SecBtn></Box>
+      <Box sx={{ display: 'flex', gap: '4px', width: '100%' }}>
+        <SecBtn onClick={onReassign}>↺ Reassign</SecBtn>
+        {onEdit && <SecBtn onClick={onEdit}>✎ Edit</SecBtn>}
+      </Box>
     </>;
   } else if (t.source === 'meetings') {
     actionBtns = <>
@@ -63,6 +67,7 @@ export default function TodoCard({ t, isOverdueFlag, me, extras = {}, onOpenSour
         {t.status !== 'in-progress' && <SecBtn onClick={() => onComplete('progress')}>In Progress</SecBtn>}
         <SecBtn blocker onClick={() => onComplete('blocker')}>Raise Blocker</SecBtn>
       </Box>
+      {onEdit && <Box sx={{ display: 'flex', gap: '4px', width: '100%' }}><SecBtn onClick={onEdit}>✎ Edit</SecBtn></Box>}
     </>;
   } else {
     actionBtns = <>
@@ -71,6 +76,7 @@ export default function TodoCard({ t, isOverdueFlag, me, extras = {}, onOpenSour
         {t.status !== 'in-progress' && <SecBtn onClick={() => onSimple('in-progress')}>In Progress</SecBtn>}
         <SecBtn blocker onClick={() => onSimple('blocked')}>Raise Blocker</SecBtn>
       </Box>
+      {onEdit && <Box sx={{ display: 'flex', gap: '4px', width: '100%' }}><SecBtn onClick={onEdit}>✎ Edit</SecBtn></Box>}
     </>;
   }
 

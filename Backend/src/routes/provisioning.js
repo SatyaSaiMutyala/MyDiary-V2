@@ -7,8 +7,8 @@ import { validateBody, validateQuery } from '../middleware/validate.js';
  * /api/provisioning — the identity hub's door.
  *
  * PACE is the source of truth for who works here. When HR creates an employee there, or
- * switches one off, PACE calls the same five endpoints on every Trustlab app so the one
- * action lands everywhere. This router is MyDiary's side of that contract; the paths and
+ * switches one off, PACE calls the same endpoints on every Trustlab app so the one
+ * action lands everywhere. rotate-token is the sixth, behind PACE's "Push token" button. This router is MyDiary's side of that contract; the paths and
  * the header are fixed by PACE (see its AppConnector), not chosen here.
  *
  * Everything behind requireProvisioningToken is machine-to-machine: no JWT, no req.user,
@@ -25,3 +25,4 @@ provisioningRouter.get('/users/lookup', validateQuery(provisioning.lookupQuerySc
 provisioningRouter.post('/users', validateBody(provisioning.createSchema), provisioning.create);
 provisioningRouter.post('/users/enable', validateBody(provisioning.keySchema), provisioning.enable);
 provisioningRouter.post('/users/disable', validateBody(provisioning.keySchema), provisioning.disable);
+provisioningRouter.post('/rotate-token', validateBody(provisioning.rotateSchema), provisioning.rotateToken);

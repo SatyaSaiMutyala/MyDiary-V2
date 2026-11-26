@@ -14,7 +14,12 @@ import { SearchField } from '../components/SearchField';
 import { ShimmerRows } from '../components/Shimmer';
 import { meetingTypes } from '../model/meeting';
 import { errorMessage } from '../store';
-import { useListDecisionsQuery } from '../store/api/decisionsApi';
+import {
+  useLazyListDecisionsQuery,
+  useListDecisionsQuery,
+} from '../store/api/decisionsApi';
+import { LoadMore } from '../components/LoadMore';
+import { usePagedQuery } from '../utils/usePagedQuery';
 import { useListMeetingsQuery } from '../store/api/meetingsApi';
 import { longDate } from '../utils/dates';
 import { useDebounced } from '../utils/useDebounced';
@@ -65,12 +70,15 @@ export function DecisionsScreen() {
     { type, limit: 200, fields: 'title' },
     { skip: !type },
   );
-  const typeIds = type ? (typedMeetings.data?.items ?? []).map(m => m.id) : null;
+  const typeIds = type
+    ? (typedMeetings.data?.items ?? []).map(m => m.id)
+    : null;
   const waitingForTypes = Boolean(type) && !typedMeetings.data;
 
-  const listQ = useListDecisionsQuery(
+  const listQ = usePagedQuery(
+    useListDecisionsQuery,
+    useLazyListDecisionsQuery,
     {
-      limit: 100,
       sort: '-createdAt',
       ...(term ? { search: term } : null),
       ...(tag ? { tag } : null),
@@ -80,8 +88,8 @@ export function DecisionsScreen() {
     { skip: waitingForTypes || (Boolean(typeIds) && typeIds.length === 0) },
   );
 
-  const rows = listQ.data?.items ?? [];
-  const total = listQ.data?.total ?? 0;
+  const rows = listQ.items;
+  const total = listQ.total;
   const loading = listQ.isLoading || waitingForTypes;
   const error = listQ.error || typedMeetings.error;
   const noMeetingsOfType = Boolean(typeIds) && typeIds.length === 0;
@@ -136,7 +144,9 @@ export function DecisionsScreen() {
             <Pressable
               key={d.id}
               accessibilityRole="button"
-              accessibilityLabel={`${d.text}. Opens ${d.meetingTitle || 'the meeting'}.`}
+              accessibilityLabel={`${d.text}. Opens ${
+                d.meetingTitle || 'the meeting'
+              }.`}
               onPress={() =>
                 d.meetingId
                   ? nav.navigate('MeetingDetail', { id: d.meetingId })
@@ -180,6 +190,7 @@ export function DecisionsScreen() {
               </Card>
             </Pressable>
           ))}
+          <LoadMore paged={listQ} />
         </>
       )}
     </FormScreen>

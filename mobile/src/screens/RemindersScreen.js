@@ -13,7 +13,12 @@ import { SearchField } from '../components/SearchField';
 import { ShimmerRows } from '../components/Shimmer';
 import { Stat } from '../components/Stat';
 import { errorMessage } from '../store';
-import { useListRemindersQuery } from '../store/api/remindersApi';
+import {
+  useLazyListRemindersQuery,
+  useListRemindersQuery,
+} from '../store/api/remindersApi';
+import { LoadMore } from '../components/LoadMore';
+import { usePagedQuery } from '../utils/usePagedQuery';
 import { useDebounced } from '../utils/useDebounced';
 import { colors, hairline, s, vs } from '../theme';
 
@@ -30,13 +35,20 @@ export function RemindersScreen() {
 
   const term = useDebounced(search.trim());
   const params = useMemo(
-    () => ({ box, limit: 100, ...(term ? { search: term } : null) }),
+    () => ({ box, ...(term ? { search: term } : null) }),
     [box, term],
   );
-  const { data, error, isLoading, refetch } = useListRemindersQuery(params);
+  // A page at a time, rather than a hundred reminders on every load.
+  const paged = usePagedQuery(
+    useListRemindersQuery,
+    useLazyListRemindersQuery,
+    params,
+  );
+  const { error, isLoading, refetch } = paged;
 
-  const rows = data?.items ?? [];
-  const counts = data?.counts;
+  const rows = paged.items;
+  // The box counts come from the same answer the first page arrived in.
+  const counts = paged.data?.counts;
 
   return (
     <FormScreen
@@ -95,13 +107,16 @@ export function RemindersScreen() {
           <ShimmerRows rows={4} icon={false} />
         </Card>
       ) : rows.length ? (
-        rows.map(r => (
-          <ReminderRow
-            key={r.id}
-            reminder={r}
-            onPress={() => nav.navigate('ReminderDetail', { id: r.id })}
-          />
-        ))
+        <>
+          {rows.map(r => (
+            <ReminderRow
+              key={r.id}
+              reminder={r}
+              onPress={() => nav.navigate('ReminderDetail', { id: r.id })}
+            />
+          ))}
+          <LoadMore paged={paged} />
+        </>
       ) : (
         <EmptyState
           text={

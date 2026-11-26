@@ -18,9 +18,14 @@ import { ShimmerRows } from '../components/Shimmer';
 import { Notice } from '../components/Notice';
 import { meetingStatuses, meetingTypes } from '../model/meeting';
 import { errorMessage } from '../store';
-import { useListMeetingsQuery } from '../store/api/meetingsApi';
+import {
+  useLazyListMeetingsQuery,
+  useListMeetingsQuery,
+} from '../store/api/meetingsApi';
 import { realToday } from '../utils/dates';
 import { useDebounced } from '../utils/useDebounced';
+import { LoadMore } from '../components/LoadMore';
+import { usePagedQuery } from '../utils/usePagedQuery';
 import { colors, hairline, s, vs } from '../theme';
 
 const blank = { type: 'all', status: 'all', from: '', to: '' };
@@ -56,7 +61,6 @@ export function MeetingsScreen() {
   const term = useDebounced(search.trim());
   const params = useMemo(
     () => ({
-      limit: 50,
       sort: view === 'past' ? '-date' : 'date',
       mine: true,
       ...(term ? { search: term } : null),
@@ -70,8 +74,14 @@ export function MeetingsScreen() {
     [view, term, f],
   );
 
-  const { data, error, isLoading, refetch } = useListMeetingsQuery(params);
-  const rows = data?.items ?? [];
+  // A page at a time, rather than fifty meetings on every load.
+  const paged = usePagedQuery(
+    useListMeetingsQuery,
+    useLazyListMeetingsQuery,
+    params,
+  );
+  const { error, isLoading, refetch } = paged;
+  const rows = paged.items;
 
   // The counts come from their own small queries, so they do not change as the list is filtered.
   const upcoming = useListMeetingsQuery({
@@ -118,9 +128,17 @@ export function MeetingsScreen() {
       }
     >
       <Card style={styles.summary}>
-        <Stat value={counts.upcoming ?? '–'} label="Upcoming" style={styles.stat} />
+        <Stat
+          value={counts.upcoming ?? '–'}
+          label="Upcoming"
+          style={styles.stat}
+        />
         <View style={styles.rule} />
-        <Stat value={counts.completed ?? '–'} label="Completed" style={styles.stat} />
+        <Stat
+          value={counts.completed ?? '–'}
+          label="Completed"
+          style={styles.stat}
+        />
         <View style={styles.rule} />
         <Stat
           value={counts.openActions}
@@ -199,13 +217,16 @@ export function MeetingsScreen() {
             <ShimmerRows rows={4} icon={false} />
           </Card>
         ) : rows.length ? (
-          rows.map(m => (
-            <MeetingRow
-              key={m.id}
-              meeting={m}
-              onPress={() => nav.navigate('MeetingDetail', { id: m.id })}
-            />
-          ))
+          <>
+            {rows.map(m => (
+              <MeetingRow
+                key={m.id}
+                meeting={m}
+                onPress={() => nav.navigate('MeetingDetail', { id: m.id })}
+              />
+            ))}
+            <LoadMore paged={paged} />
+          </>
         ) : (
           <EmptyState
             text={
@@ -218,7 +239,6 @@ export function MeetingsScreen() {
           />
         )}
       </View>
-
     </FormScreen>
   );
 }

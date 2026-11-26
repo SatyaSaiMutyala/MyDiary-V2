@@ -42,6 +42,6 @@ export const meetingRequestsApi = baseApi.injectEndpoints({
 });
 
 export const {
-  useListRequestsQuery, useCreateRequestMutation,
+  useListRequestsQuery, useLazyListRequestsQuery, useCreateRequestMutation,
   useAcceptRequestMutation, useDeclineRequestMutation, useCounterRequestMutation,
 } = meetingRequestsApi;

@@ -19,10 +19,13 @@ import { RichText } from '../components/RichText';
 import { ShimmerRows } from '../components/Shimmer';
 import { errorMessage } from '../store';
 import {
+  useLazyListNotificationsQuery,
   useListNotificationsQuery,
   useMarkNotificationReadMutation,
   useReadAllNotificationsMutation,
 } from '../store/api/notificationsApi';
+import { LoadMore } from '../components/LoadMore';
+import { usePagedQuery } from '../utils/usePagedQuery';
 import { relativeTime } from '../utils/dates';
 import { plainText } from '../utils/richText';
 import { colors, hairline, s, space, vs } from '../theme';
@@ -49,7 +52,9 @@ function NotificationRow({ n, last, busy, onPress }) {
       accessibilityRole={n.unread ? 'button' : undefined}
       accessibilityLabel={
         n.unread
-          ? `Unread. ${plainText(n.text)}. ${relativeTime(n.time)}. Tap to mark read.`
+          ? `Unread. ${plainText(n.text)}. ${relativeTime(
+              n.time,
+            )}. Tap to mark read.`
           : `${plainText(n.text)}. ${relativeTime(n.time)}.`
       }
       style={({ pressed }) => [
@@ -94,16 +99,23 @@ export function NotificationsScreen() {
   const [busyId, setBusyId] = useState('');
   const [problem, setProblem] = useState('');
 
-  const { data, error, isLoading, refetch } = useListNotificationsQuery({
-    limit: 50,
-    sort: '-createdAt',
-  });
+  // A page at a time, with older ones added below on demand. The unread badge is a separate
+  // one-row call, so it is right whether or not the rest has been loaded.
+  const paged = usePagedQuery(
+    useListNotificationsQuery,
+    useLazyListNotificationsQuery,
+    { sort: '-createdAt', ...(box === 'unread' ? { unread: 'true' } : null) },
+  );
+  const { error, isLoading, refetch } = paged;
+  const { data } = useListNotificationsQuery({ limit: 1 });
   const [markRead] = useMarkNotificationReadMutation();
   const [readAll, readingAll] = useReadAllNotificationsMutation();
 
-  const all = data?.items ?? [];
   const unreadCount = data?.unreadTotal ?? 0;
-  const rows = box === 'unread' ? all.filter(n => n.unread) : all;
+  // How many there are in all, not how many this screen has been given so far.
+  const totalCount = data?.total ?? 0;
+  // The box is asked of the server now, so the rows that arrive are already the right ones.
+  const rows = paged.items;
 
   const open = async n => {
     if (!n.unread) {
@@ -131,16 +143,14 @@ export function NotificationsScreen() {
 
   return (
     <FormScreen title="Notifications" onRefresh={refetch}>
-      {problem ? (
-        <Notice tone="error" title={problem} />
-      ) : null}
+      {problem ? <Notice tone="error" title={problem} /> : null}
 
       <View style={styles.chips}>
         <FilterChips
           value={box}
           onChange={setBox}
           options={[
-            { key: 'all', label: 'All', count: all.length },
+            { key: 'all', label: 'All', count: totalCount },
             { key: 'unread', label: 'Unread', count: unreadCount },
           ]}
         />
@@ -159,9 +169,13 @@ export function NotificationsScreen() {
             label={
               unreadCount
                 ? `${unreadCount} unread`
-                : `${all.length} ${all.length === 1 ? 'notification' : 'notifications'}`
+                : `${totalCount} ${
+                    totalCount === 1 ? 'notification' : 'notifications'
+                  }`
             }
-            action={unreadCount && !readingAll.isLoading ? 'Mark all read' : undefined}
+            action={
+              unreadCount && !readingAll.isLoading ? 'Mark all read' : undefined
+            }
             onAction={unreadCount ? clearAll : undefined}
           />
           <Card style={styles.list}>
@@ -175,6 +189,7 @@ export function NotificationsScreen() {
               />
             ))}
           </Card>
+          <LoadMore paged={paged} />
         </>
       ) : box === 'unread' ? (
         <EmptyState text="Nothing unread. You are all caught up." />
@@ -183,8 +198,9 @@ export function NotificationsScreen() {
       )}
 
       <AppText variant="meta" color={colors.inkFaint} style={styles.foot}>
-        Notifications are raised by the website and the app as things happen — an action assigned to
-        you, a meeting you are part of, minutes circulated. They are not push messages yet.
+        Notifications are raised by the website and the app as things happen —
+        an action assigned to you, a meeting you are part of, minutes
+        circulated. They are not push messages yet.
       </AppText>
     </FormScreen>
   );

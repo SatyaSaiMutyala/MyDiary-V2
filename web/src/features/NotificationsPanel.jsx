@@ -4,7 +4,8 @@ import { Box, ClickAwayListener, Typography } from '@mui/material';
 import { keyframes } from '@mui/material/styles';
 import { toolBtn } from '../layouts/Topbar';
 import { TextLink } from '../components';
-import { useListNotificationsQuery, useMarkNotificationReadMutation, useReadAllNotificationsMutation } from '../store/api/notificationsApi';
+import { useLazyListNotificationsQuery, useListNotificationsQuery, useMarkNotificationReadMutation, useReadAllNotificationsMutation } from '../store/api/notificationsApi';
+import { usePagedQuery } from '../store/usePagedQuery';
 import { errorMessage } from '../store/api/baseApi';
 import { relativeTime } from '../utils/dates';
 import { tokens, fonts } from '../theme/tokens';
@@ -28,11 +29,15 @@ const ICON_STYLE = {
  */
 export default function NotificationsBell({ onRail = false }) {
   const [open, setOpen] = useState(false);
-  const { data, error, isLoading } = useListNotificationsQuery({ limit: 50, sort: '-createdAt' }, { pollingInterval: 60000 });
+  // A page at a time, with older ones added below on demand. The bell's own unread count comes
+  // from the same answer, so the badge is right whether or not the rest has been loaded.
+  const paged = usePagedQuery(useListNotificationsQuery, useLazyListNotificationsQuery, { sort: '-createdAt' });
+  const { data } = useListNotificationsQuery({ limit: 1 }, { pollingInterval: 60000 });
+  const { error, isLoading } = paged;
   const [markRead] = useMarkNotificationReadMutation();
   const [readAll] = useReadAllNotificationsMutation();
 
-  const notifications = data?.items || [];
+  const notifications = paged.items;
   const unreadCount = data?.unreadTotal ?? 0;
 
   const markAllRead = () => { readAll().unwrap().catch(() => {}); };
@@ -73,6 +78,14 @@ export default function NotificationsBell({ onRail = false }) {
                   </Box>
                 );
               })}
+              {paged.more > 0 && (
+                <Box
+                  onClick={paged.loadMore}
+                  sx={{ p: '12px 18px', textAlign: 'center', fontSize: 12.5, color: tokens.tealDark, cursor: 'pointer', fontWeight: 700, '&:hover': { bgcolor: tokens.cream } }}
+                >
+                  {paged.loadingMore ? 'Loading…' : `Show ${paged.nextBatch} older`}
+                </Box>
+              )}
             </Box>
           </Box>
         )}

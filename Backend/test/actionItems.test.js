@@ -193,3 +193,59 @@ describe('a task allocated from My To-Do, with no meeting behind it', () => {
   });
 });
 
+describe('the two To-Do lists, narrowed on the server', () => {
+  it('separates what you owe from what you handed out', async () => {
+    const staff = await createAndLogin(ctx.app, token, {
+      name: 'Nisha Rao', email: 'nisha.todo@trustlab.co.in', role: 'employee', modules: ['todo', 'meetings'],
+    });
+
+    await post('/api/action-items', { desc: 'MINE — I kept this', deadline: '2026-12-20' });
+    await post('/api/action-items', { desc: 'HERS — I gave her this', owner: 'Nisha Rao', deadline: '2026-12-21' });
+
+    const owed = await get('/api/action-items?mine=true&limit=200');
+    expect(owed.body.items.some((a) => a.desc === 'MINE — I kept this')).toBe(true);
+    expect(owed.body.items.some((a) => a.desc === 'HERS — I gave her this')).toBe(false);
+
+    const handed = await get('/api/action-items?delegated=true&limit=200');
+    expect(handed.body.items.some((a) => a.desc === 'HERS — I gave her this')).toBe(true);
+    // A task you wrote for yourself is not "delegated" — it is simply yours.
+    expect(handed.body.items.some((a) => a.desc === 'MINE — I kept this')).toBe(false);
+
+    // And hers is hers: she sees it owed, and has delegated nothing.
+    const hers = await request(ctx.app).get('/api/action-items?mine=true&limit=200').set(auth(staff.token));
+    expect(hers.body.items.some((a) => a.desc === 'HERS — I gave her this')).toBe(true);
+    const herDelegated = await request(ctx.app).get('/api/action-items?delegated=true&limit=200').set(auth(staff.token));
+    expect(herDelegated.body.items.every((a) => a.desc !== 'HERS — I gave her this')).toBe(true);
+  });
+
+  it('counts everything it holds, so a capped page can say what it is hiding', async () => {
+    await createAndLogin(ctx.app, token, { name: 'Vikram Shah', email: 'vikram.todo@trustlab.co.in', role: 'employee', modules: ['todo'] });
+    for (const n of [1, 2, 3]) {
+      await post('/api/action-items', { desc: `Handed over ${n}`, owner: 'Vikram Shah', deadline: `2026-12-0${n}` });
+    }
+
+    // The screen can ask for at most 200 rows. The total it reports has to be the real one, or a
+    // person with more than that is never told there is more to see.
+    const r = await get('/api/action-items?delegated=true&limit=1');
+    expect(r.body.items).toHaveLength(1);
+    expect(r.body.total).toBe(3);
+  });
+
+  it('pages, so nothing is stranded beyond the first screenful', async () => {
+    await createAndLogin(ctx.app, token, { name: 'Imran Shaikh', email: 'imran.todo@trustlab.co.in', role: 'employee', modules: ['todo'] });
+    for (const n of [1, 2, 3]) {
+      await post('/api/action-items', { desc: `Paged ${n}`, owner: 'Imran Shaikh', deadline: `2026-12-0${n}` });
+    }
+
+    const one = await get('/api/action-items?delegated=true&limit=2&page=1&sort=deadline');
+    const two = await get('/api/action-items?delegated=true&limit=2&page=2&sort=deadline');
+    expect(one.body.items).toHaveLength(2);
+    expect(two.body.items).toHaveLength(1); // the third, which the first page could not hold
+    expect(one.body.items.map((a) => a.id)).not.toContain(two.body.items[0].id);
+  });
+
+  it('refuses a flag it does not understand', async () => {
+    expect((await get('/api/action-items?delegated=maybe')).status).toBe(400);
+  });
+});
+

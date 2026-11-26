@@ -8,6 +8,7 @@
 import bcrypt from 'bcryptjs';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { AppSetting } from '../src/models/AppSetting.js';
 import { auth, login, startTestApp } from './helpers.js';
 
 const TOKEN = 'test-provisioning-token';
@@ -77,6 +78,7 @@ describe('the door', () => {
     // problem. Sending the wrong one of those sends HR to fix the wrong thing.
     const saved = config.provisioningToken;
     config.provisioningToken = '';
+    await AppSetting.deleteMany({}); // and nothing pushed through rotate-token either
     try {
       const r = await get('/api/provisioning/ping');
       expect(r.status).toBe(503);
@@ -226,5 +228,57 @@ describe('the Activity Log', () => {
     const mine = r.body.items.filter((e) => e.user?.name === 'PACE (provisioning)');
     expect(mine.length).toBeGreaterThan(0);
     expect(mine.map((e) => e.details)).toContain('account created by PACE');
+  });
+});
+
+/**
+ * Last on purpose: a successful rotation changes the secret for everything after it, so
+ * running these earlier would pull the token out from under the tests above.
+ */
+describe('rotating the token', () => {
+  const NEXT = 'a-replacement-token-of-sufficient-length';
+
+  it('refuses a token short enough to be guessable', async () => {
+    const r = await post('/api/provisioning/rotate-token', { new_token: 'tiny' });
+    expect(r.status).toBe(400);
+  });
+
+  it('refuses to rotate for a caller who does not hold the current token', async () => {
+    const r = await post('/api/provisioning/rotate-token', { new_token: NEXT }, 'not-the-token');
+    expect(r.status).toBe(401);
+  });
+
+  it('accepts the new token, and never echoes it back', async () => {
+    const r = await post('/api/provisioning/rotate-token', { new_token: NEXT });
+    expect(r.status).toBe(200);
+    expect(r.body).toEqual({ ok: true, rotated: true });
+    expect(JSON.stringify(r.body)).not.toContain(NEXT);
+  });
+
+  it('retires the old token immediately', async () => {
+    // If the previous secret still worked, rotating would achieve nothing.
+    expect((await get('/api/provisioning/ping', TOKEN)).status).toBe(401);
+  });
+
+  it('opens the door to the new one', async () => {
+    expect((await get('/api/provisioning/ping', NEXT)).status).toBe(200);
+  });
+
+  it('stores only a hash, never the token itself', async () => {
+    const rows = await AppSetting.find({}).lean();
+    const blob = JSON.stringify(rows);
+    expect(blob).not.toContain(NEXT);
+    expect(blob).toMatch(/[0-9a-f]{64}/); // a sha-256 digest
+  });
+
+  it('beats the .env fallback, so a rotation cannot be undone by the old env value', async () => {
+    const saved = config.provisioningToken;
+    config.provisioningToken = TOKEN;
+    try {
+      expect((await get('/api/provisioning/ping', TOKEN)).status).toBe(401);
+      expect((await get('/api/provisioning/ping', NEXT)).status).toBe(200);
+    } finally {
+      config.provisioningToken = saved;
+    }
   });
 });

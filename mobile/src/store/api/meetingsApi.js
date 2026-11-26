@@ -165,6 +165,7 @@ export const meetingsApi = baseApi.injectEndpoints({
 
 export const {
   useListMeetingsQuery,
+  useLazyListMeetingsQuery,
   useGetMeetingQuery,
   useCreateMeetingMutation,
   useUpdateMeetingMutation,

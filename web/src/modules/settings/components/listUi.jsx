@@ -5,7 +5,14 @@ import { tokens, fonts } from '../../../theme/tokens';
 import { errorDetails, errorMessage } from '../../../store/api/baseApi';
 import { DateInput as DatePicker } from '../../../components/DateTimeInput';
 
-export const PAGE_SIZE = 25;
+/**
+ * Rows per page, everywhere a list is paged.
+ *
+ * One number rather than one per screen: a list that asks for hundreds at once is slow to draw,
+ * heavy on the wire, and — because the server will not return more than 200 — quietly loses the
+ * rows past the end without saying so.
+ */
+export const PAGE_SIZE = 15;
 
 /** "1–25 of 57" with Prev / Next, driven by the list envelope { page, limit, total, pages, hasMore }. */
 export function Pager({ data, page, onPage, loading }) {

@@ -33,10 +33,21 @@ export function collectTodoItems(state) {
  * meeting (the API's `createdBy.name`), which is what the "Delegated by" line shows.
  */
 export function actionToTodo(a) {
+  // A task allocated from this screen has no meeting behind it, so it belongs under Standalone
+  // rather than From Meetings — otherwise the source filters count it in the wrong place and the
+  // card tries to link back to a meeting that was never there.
+  const standalone = a.source === 'standalone' || !a.meetingId;
   return {
     id: a.id, desc: a.desc, owner: a.owner, ownerType: a.ownerType || 'internal',
     deadline: a.deadline, priority: a.priority || 'medium', status: a.status || 'open',
-    source: 'meetings', sourceId: a.meetingId, sourceTitle: a.meetingTitle, creator: a.createdBy?.name || '',
+    source: standalone ? 'standalone' : 'meetings',
+    sourceId: standalone ? a.id : a.meetingId,
+    sourceTitle: standalone ? 'Ad-hoc task' : a.meetingTitle,
+    creator: a.createdBy?.name || '',
+    // Tells the screen this one is on the server, so it is changed through the API rather than in
+    // the browser's own copy — the visits and demo rows beside it are not.
+    fromApi: true,
+    meetingId: a.meetingId ?? null,
     raw: a, parent: null,
   };
 }

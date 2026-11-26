@@ -102,6 +102,7 @@ export const actionItemsApi = baseApi.injectEndpoints({
 
 export const {
   useListActionItemsQuery,
+  useLazyListActionItemsQuery,
   useAllocateTaskMutation,
   useListPeopleQuery,
   useGetActionItemQuery,

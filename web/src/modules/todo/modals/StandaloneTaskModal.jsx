@@ -13,14 +13,24 @@ const labelSx = { fontFamily: fonts.mono, fontSize: 10, letterSpacing: '0.1em', 
 const ctrlSx = { width: '100%', mt: '6px', height: 40, p: '0 12px', border: `1px solid ${tokens.line}`, borderRadius: '6px', fontFamily: 'inherit', fontSize: 13, bgcolor: '#fff', color: tokens.ink, boxSizing: 'border-box', '&:focus': { outline: 'none', borderColor: tokens.teal, boxShadow: `0 0 0 3px ${tokens.tealSoft}` } };
 
 /** openStandaloneTask / submitStandaloneTask — "⚡ New Ad-hoc Task" composer */
-export default function StandaloneTaskModal({ open, onClose, onSubmit, me }) {
+/**
+ * The task composer, used both to write a new one and to change one already written.
+ *
+ * Editing is the same four fields as creating — there is nothing about a task that is only
+ * settable at birth — so it is the same form rather than a second one that would drift from it.
+ *
+ * @param {object} props
+ * @param {object} [props.task] the task being changed; omitted means a new one
+ */
+export default function StandaloneTaskModal({ open, onClose, onSubmit, me, task }) {
   const dlg = useDialog();
+  const editing = Boolean(task);
   const today = new Date(TODAY).toISOString().slice(0, 10);
   const in7 = new Date(TODAY.getTime() + 7 * 86400000).toISOString().slice(0, 10);
-  const [desc, setDesc] = useState('');
-  const [owner, setOwner] = useState('');
-  const [deadline, setDeadline] = useState(in7);
-  const [priority, setPriority] = useState('medium');
+  const [desc, setDesc] = useState(task?.desc ?? '');
+  const [owner, setOwner] = useState(task && task.owner !== me ? task.owner : '');
+  const [deadline, setDeadline] = useState(task?.deadline ?? in7);
+  const [priority, setPriority] = useState(task?.priority ?? 'medium');
   // Real accounts, not the prototype's list of job titles: a task allocated to somebody has to
   // reach a person who can sign in and see it.
   const { data: people, isLoading: loadingPeople } = useListPeopleQuery(undefined, { skip: !open });
@@ -34,15 +44,17 @@ export default function StandaloneTaskModal({ open, onClose, onSubmit, me }) {
   };
 
   return (
-    <ModalShell open={open} onClose={onClose} width={640} head="gradient" icon="⚡" title="New Ad-hoc Task" sub="Allocate a task to anyone — no meeting or visit required"
+    <ModalShell open={open} onClose={onClose} width={640} head="gradient" icon={editing ? '✎' : '⚡'}
+      title={editing ? 'Edit task' : 'New Ad-hoc Task'}
+      sub={editing ? 'Change the wording, the owner, the date or how urgent it is' : 'Allocate a task to anyone — no meeting or visit required'}
       bodySx={{ bgcolor: tokens.creamWarm, p: { xs: '16px', md: '20px 28px' } }}
       footer={<>
         <Box sx={{ fontSize: 11, color: tokens.slate, fontFamily: fonts.mono, letterSpacing: '0.04em' }}>
-          ↻ Lands in <strong>{owner ? `${owner}'s` : 'your'} To-Do inbox</strong> immediately{owner ? ', and they are told' : ''}
+          ↻ {editing ? 'Saved' : 'Lands'} in <strong>{owner ? `${owner}'s` : 'your'} To-Do inbox</strong>{editing ? '' : ' immediately'}{owner ? ', and they are told' : ''}
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
           <Btn onClick={onClose}>Cancel</Btn>
-          <Btn variant="primary" onClick={submit}>Create & Notify</Btn>
+          <Btn variant="primary" onClick={submit}>{editing ? '💾 Save changes' : 'Create & Notify'}</Btn>
         </Box>
       </>}>
       <Box sx={{ mb: '14px' }}>

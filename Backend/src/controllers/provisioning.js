@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { config } from '../config.js';
 import * as provisioning from '../services/provisioning.js';
+import { MIN_TOKEN_LENGTH, rotate } from '../services/provisioningToken.js';
 import { log } from '../services/audit.js';
 import { notFound } from '../utils/errors.js';
 
@@ -111,3 +112,33 @@ async function setStatus(req, res, status) {
   });
   res.json({ ok: true, user: provisioning.serializeForHub(user) });
 }
+
+/**
+ * The replacement secret. A minimum length is enforced because this endpoint is the one
+ * way the token can be set remotely, and a short one would quietly weaken the only lock
+ * on the door — PACE generates 64 hex characters, so the floor costs nothing.
+ */
+export const rotateSchema = z
+  .object({ new_token: z.string().trim().min(MIN_TOKEN_LENGTH, `Token must be at least ${MIN_TOKEN_LENGTH} characters.`).max(255) })
+  .strict();
+
+/**
+ * POST /api/provisioning/rotate-token — PACE's "Push token" button.
+ *
+ * Authenticated with the CURRENT token by the middleware above, then stores the new one;
+ * that is the handover. From the next request on, only the new token opens the door.
+ * @type {import('express').RequestHandler}
+ */
+export const rotateToken = async (req, res) => {
+  await rotate(req.body.new_token);
+  await log({
+    user: HUB_ACTOR,
+    action: 'update',
+    module: 'Settings',
+    entity: 'Provisioning token',
+    details: 'rotated by PACE',
+    ip: req.ip ?? '',
+  });
+  // The token itself is never echoed back, logged, or stored in the clear.
+  res.json({ ok: true, rotated: true });
+};

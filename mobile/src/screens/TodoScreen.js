@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { ChevronRight, Plus } from 'lucide-react-native';
@@ -16,14 +16,18 @@ import { ScreenScroll } from '../components/ScreenScroll';
 import { SearchField } from '../components/SearchField';
 import { ShimmerRows } from '../components/Shimmer';
 import { StatusDot } from '../components/StatusDot';
-import { errorMessage, useMe } from '../store';
+import { errorMessage } from '../store';
 import {
+  useLazyListActionItemsQuery,
   useListActionItemsQuery,
   useUpdateActionItemMutation,
 } from '../store/api/actionItemsApi';
 import { dueDate } from '../utils/dates';
 import { useDebounced } from '../utils/useDebounced';
 import { colors, hairline, s, shadow, vs } from '../theme';
+
+/** How many rows one screenful holds; "Load more" fetches the next page of the same size. */
+const PAGE = 15;
 
 const PRIORITY_TONE = {
   critical: 'critical',
@@ -92,7 +96,6 @@ function TodoRow({ task, onToggle, onOpen, showOwner, last }) {
  */
 export function TodoScreen() {
   const nav = useNavigation();
-  const me = useMe();
   const [box, setBox] = useState('owed');
   // Refines the "owed by me" list only; the other two views are already narrow.
   const [scope, setScope] = useState('open');
@@ -100,30 +103,96 @@ export function TodoScreen() {
 
   const term = useDebounced(search.trim());
 
-  // Everything owed by me, and everything I handed out, in two queries.
+  /**
+   * Everything owed by me, and everything I handed out — each narrowed by the server.
+   *
+   * The delegated list used to be worked out here, from every action item in the company: that
+   * put other people's tasks on the wire, and it lost rows, because one page holds at most 200
+   * and they ran out long before reaching the ones that were mine. `limit` grows a screenful at
+   * a time, and the server's `total` says whether there is more to come.
+   */
+  const searchArg = term ? { search: term } : null;
   const mineQ = useListActionItemsQuery({
     mine: 'true',
-    limit: 200,
+    limit: PAGE,
     sort: 'deadline',
-    ...(term ? { search: term } : null),
+    ...searchArg,
   });
   const allQ = useListActionItemsQuery({
-    limit: 200,
+    delegated: 'true',
+    limit: PAGE,
     sort: 'deadline',
-    ...(term ? { search: term } : null),
+    ...searchArg,
   });
+
+  /**
+   * Pages beyond the first. It has to be page-by-page rather than one ever-larger request: the
+   * server will not return more than 200 rows at once, so asking for more fails and the screen is
+   * left showing what it had, with no sign anything is missing.
+   */
+  const [pages, setPages] = useState(1);
+  const [moreMine, setMoreMine] = useState([]);
+  const [moreDelegated, setMoreDelegated] = useState([]);
+  const [fetchPage, { isFetching: loadingMore }] =
+    useLazyListActionItemsQuery();
+
+  // A new search starts the list again.
+  useEffect(() => {
+    setPages(1);
+    setMoreMine([]);
+    setMoreDelegated([]);
+  }, [term]);
+
+  const loadMore = async () => {
+    const next = pages + 1;
+    const want = held => held > PAGE * pages;
+    try {
+      if (want(mineQ.data?.total ?? 0)) {
+        const r = await fetchPage({
+          mine: 'true',
+          limit: PAGE,
+          page: next,
+          sort: 'deadline',
+          ...searchArg,
+        }).unwrap();
+        setMoreMine(x => [...x, ...(r.items ?? [])]);
+      }
+      if (want(allQ.data?.total ?? 0)) {
+        const r = await fetchPage({
+          delegated: 'true',
+          limit: PAGE,
+          page: next,
+          sort: 'deadline',
+          ...searchArg,
+        }).unwrap();
+        setMoreDelegated(x => [...x, ...(r.items ?? [])]);
+      }
+      setPages(next);
+    } catch {
+      // The row count stays as it was; pulling to refresh tries again.
+    }
+  };
   const [updateAction] = useUpdateActionItemMutation();
 
-  const mine = useMemo(() => mineQ.data?.items ?? [], [mineQ.data]);
-  const all = useMemo(() => allQ.data?.items ?? [], [allQ.data]);
-
-  const delegated = useMemo(
-    () =>
-      all.filter(
-        a => a.createdBy?.name === me?.name && a.owner !== me?.name,
-      ),
-    [all, me?.name],
+  const mine = useMemo(
+    () => [...(mineQ.data?.items ?? []), ...moreMine],
+    [mineQ.data, moreMine],
   );
+  const all = useMemo(
+    () => [...(allQ.data?.items ?? []), ...moreDelegated],
+    [allQ.data, moreDelegated],
+  );
+
+  const delegated = all;
+
+  // What the server holds, against what this screen has been given.
+  const held = (mineQ.data?.total ?? 0) + (allQ.data?.total ?? 0);
+  const loaded = mine.length + delegated.length;
+  const leftOwed = Math.max(0, (mineQ.data?.total ?? 0) - mine.length);
+  const leftDelegated = Math.max(0, (allQ.data?.total ?? 0) - delegated.length);
+  const more = leftOwed + leftDelegated;
+  // One press fetches the next page of each list that still has one, so this is what will arrive.
+  const nextBatch = Math.min(leftOwed, PAGE) + Math.min(leftDelegated, PAGE);
 
   const counts = {
     owed: mine.filter(a => a.status !== 'done').length,
@@ -244,6 +313,25 @@ export function TodoScreen() {
                 />
               ))}
             </Card>
+            {/* Nothing is hidden silently: when the server holds more than this screen was given,
+                it says so and offers the rest. */}
+            {more > 0 ? (
+              <Pressable
+                onPress={loadMore}
+                disabled={loadingMore}
+                style={({ pressed }) => [
+                  styles.more,
+                  pressed && styles.morePressed,
+                ]}
+              >
+                <AppText variant="body" color={colors.tealDeep}>
+                  {loadingMore ? 'Loading…' : `Load ${nextBatch} more`}
+                </AppText>
+                <AppText variant="meta" color={colors.inkFaint}>
+                  Showing {loaded} of {held}
+                </AppText>
+              </Pressable>
+            ) : null}
           </>
         ) : (
           <EmptyState
@@ -271,6 +359,15 @@ const styles = StyleSheet.create({
   search: { marginBottom: vs(4) },
   chips: { marginBottom: vs(6) },
   loading: { padding: s(14) },
+  more: {
+    alignItems: 'center',
+    gap: vs(3),
+    paddingVertical: vs(14),
+    marginTop: vs(10),
+    borderRadius: s(12),
+    backgroundColor: colors.card,
+  },
+  morePressed: { opacity: 0.7 },
   list: { paddingHorizontal: s(14) },
   row: {
     flexDirection: 'row',
