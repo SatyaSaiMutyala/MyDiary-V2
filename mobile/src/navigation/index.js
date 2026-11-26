@@ -3,6 +3,7 @@ import { DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ForceUpdateDialog } from '../components/ForceUpdateDialog';
+import { ForcePasswordDialog } from '../components/ForcePasswordDialog';
 import { AccountScreen } from '../screens/AccountScreen';
 import { ActivityScreen } from '../screens/ActivityScreen';
 import { ChangePasswordScreen } from '../screens/ChangePasswordScreen';
@@ -53,10 +54,10 @@ import { TodoScreen } from '../screens/TodoScreen';
 import { VisitDetailScreen } from '../screens/VisitDetailScreen';
 import { VisitFormScreen } from '../screens/VisitFormScreen';
 import { VisitsScreen } from '../screens/VisitsScreen';
-import { useAppDispatch, useAppSelector } from '../store';
-import { useMeQuery } from '../store/api/authApi';
+import { errorMessage, useAppDispatch, useAppSelector } from '../store';
+import { useChangePasswordMutation, useMeQuery } from '../store/api/authApi';
 import { loadSession } from '../store/persist';
-import { restored } from '../store/slices/sessionSlice';
+import { restored, signedOut, userUpdated } from '../store/slices/sessionSlice';
 import { navigationRef } from '../push';
 import { usePush } from '../push/usePush';
 import { useReminderAlarms } from '../reminders/useReminderAlarms';
@@ -120,6 +121,41 @@ function PushGate() {
   return null;
 }
 
+/**
+ * The password gate: raised by `mustChangePassword` on the person's own record.
+ *
+ * It sits beside UpdateGate, outside the navigator, so it covers every screen — and it is checked
+ * against the session, which PushGate keeps fresh from /auth/me. Someone who sets their password on
+ * the website is let through here the next time the app is looked at, without signing out.
+ */
+function PasswordGate() {
+  const dispatch = useAppDispatch();
+  const user = useAppSelector(st => st.session.user);
+  const [changePassword, call] = useChangePasswordMutation();
+
+  if (!user?.mustChangePassword) {
+    return null;
+  }
+  const submit = async (next, fail) => {
+    try {
+      await changePassword({ next }).unwrap();
+      // Straight into the session so the app opens behind it without a sign-out.
+      dispatch(userUpdated({ ...user, mustChangePassword: false }));
+    } catch (err) {
+      fail(errorMessage(err));
+    }
+  };
+  return (
+    <ForcePasswordDialog
+      visible
+      name={user.name}
+      saving={call.isLoading}
+      onSubmit={submit}
+      onSignOut={() => dispatch(signedOut())}
+    />
+  );
+}
+
 function UpdateGate() {
   const { updateRequired, storeVersion, openStore } = useForceUpdate();
   return (
@@ -157,6 +193,7 @@ export function RootNavigator() {
     <NavigationContainer ref={navigationRef} theme={navTheme}>
       <PushGate />
       <UpdateGate />
+      <PasswordGate />
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Tabs" component={Tabs} />
 

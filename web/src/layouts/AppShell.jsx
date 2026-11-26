@@ -6,6 +6,7 @@ import Topbar from './Topbar';
 import PhoneChrome from './PhoneChrome';
 import CommandPalette from '../features/CommandPalette';
 import SpectatorBar from '../features/SpectatorBar';
+import ForcePasswordDialog from '../features/ForcePasswordDialog';
 import { DESKTOP_MIN, tokens } from '../theme/tokens';
 
 /** GateBook shell: desktop rail + 60px top bar at ≥861px; dark app bar + bottom tabs on phones. */
@@ -38,6 +39,8 @@ export default function AppShell() {
         </Box>
       </Box>
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+      {/* Covers every signed-in page, and nothing behind it can be reached while it is up. */}
+      <ForcePasswordDialog />
     </Box>
   );
 }

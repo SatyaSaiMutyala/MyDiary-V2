@@ -72,13 +72,14 @@ export async function createUser(input) {
  *   modules: string[] }>} patch
  */
 export async function updateUser(user, patch) {
-  const before = { name: user.name, email: user.email, title: user.title, department: user.department, position: user.position, labUnit: user.labUnit, role: user.role, status: user.status, modules: [...user.modules] };
+  const before = { name: user.name, email: user.email, title: user.title, department: user.department, position: user.position, labUnit: user.labUnit, role: user.role, status: user.status, modules: [...user.modules], mustChangePassword: user.mustChangePassword === true };
   if (patch.name !== undefined) user.name = patch.name;
   if (patch.email !== undefined) {
     const email = patch.email.toLowerCase();
     if (email !== user.email && (await User.exists({ email }))) throw conflict(`An account with the email ${email} already exists.`);
     user.email = email;
   }
+  if (patch.mustChangePassword !== undefined) user.mustChangePassword = patch.mustChangePassword;
   if (patch.title !== undefined) user.title = patch.title;
   if (patch.department !== undefined) user.department = patch.department;
   if (patch.position !== undefined) user.position = patch.position;

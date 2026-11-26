@@ -34,7 +34,7 @@ import { useListNotificationsQuery } from '../store/api/notificationsApi';
 import { useListVisitsQuery } from '../store/api/visitsApi';
 import { initialsOf } from '../utils/people';
 import { dueDate, fullDate, greeting, realToday } from '../utils/dates';
-import { colors, hairline, radius, s, shadow, vs } from '../theme';
+import { colors, fs, hairline, radius, s, shadow, vs } from '../theme';
 
 /**
  * A counting query asks for one row — the total is what matters, not the rows.
@@ -414,7 +414,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   greeting: { marginTop: vs(16) },
-  name: { marginTop: vs(2) },
+  // One step down from the `title` variant's 30. A name is the headline of this screen, but at 30
+  // it was shouting over the greeting above it and wrapping onto two lines for anyone with a long
+  // one. The scale has nothing between 30 and heading's 17, so the size is set here rather than
+  // bending the shared scale for one screen.
+  name: { marginTop: vs(2), fontSize: fs(24), lineHeight: fs(31) },
   date: { marginTop: vs(8) },
   content: { paddingHorizontal: s(13), paddingTop: vs(12) },
   notice: { marginBottom: vs(10) },

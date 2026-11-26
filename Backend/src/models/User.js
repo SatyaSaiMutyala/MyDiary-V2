@@ -26,6 +26,15 @@ const userSchema = new Schema(
      * blank for everybody else. It is what My Activity reads to know whose board is whose.
      */
     labUnit: { type: String, default: '' },
+    /**
+     * The person must set a new password before they can use either app.
+     *
+     * Turned on whenever somebody OTHER than the owner chose the password — an admin creating the
+     * account, or resetting it — because at that moment two people know it. Turned off the moment
+     * they set their own. It lives on the record rather than on a device, so changing it on the
+     * phone also lets the website through, and the other way round.
+     */
+    mustChangePassword: { type: Boolean, default: false },
     status: { type: String, enum: USER_STATUSES, required: true, default: 'active' },
     /** Modules this person can open (services/modules.js). Ignored for admins (always all). */
     modules: { type: [String], default: [] },
@@ -81,6 +90,7 @@ export function serializeUser(u) {
     labUnit: u.labUnit ?? '',
     modules: effectiveModules(u),
     status: u.status ?? 'active',
+    mustChangePassword: u.mustChangePassword === true,
     createdAt: (u.createdAt ?? new Date()).toISOString(),
     updatedAt: (u.updatedAt ?? u.createdAt ?? new Date()).toISOString(),
   };

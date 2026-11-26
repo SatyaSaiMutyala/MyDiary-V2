@@ -86,6 +86,15 @@ export function ScreenScroll({
     setRefreshing(true);
     try {
       await onRefresh?.();
+    } catch {
+      // A pull that fails leaves the screen showing what it already had, and pulling again tries
+      // once more. It is swallowed here rather than re-thrown because React Native calls this from
+      // RefreshControl and never looks at the promise it returns: a rejection escaping this point
+      // has nothing to catch it, and surfaces as "Uncaught (in promise)" from
+      // Libraries/promiseRejectionTrackingOptions.js — a crash report for a failed refresh.
+      //
+      // Nothing is hidden by this. Every screen reads its queries' own `error` and draws a Notice,
+      // so the reason still reaches the person through the path built for it.
     } finally {
       setRefreshing(false);
     }

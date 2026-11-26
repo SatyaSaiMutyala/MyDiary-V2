@@ -29,6 +29,7 @@ export const createSchema = z
     role: roleField,
     status: statusField.optional(),
     modules: modulesField.optional(),
+    mustChangePassword: z.boolean({ error: 'mustChangePassword must be true or false.' }).optional(),
     password: passwordField.optional(),
   })
   .strict();
@@ -44,6 +45,7 @@ export const patchSchema = z
     role: roleField.optional(),
     status: statusField.optional(),
     modules: modulesField.optional(),
+    mustChangePassword: z.boolean({ error: 'mustChangePassword must be true or false.' }).optional(),
   })
   .strict();
 
@@ -61,8 +63,8 @@ export const USERS_LIST = {
   fields: ['name', 'email', 'role', 'title', 'department', 'position', 'labUnit', 'modules', 'status', 'createdAt', 'updatedAt'],
 };
 
-const CHANGE_FIELDS = ['name', 'email', 'title', 'department', 'position', 'labUnit', 'role', 'status', 'modules'];
-const snapshot = (u) => ({ name: u.name, email: u.email, title: u.title, department: u.department, position: u.position, labUnit: u.labUnit, role: u.role, status: u.status, modules: [...u.modules] });
+const CHANGE_FIELDS = ['name', 'email', 'title', 'department', 'position', 'labUnit', 'role', 'status', 'modules', 'mustChangePassword'];
+const snapshot = (u) => ({ name: u.name, email: u.email, title: u.title, department: u.department, position: u.position, labUnit: u.labUnit, role: u.role, status: u.status, modules: [...u.modules], mustChangePassword: u.mustChangePassword === true });
 
 /** GET /api/users/modules — the module registry for the permissions editor. @type {import('express').RequestHandler} */
 /**
@@ -106,6 +108,12 @@ export const list = async (req, res) => {
 /** POST /api/users @type {import('express').RequestHandler} */
 export const create = async (req, res) => {
   const user = await usersService.createUser(req.body);
+  // Whoever created the account chose its first password, so the owner replaces it before they can
+  // get anywhere. An admin who does not want that can untick it on the account afterwards.
+  if (user.mustChangePassword !== true) {
+    user.mustChangePassword = true;
+    await user.save();
+  }
   res.locals.audit = { entity: user.name, entityId: user._id.toString(), details: `Created ${user.role} account ${user.email}` };
   res.status(201).json({ user: serializeUser(user) });
 };
@@ -142,7 +150,10 @@ export const remove = async (req, res) => {
 export const resetPassword = async (req, res) => {
   const user = await usersService.findUserOr404(req.params.id);
   user.passwordHash = await usersService.hashPassword(req.body.password);
+  // The admin knows this password, so it is a way in rather than a secret: the person is made to
+  // replace it before they can use either app.
+  user.mustChangePassword = true;
   await user.save();
-  res.locals.audit = { action: 'update', entity: user.name, entityId: user._id.toString(), details: 'Password reset by admin' };
+  res.locals.audit = { action: 'update', entity: user.name, entityId: user._id.toString(), details: 'Password reset by admin — they must set their own before using the apps' };
   res.json({ ok: true });
 };

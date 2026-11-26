@@ -52,7 +52,11 @@ describe('automatic audit entries', () => {
     expect(update.details).toContain('role: employee → manager');
     expect(update.details).toContain('title: — → Lab Head');
     expect(update.details).toContain('modules:');
-    expect(forPriya.find((e) => e.details === 'Password reset by admin')).toBeTruthy();
+    // The trail says what the reset did to them, not just that it happened: an admin-chosen
+    // password puts the person behind the "set your password" gate until they replace it.
+    const reset = forPriya.find((e) => e.details.startsWith('Password reset by admin'));
+    expect(reset).toBeTruthy();
+    expect(reset.details).toContain('must set their own');
     expect(forPriya[0].details).toBe('Deleted manager account priya.nair@trustlab.co.in');
     expect(forPriya.every((e) => e.user.name === 'Venkata Cherukuri')).toBe(true);
   });

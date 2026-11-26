@@ -12,7 +12,8 @@ export const authApi = baseApi.injectEndpoints({
       invalidatesTags: ['Me', { type: 'Audit', id: 'LIST' }],
     }),
     changePassword: b.mutation({
-      query: ({ current, next }) => ({ url: '/auth/change-password', method: 'POST', body: { current, next } }),
+      // `current` is optional server-side; the forced dialog does not ask for it.
+      query: ({ current, next }) => ({ url: '/auth/change-password', method: 'POST', body: current ? { current, next } : { next } }),
       invalidatesTags: [{ type: 'Audit', id: 'LIST' }],
     }),
   }),

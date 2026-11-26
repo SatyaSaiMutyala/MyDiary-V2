@@ -25,15 +25,26 @@ setupListeners(store.dispatch, (dispatch, actions) => {
   return () => sub.remove();
 });
 
-// Keep the phone's storage in step with the session, so closing the app does
-// not sign the person out.
+// Keep the phone's storage in step with the session, so closing the app does not sign the person
+// out — and so the next cold start begins from who the person is NOW.
+//
+// This used to compare the token alone. A token does not change when an admin moves somebody
+// between departments, grants a module or sets their unit: /auth/me brings the new profile down and
+// `userUpdated` puts it in memory, but the copy on disk was left as it was. The app then looked
+// right until it was next opened from cold, when the stale profile was restored and the person was
+// back in the wrong place — someone moved from Information Technology to Clinical Laboratory kept
+// landing on My Activity instead of Lab Readiness, and only a sign-out and sign-in (a new token)
+// made it stick. So the profile is compared too. The reducers replace the user object rather than
+// mutating it, so comparing the reference is enough to notice.
 let lastToken;
+let lastUser;
 store.subscribe(() => {
   const { token, user, loading } = store.getState().session;
-  if (loading || token === lastToken) {
+  if (loading || (token === lastToken && user === lastUser)) {
     return;
   }
   lastToken = token;
+  lastUser = user;
   saveSession(token && user ? { token, user } : null);
 });
 

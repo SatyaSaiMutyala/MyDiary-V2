@@ -54,9 +54,24 @@ export async function updateProfile(user, patch) {
   return changes;
 }
 
-/** @param {any} user @param {string} current @param {string} next */
+/**
+ * Sets a new password for somebody already signed in.
+ *
+ * The old password is checked only when it is offered. The website still asks for it and so still
+ * gets the check; the phone does not ask, and the change goes through on the strength of the
+ * session alone.
+ *
+ * @returns true when the old password was offered and matched — what the audit trail records.
+ */
 export async function changePassword(user, current, next) {
-  if (!(await checkPassword(current, user.passwordHash))) throw badRequest('Your current password is incorrect.', { current: 'Your current password is incorrect.' });
+  const offered = typeof current === 'string' && current !== '';
+  if (offered && !(await checkPassword(current, user.passwordHash))) {
+    throw badRequest('Your current password is incorrect.', { current: 'Your current password is incorrect.' });
+  }
   user.passwordHash = await hashPassword(next);
+  // They have now chosen it themselves, so whatever forced them here is satisfied — on every
+  // device at once, because this is the record both apps read.
+  user.mustChangePassword = false;
   await user.save();
+  return offered;
 }

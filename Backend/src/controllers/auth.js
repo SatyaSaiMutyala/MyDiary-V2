@@ -24,8 +24,17 @@ export const meSchema = z
     labUnit: z.string({ error: 'Unit must be text.' }).trim().max(60, 'Unit is too long (max 60).').optional(),
   })
   .strict();
+/**
+ * Changing your own password.
+ *
+ * `current` is optional: the phone does not ask for it, so somebody already signed in can set a new
+ * password straight away. It is still checked when it IS sent, which is what the website does — but
+ * be clear that this is a convenience, not a defence. Anything calling the API can leave the field
+ * out, so an unlocked phone or a borrowed browser session is now enough to take an account over.
+ * Who changed it and when is recorded either way (services/audit.js).
+ */
 export const changePasswordSchema = z.object({
-  current: z.string({ error: 'Enter your current password.' }).min(1, 'Enter your current password.').max(200),
+  current: z.string({ error: 'Your current password must be text.' }).max(200).optional(),
   next: passwordField,
 });
 
@@ -81,8 +90,10 @@ export const updateMe = async (req, res) => {
 /** POST /api/auth/change-password { current, next } @type {import('express').RequestHandler} */
 export const changePassword = async (req, res) => {
   const user = currentUser(req);
-  await authService.changePassword(user, req.body.current, req.body.next);
-  await log({ user, action: 'auth', module: 'Session', entity: 'Password', entityId: user._id.toString(), details: `${user.name} changed their password`, ip: req.ip });
+  const confirmed = await authService.changePassword(user, req.body.current, req.body.next);
+  // The trail says whether the old password was re-entered, so a change made without it is not
+  // indistinguishable from one made with it.
+  await log({ user, action: 'auth', module: 'Session', entity: 'Password', entityId: user._id.toString(), details: `${user.name} changed their password${confirmed ? '' : ' without re-entering the old one'}`, ip: req.ip });
   res.locals.audit = false;
   res.json({ ok: true });
 };

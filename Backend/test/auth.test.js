@@ -85,14 +85,37 @@ describe('/api/auth/me', () => {
 });
 
 describe('POST /api/auth/change-password', () => {
-  it('checks the current password and the new one', async () => {
+  it('lets somebody already signed in set a new password without the old one', async () => {
+    // The phone does not ask for the old password: the session is taken as the proof. This is a
+    // deliberate weakening — anything holding a valid token can take the account over — so it is
+    // pinned here rather than left to be discovered.
+    const { token, user } = await createAndLogin(ctx.app, adminToken, {
+      name: 'Phone Person', email: 'phone.pwd@trustlab.co.in', role: 'employee', password: 'password123',
+    });
+    const r = await request(ctx.app).post('/api/auth/change-password').set(auth(token)).send({ next: 'phonepassword1' });
+    expect(r.status).toBe(200);
+    await login(ctx.app, user.email, 'phonepassword1');
+    expect((await request(ctx.app).post('/api/auth/login').send({ email: user.email, password: 'password123' })).status).toBe(401);
+  });
+
+  it('still refuses a short new password, with or without the old one', async () => {
+    const { token } = await createAndLogin(ctx.app, adminToken, {
+      name: 'Short Pwd', email: 'short.pwd@trustlab.co.in', role: 'employee', password: 'password123',
+    });
+    const r = await request(ctx.app).post('/api/auth/change-password').set(auth(token)).send({ next: 'short' });
+    expect(r.status).toBe(400);
+    expect(r.body.error.message).toBe('Password must be at least 8 characters.');
+  });
+
+  it('refuses a signed-out caller outright', async () => {
+    const r = await request(ctx.app).post('/api/auth/change-password').send({ next: 'whateverpass1' });
+    expect(r.status).toBe(401);
+  });
+
+  it('still checks the old password when it IS sent, as the website sends it', async () => {
     const { token, user } = await createAndLogin(ctx.app, adminToken, {
       name: 'Pwd Person', email: 'pwd@trustlab.co.in', role: 'employee', password: 'password123',
     });
-    const short = await request(ctx.app).post('/api/auth/change-password').set(auth(token)).send({ current: 'password123', next: 'short' });
-    expect(short.status).toBe(400);
-    expect(short.body.error.message).toBe('Password must be at least 8 characters.');
-
     const wrong = await request(ctx.app).post('/api/auth/change-password').set(auth(token)).send({ current: 'wrong-one', next: 'newpassword1' });
     expect(wrong.status).toBe(400);
     expect(wrong.body.error).toEqual({ message: 'Your current password is incorrect.', code: 'validation', details: { current: 'Your current password is incorrect.' } });
@@ -129,6 +152,61 @@ describe('requireModule', () => {
     expect((await request(mini).get('/diary').set(auth(emp.token))).status).toBe(403);
   });
 
+});
+
+describe('being made to change your password', () => {
+  /**
+   * The flag lives on the record, not on a device. That is the whole point: a person made to change
+   * their password is blocked on the phone AND the website, and changing it in either place lets
+   * them through in both.
+   */
+  it('is set on a new account, and on every admin reset', async () => {
+    const { user, token } = await createAndLogin(ctx.app, adminToken, {
+      name: 'Fresh Joiner', email: 'fresh.joiner@trustlab.co.in', role: 'employee', password: 'password123',
+    });
+    // The admin chose that password, so the owner has to replace it.
+    expect(user.mustChangePassword).toBe(true);
+    expect((await request(ctx.app).get('/api/auth/me').set(auth(token))).body.user.mustChangePassword).toBe(true);
+
+    // They set their own → cleared.
+    await request(ctx.app).post('/api/auth/change-password').set(auth(token)).send({ next: 'theirownpass1' }).expect(200);
+    expect((await request(ctx.app).get('/api/auth/me').set(auth(token))).body.user.mustChangePassword).toBe(false);
+
+    // An admin resetting it puts them back behind the popup — two people know it again.
+    await request(ctx.app).post(`/api/users/${user.id}/reset-password`).set(auth(adminToken)).send({ password: 'adminchose1' }).expect(200);
+    const after = await login(ctx.app, user.email, 'adminchose1');
+    expect(after.user.mustChangePassword).toBe(true);
+  });
+
+  it('clears for every device at once, however the password was changed', async () => {
+    const { user } = await createAndLogin(ctx.app, adminToken, {
+      name: 'Two Devices', email: 'two.devices@trustlab.co.in', role: 'employee', password: 'password123',
+    });
+    // The same person signed in twice — a phone and a browser.
+    const phone = (await login(ctx.app, user.email, 'password123')).token;
+    const web = (await login(ctx.app, user.email, 'password123')).token;
+    expect((await request(ctx.app).get('/api/auth/me').set(auth(phone))).body.user.mustChangePassword).toBe(true);
+    expect((await request(ctx.app).get('/api/auth/me').set(auth(web))).body.user.mustChangePassword).toBe(true);
+
+    // Changed on the phone…
+    await request(ctx.app).post('/api/auth/change-password').set(auth(phone)).send({ next: 'changedonphone1' }).expect(200);
+
+    // …and the browser's next look at itself is already through.
+    expect((await request(ctx.app).get('/api/auth/me').set(auth(web))).body.user.mustChangePassword).toBe(false);
+  });
+
+  it('lets an admin raise it or lift it on any account', async () => {
+    const { user } = await createAndLogin(ctx.app, adminToken, {
+      name: 'Toggled Person', email: 'toggled@trustlab.co.in', role: 'employee', password: 'password123',
+    });
+    const off = await request(ctx.app).patch(`/api/users/${user.id}`).set(auth(adminToken)).send({ mustChangePassword: false });
+    expect(off.status).toBe(200);
+    expect(off.body.user.mustChangePassword).toBe(false);
+
+    const on = await request(ctx.app).patch(`/api/users/${user.id}`).set(auth(adminToken)).send({ mustChangePassword: true });
+    expect(on.body.user.mustChangePassword).toBe(true);
+    expect((await request(ctx.app).patch(`/api/users/${user.id}`).set(auth(adminToken)).send({ mustChangePassword: 'yes' })).status).toBe(400);
+  });
 });
 
 describe('the laboratory flag on the session user', () => {

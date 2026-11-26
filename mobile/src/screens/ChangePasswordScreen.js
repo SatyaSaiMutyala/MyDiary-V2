@@ -18,25 +18,23 @@ const MIN_LENGTH = 8;
 /**
  * Change the password used to sign in.
  *
- * The current password is asked for because the server asks for it — knowing the phone is unlocked
- * is not the same as knowing whose phone it is. The confirmation box is this screen's own idea: the
- * server cannot tell a typo from a decision.
+ * The old password is not asked for: being signed in on this phone is taken as proof enough, which
+ * is what was wanted. It does mean an unlocked, signed-in phone is all somebody needs to take the
+ * account over, so the warning below says so plainly rather than letting it come as a surprise.
+ *
+ * The confirmation box stays — the server cannot tell a typo from a decision, and this is the one
+ * field nobody can check for themselves afterwards.
  */
 export function ChangePasswordScreen() {
   const nav = useNavigation();
   const [changePassword, call] = useChangePasswordMutation();
 
-  const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
   const [again, setAgain] = useState('');
   const [problem, setProblem] = useState('');
   const [done, setDone] = useState(false);
 
   const save = async () => {
-    if (!current) {
-      setProblem('Enter your current password.');
-      return;
-    }
     if (next.length < MIN_LENGTH) {
       setProblem(`Password must be at least ${MIN_LENGTH} characters.`);
       return;
@@ -45,14 +43,10 @@ export function ChangePasswordScreen() {
       setProblem('The two new passwords do not match.');
       return;
     }
-    if (next === current) {
-      setProblem('The new password is the same as the current one.');
-      return;
-    }
     setProblem('');
     try {
-      await changePassword({ current, next }).unwrap();
-      setCurrent('');
+      // No `current`: the server treats it as optional and takes the session as the proof.
+      await changePassword({ next }).unwrap();
       setNext('');
       setAgain('');
       setDone(true);
@@ -89,14 +83,6 @@ export function ChangePasswordScreen() {
       {done ? null : (
         <FormCard title="Your password">
           <TextField
-            label="Current password"
-            value={current}
-            onChangeText={setCurrent}
-            secure
-            autoCapitalize="none"
-            placeholder="The one you use now"
-          />
-          <TextField
             label="New password"
             value={next}
             onChangeText={setNext}
@@ -112,6 +98,10 @@ export function ChangePasswordScreen() {
             autoCapitalize="none"
             placeholder="Type it once more"
           />
+          <AppText variant="meta" color={colors.inkFaint} style={styles.hint}>
+            Your old password is not needed — being signed in here is enough. Keep this phone
+            locked: anyone who can open it can change this password.
+          </AppText>
           <AppText variant="meta" color={colors.inkFaint} style={styles.hint}>
             You stay signed in on this phone. Anyone signed in elsewhere stays signed in too, so
             change it on those devices as well if that matters.
