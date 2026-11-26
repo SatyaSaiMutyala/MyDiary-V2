@@ -134,9 +134,11 @@ describe('requireModule', () => {
 describe('the laboratory flag on the session user', () => {
   it('says whether this person works somewhere that runs a readiness board', async () => {
     // Nobody has a board yet, so nobody is a laboratory person.
+    // An admin is treated as a laboratory person whatever their own department is, so the board
+    // is never hidden from them.
     const before = await request(ctx.app).get('/api/auth/me').set(auth(adminToken));
-    expect(before.body.user.lab).toBe(false);
-    expect(before.body.user.seesAll).toBe(true); // the first account is an admin
+    expect(before.body.user.lab).toBe(true);
+    expect(before.body.user.seesAll).toBe(true);
 
     // Give a department a board, and put somebody in it.
     const dept = await request(ctx.app).post('/api/departments').set(auth(adminToken)).send({ code: 'TDPL-LAB-X', name: 'Pathology Lab' });
@@ -155,3 +157,36 @@ describe('the laboratory flag on the session user', () => {
     expect(mine.body.user.seesAll).toBe(false);
   });
 });
+
+describe('choosing your own unit', () => {
+  it('lets a laboratory person set it once, and refuses one that is not theirs', async () => {
+    const dept = await request(ctx.app).post('/api/departments').set(auth(adminToken)).send({ code: 'TDPL-LAB-U', name: 'Pathology Unit Lab' });
+    const id = dept.body.department.id;
+    await request(ctx.app).post(`/api/departments/${id}/lab-readiness/restore`).set(auth(adminToken));
+    await request(ctx.app).put(`/api/departments/${id}/lab-readiness`).set(auth(adminToken)).send({ enabled: true });
+    const units = (await request(ctx.app).get(`/api/departments/${id}`).set(auth(adminToken))).body.department.labReadiness.units;
+    const mine = units[1].key;
+
+    const staff = await createAndLogin(ctx.app, adminToken, {
+      name: 'Latha Menon', email: 'latha.unit@trustlab.co.in', role: 'employee',
+      department: 'Pathology Unit Lab', modules: ['labReadiness', 'activity'],
+    });
+    expect(staff.user.labUnit).toBe('');
+
+    // They set it themselves — no admin involved.
+    const saved = await request(ctx.app).patch('/api/auth/me').set(auth(staff.token)).send({ labUnit: mine });
+    expect(saved.status).toBe(200);
+    expect(saved.body.user.labUnit).toBe(mine);
+
+    // And it is what the board reads back for them.
+    const board = await request(ctx.app).get('/api/lab-readiness/mine').set(auth(staff.token));
+    expect(board.body.unit.key).toBe(mine);
+
+    // A unit that is not their department's is refused rather than quietly stored.
+    const wrong = await request(ctx.app).patch('/api/auth/me').set(auth(staff.token)).send({ labUnit: 'nrl-nowhere' });
+    expect(wrong.status).toBe(400);
+    expect(wrong.body.error.message).toContain('not a unit of your department');
+    expect((await request(ctx.app).get('/api/auth/me').set(auth(staff.token))).body.user.labUnit).toBe(mine);
+  });
+});
+

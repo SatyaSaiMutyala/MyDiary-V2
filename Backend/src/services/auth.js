@@ -1,5 +1,7 @@
 import { badRequest, forbidden, unauthorized } from '../utils/errors.js';
+import { Department } from '../models/Department.js';
 import { User } from '../models/User.js';
+import { cleanName } from './people.js';
 import { checkPassword, hashPassword } from './users.js';
 
 /**
@@ -27,6 +29,26 @@ export async function updateProfile(user, patch) {
   if (patch.title !== undefined && patch.title !== user.title) {
     changes.push(`title: ${user.title || '—'} → ${patch.title || '—'}`);
     user.title = patch.title;
+  }
+  /**
+   * Their own unit, which only they reliably know.
+   *
+   * It is checked against their own department's units, so this cannot be used to put themselves
+   * in another department's board, and a unit that no longer exists is refused rather than saved
+   * and quietly ignored.
+   */
+  if (patch.labUnit !== undefined && patch.labUnit !== user.labUnit) {
+    const wanted = patch.labUnit.trim();
+    if (wanted) {
+      const dept = await Department.findOne({
+        name: new RegExp(`^${cleanName(user.department ?? '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i'),
+        'labReadiness.enabled': true,
+      });
+      const unit = (dept?.labReadiness?.units ?? []).find((u) => u.key === wanted && u.active !== false);
+      if (!unit) throw badRequest('That is not a unit of your department.', [{ field: 'labUnit', message: 'Choose one of your department’s units.' }]);
+    }
+    changes.push(`unit: ${user.labUnit || '—'} → ${wanted || '—'}`);
+    user.labUnit = wanted;
   }
   if (changes.length) await user.save();
   return changes;

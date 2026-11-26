@@ -94,7 +94,20 @@ export function useRailBadges() {
 export function RailNav({ open, onNavigate }) {
   const badges = useRailBadges();
   const { me } = useViewerUser();
-  const groups = NAV_GROUPS.map(([g, items]) => [g, items.filter(it => hasModule(me, it.module))]).filter(([, items]) => items.length);
+  /**
+   * A laboratory person's activity IS the readiness board — the two are the same work, so only
+   * one of them is offered. Somebody in any other department has the board's opposite: shift
+   * tasks in My Activity, and no readiness at all. Admins keep both, because they have to be able
+   * to look at either.
+   */
+  const labPerson = Boolean(me?.lab) && !me?.seesAll;
+  const visible = (it) => {
+    if (!hasModule(me, it.module)) return false;
+    if (labPerson && it.module === 'activity') return false;
+    if (!me?.lab && it.module === 'labReadiness') return false;
+    return true;
+  };
+  const groups = NAV_GROUPS.map(([g, items]) => [g, items.filter(visible)]).filter(([, items]) => items.length);
   return (
     <>
       {groups.map(([group, items]) => (

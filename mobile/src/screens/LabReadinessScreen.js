@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import {
@@ -30,7 +30,9 @@ import { SegmentedControl } from '../components/SegmentedControl';
 import { Shimmer, ShimmerRows } from '../components/Shimmer';
 import { Stat } from '../components/Stat';
 import { clock, emptyItem, groupBoard, unitKinds } from '../lab/model';
-import { errorMessage, useAppDispatch, useAppSelector } from '../store';
+import { errorMessage, useAppDispatch, useAppSelector, useMe } from '../store';
+import { useUpdateMeMutation } from '../store/api/authApi';
+import { UnitQuestion } from './ActivityScreen';
 import {
   useAddLabPhotoMutation,
   useLabBoardQuery,
@@ -91,14 +93,45 @@ export function LabReadinessScreen() {
   const day = useLabDayQuery({ date });
   const units = useMemo(() => day.data?.units ?? [], [day.data]);
 
-  // Until a unit is picked, land on the first one that still has this round to do.
+  /**
+   * Which unit this person works in, saved on their own account.
+   *
+   * Nobody else can know it — a job title says "Phlebotomist", not whether they are in
+   * Biochemistry or at Anantapur — so they are asked once, the first time they open the board,
+   * and never again. An admin can still change it in Settings.
+   */
+  const me = useMe();
+  const [saveMe, saving] = useUpdateMeMutation();
+  const [asking, setAsking] = useState(false);
+  const myUnit = me?.labUnit ?? '';
+
   useEffect(() => {
     if (chosen || !units.length) {
       return;
     }
+    // Their own unit if they have picked one; otherwise ask, and meanwhile land on the round
+    // that still has work in it.
+    const own = myUnit && units.find(u => u.key === myUnit);
+    if (own) {
+      dispatch(unitChosen(own.key));
+      return;
+    }
+    if (!myUnit) {
+      setAsking(true);
+    }
     const pending = units.find(u => !u.phases[phase].signedAt) ?? units[0];
     dispatch(unitChosen(pending.key));
-  }, [chosen, units, phase, dispatch]);
+  }, [chosen, units, phase, dispatch, myUnit]);
+
+  const rememberUnit = async key => {
+    try {
+      await saveMe({ labUnit: key }).unwrap();
+      dispatch(unitChosen(key));
+      setAsking(false);
+    } catch {
+      // The sheet stays open with the message; they can pick again or dismiss it.
+    }
+  };
 
   const unit = units.find(u => u.key === chosen) ?? units[0];
   const target = unit ? { unitKey: unit.key, date, phase } : undefined;
@@ -259,7 +292,16 @@ export function LabReadinessScreen() {
           />
         ) : null}
 
-        {progress ? (
+        {/* Asked before the board is drawn: once they say which unit is theirs it opens there
+            every day, and the question never comes back. */}
+        {asking && units.length ? (
+          <UnitQuestion
+            units={units}
+            onPick={rememberUnit}
+            saving={saving}
+            onSkip={() => setAsking(false)}
+          />
+        ) : progress ? (
           <>
             {/* Complete means nothing outstanding on that line: every activity that is still
                 missing an answer, a remark or a photograph is listed once in `missing`. */}
@@ -322,7 +364,7 @@ export function LabReadinessScreen() {
           <EmptyState text="No units are set up for Lab Readiness yet. An admin adds them in Department Master on the website." />
         ) : null}
 
-        {target && board ? (
+        {!asking && target && board ? (
           <LabSections
             key={`${target.unitKey}|${target.date}|${target.phase}`}
             sections={sections}
@@ -358,7 +400,7 @@ export function LabReadinessScreen() {
         ) : null}
       </ScreenScroll>
 
-      {progress && target ? (
+      {!asking && progress && target ? (
         <FooterBar inTabs>
           {locked ? (
             <View style={styles.footRow}>

@@ -27,7 +27,8 @@ import {
   shiftStats,
   todayFacts,
 } from '../utils/departments';
-import { useLabMineQuery } from '../store/api/labReadinessApi';
+import { useLabDayQuery, useLabMineQuery } from '../store/api/labReadinessApi';
+import { useUpdateMeMutation } from '../store/api/authApi';
 import { longDate, realToday } from '../utils/dates';
 import { colors, hairline, radius, s, vs } from '../theme';
 
@@ -104,6 +105,27 @@ export function ActivityScreen() {
     { skip: !canOpen(me, 'labReadiness') },
   );
   const lab = labQ.data?.unit ? labQ.data : null;
+
+  /**
+   * Which unit this person works in, chosen by them and kept on their account.
+   *
+   * Nobody else can know it — a job title says "Lab Technician", not whether they are in
+   * Biochemistry or at Anantapur — so they are asked once and never again.
+   */
+  const unitsQ = useLabDayQuery(
+    { date: today },
+    { skip: !canOpen(me, 'labReadiness') },
+  );
+  const labUnits = unitsQ.data?.units ?? [];
+  const [saveMe, savingUnit] = useUpdateMeMutation();
+  const rememberUnit = async key => {
+    try {
+      await saveMe({ labUnit: key }).unwrap();
+      labQ.refetch();
+    } catch {
+      // The question stays on screen; they can pick again.
+    }
+  };
   const [tick] = useSetActivityTickMutation();
 
   const dept = deptQ.data;
@@ -221,10 +243,10 @@ export function ActivityScreen() {
       // "nothing due" would hide. Say what is missing and who fixes it.
       if (labQ.data && !labQ.data.unit) {
         return (
-          <EmptyState
-            text={`Your unit has not been set yet, so none of ${
-              labQ.data.department?.name ?? 'the laboratory'
-            }'s readiness lines are yours. Ask an admin to set it in Department Master · Who works where.`}
+          <UnitQuestion
+            units={labUnits}
+            onPick={rememberUnit}
+            saving={savingUnit}
           />
         );
       }
@@ -427,6 +449,18 @@ const styles = StyleSheet.create({
   },
   lastRow: { borderBottomWidth: 0 },
   rowText: { flex: 1, gap: vs(1) },
+  askCard: { padding: s(16), gap: vs(4) },
+  askText: { marginBottom: vs(8) },
+  askRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: vs(13),
+    borderTopWidth: hairline,
+    borderTopColor: colors.line,
+  },
+  askRowOn: { opacity: 0.6 },
+  askSkip: { paddingTop: vs(14), alignItems: 'center' },
   lineMeta: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -447,3 +481,45 @@ const styles = StyleSheet.create({
   boxOn: { backgroundColor: colors.teal, borderColor: colors.teal },
   struck: { textDecorationLine: 'line-through' },
 });
+
+/**
+ * The one-time question a laboratory person is asked before their own round can be shown.
+ *
+ * Offered rather than demanded: somebody who would rather not say can still open the board and
+ * pick a unit there, which is what the "Not now" line is for.
+ */
+export function UnitQuestion({ units, onPick, saving, onSkip }) {
+  if (!units.length) {
+    return (
+      <EmptyState text="No units are set up for Lab Readiness yet. An admin adds them in Department Master on the website." />
+    );
+  }
+  return (
+    <Card style={styles.askCard}>
+      <AppText variant="h3">Which unit do you work in?</AppText>
+      <AppText variant="body" color={colors.inkMuted} style={styles.askText}>
+        Nobody else can know this, so pick it once and it is remembered — your
+        own round opens here every day after that. An admin can change it later
+        in Settings.
+      </AppText>
+      {units.map(u => (
+        <Pressable
+          key={u.key}
+          onPress={() => onPick(u.key)}
+          disabled={saving?.isLoading}
+          style={({ pressed }) => [styles.askRow, pressed && styles.askRowOn]}
+        >
+          <AppText variant="body">{u.name}</AppText>
+          <ChevronRight size={s(18)} color={colors.inkFaint} strokeWidth={2} />
+        </Pressable>
+      ))}
+      {onSkip ? (
+        <Pressable onPress={onSkip} style={styles.askSkip}>
+          <AppText variant="meta" color={colors.inkMuted}>
+            Not now — just show me the board
+          </AppText>
+        </Pressable>
+      ) : null}
+    </Card>
+  );
+}

@@ -134,8 +134,8 @@ export const overview = async (req, res) => {
  * @type {import('express').RequestHandler}
  */
 export const mine = async (req, res) => {
-  const dept = await lab.readinessDepartment(req.query.departmentId);
   const user = currentUser(req);
+  const dept = await lab.readinessDepartment(req.query.departmentId, user);
   lab.assertCanRecord(dept, user);
   const date = req.query.date ? lab.requireDate(String(req.query.date)) : todayStr();
   res.json(await lab.myLines(dept, user, date));

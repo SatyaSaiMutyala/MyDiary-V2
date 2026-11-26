@@ -3,6 +3,7 @@ import { Department, serializeLabReadiness } from '../models/Department.js';
 import { LabRun, isSigned, serializeRun } from '../models/LabRun.js';
 import { DECLARATIONS, LAB_ACTIVITIES, LAB_UNITS } from '../data/labReadiness.js';
 import { badRequest, conflict, forbidden, notFound } from '../utils/errors.js';
+import { cleanName } from './people.js';
 import { deleteEvidence, putEvidence } from './storage.js';
 
 /**
@@ -16,12 +17,21 @@ import { deleteEvidence, putEvidence } from './storage.js';
  */
 
 /** The department that runs the board, or a clear 404. */
-export async function readinessDepartment(departmentId) {
+/** A person's department, matched by name the way the rest of the app matches names. */
+const nameRegex = (name) => new RegExp(`^${cleanName(name).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+
+export async function readinessDepartment(departmentId, user) {
   const id = departmentId ? String(departmentId) : '';
   if (id && !mongoose.isValidObjectId(id)) throw notFound('That department does not exist.');
+  // Asked for nobody in particular, the first department running a board is the answer. Asked on
+  // behalf of a person, their own department comes first — otherwise somebody in the second lab
+  // to be switched on would be shown the first one's board, which is not theirs.
+  const own = user?.department
+    ? await Department.findOne({ name: nameRegex(user.department), 'labReadiness.enabled': true })
+    : null;
   const d = id
     ? await Department.findById(id)
-    : await Department.findOne({ 'labReadiness.enabled': true }).sort({ order: 1 });
+    : own ?? await Department.findOne({ 'labReadiness.enabled': true }).sort({ order: 1 });
   if (!d) throw notFound('No department is set up for Lab Readiness yet. Turn it on in Department Master.');
   if (!d.labReadiness?.enabled) throw badRequest(`Lab Readiness is not switched on for ${d.name}.`);
   return d;

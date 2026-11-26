@@ -9,7 +9,6 @@ import { todayFacts, getTaskStatus } from '../../utils/departments';
 import { DAYS_OF_WEEK_FULL } from '../../data/departments';
 import { MONTHS } from '../../utils/dates';
 import { useGetActivityQuery, useGetDepartmentQuery, useListAssignmentsQuery, useSetActivityTickMutation } from '../../store/api/departmentsApi';
-import { useGetMyLabLinesQuery } from '../../store/api/labReadinessApi';
 import { ApiError, Fetching, useToast } from '../settings/components/listUi';
 import { activityArgs, assignmentFor, shiftStats, PHASE_KEYS } from './utils';
 // Kept available for parity with the prototype's renderCMDOversightBlock / renderMyActivityOversight —
@@ -102,8 +101,6 @@ export default function MyActivityPage() {
   const [setTick] = useSetActivityTickMutation();
   // A department that runs a readiness board has no shift tasks: its rounds are its opening and
   // closing tasks, and these are this person's own lines of them.
-  const labOn = Boolean(dept?.labReadiness?.enabled);
-  const { data: labLines } = useGetMyLabLinesQuery({ date: todayStr }, { skip: !labOn });
 
   const header = (
     <PageHeader code="TL-OPS-ACT-001" parts={['MyDiary · Personal', 'Daily Shift Checklist']} icon="✍" title="My Activity"
@@ -146,22 +143,13 @@ export default function MyActivityPage() {
 
   // Where a readiness board replaces the shift tasks, the day's count is the person's own lines of
   // it — otherwise the two halves of the page would disagree about how much work there is.
-  const labCount = (kind) => {
-    const lines = labOn ? (labLines?.phases?.[kind]?.lines ?? []) : [];
-    return { total: lines.length, done: lines.filter(l => l.complete).length };
-  };
-  const labTotal = labCount('opening').total + labCount('closing').total;
-  const labDone = labCount('opening').done + labCount('closing').done;
-
-  const totalT = shiftTotal + labTotal;
-  const doneT = shiftDone + labDone;
+  const totalT = shiftTotal;
+  const doneT = shiftDone;
   const pct = totalT ? Math.round((doneT / totalT) * 100) : 0;
   const circ = 2 * Math.PI * 38;
   const offset = circ - (pct / 100) * circ;
 
-  const phaseCount = (kind) => (labOn && (kind === 'opening' || kind === 'closing')
-    ? labCount(kind)
-    : { total: lists[kind].length, done: lists[kind].filter(t => getTaskStatus(log, me, todayStr, kind, t.id) === 'done').length });
+  const phaseCount = (kind) => ({ total: lists[kind].length, done: lists[kind].filter(t => getTaskStatus(log, me, todayStr, kind, t.id) === 'done').length });
   const op = phaseCount('opening'), cl = phaseCount('closing'), wk = phaseCount('weekly'), mo = phaseCount('monthly');
 
   const allOn = PHASE_KEYS.every(k => show[k]);
@@ -179,36 +167,6 @@ export default function MyActivityPage() {
   };
 
   /** One readiness line, in the same shape the lane draws a shift task. */
-  const readinessLane = (kind, label, icon) => {
-    const round = labLines?.phases?.[kind];
-    const lines = round?.lines ?? [];
-    if (!show[kind] || lines.length === 0) return null;
-    const doneCt = lines.filter(l => l.complete).length;
-    const pctL = lines.length ? Math.round((doneCt / lines.length) * 100) : 0;
-    const open = () => navigate(`/lab-readiness?unit=${encodeURIComponent(labLines.unit.key)}&date=${todayStr}&phase=${kind}`);
-    return (
-      <Lane key={kind} kind={kind} title={`${icon} ${label}`} count={`· ${lines.length} activit${lines.length === 1 ? 'y' : 'ies'}`} pill={round.signedAt ? 'Signed off' : `${doneCt}/${lines.length} · ${pctL}%`} pillDone={Boolean(round.signedAt)}>
-        <Box sx={{ fontSize: 12, color: tokens.slate, p: '2px 4px 10px' }}>
-          {labLines.unit.name} · recorded on the Lab Readiness board, with a photograph where one is asked for.
-        </Box>
-        {lines.map(l => (
-          <Box key={l.key} onClick={open} sx={{ p: '11px 14px', m: '4px 0', bgcolor: l.complete ? tokens.creamWarm : tokens.card, border: `1px solid ${tokens.line}`, borderRadius: '8px', cursor: 'pointer', display: 'flex', gap: '12px', alignItems: 'center', '&:hover': { borderColor: tokens.teal } }}>
-            <Box sx={{ width: 26, height: 26, borderRadius: '6px', flexShrink: 0, bgcolor: l.complete ? tokens.tealDark : tokens.card, border: `2px solid ${l.complete ? tokens.tealDark : tokens.lineSoft}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, color: '#fff' }}>{l.complete ? '✓' : ''}</Box>
-            <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Box sx={{ fontSize: 13, color: l.complete ? tokens.slate : tokens.ink, lineHeight: 1.45 }}>{l.text}</Box>
-              {l.remark && <Box sx={{ fontSize: 11.5, color: tokens.slate, mt: '3px', fontStyle: 'italic' }}>{l.remark}</Box>}
-            </Box>
-            <Box sx={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
-              {l.scheduledTime && <Box sx={{ fontFamily: fonts.mono, fontSize: 10, p: '4px 9px', borderRadius: '10px', color: tokens.slate, bgcolor: tokens.creamWarm, fontWeight: 700 }}>⏱ {l.scheduledTime}</Box>}
-              {l.photoRequired && <Box sx={{ fontFamily: fonts.mono, fontSize: 10, p: '4px 9px', borderRadius: '10px', fontWeight: 700, bgcolor: l.photos ? tokens.okSoft : tokens.yellowSoft, color: l.photos ? tokens.ok : tokens.amber }}>📷 {l.photos || 'needed'}</Box>}
-              {l.status && <Box sx={{ fontFamily: fonts.mono, fontSize: 10, p: '4px 9px', borderRadius: '10px', fontWeight: 700, bgcolor: tokens.tealSofter, color: tokens.tealDark, textTransform: 'uppercase' }}>{l.status}</Box>}
-            </Box>
-          </Box>
-        ))}
-      </Lane>
-    );
-  };
-
   const lane = (kind, label, icon) => {
     const list = lists[kind];
     if (!show[kind] || list.length === 0) return null;
@@ -290,18 +248,13 @@ export default function MyActivityPage() {
 
       {/* A lab person with no unit has a board waiting but no lines of their own — "clean slate"
           would hide that, so it says what is missing and who sets it. */}
-      {totalT === 0 && labOn && labLines && !labLines.unit && (
-        <EmptyState icon="🔬" title="Your unit has not been set yet" sx={{ mb: '14px' }}
-          desc={<>None of {labLines.department?.name ?? 'the laboratory'}&apos;s readiness lines are yours until an admin sets your unit in <Box component="a" onClick={() => navigate(`/departments/${dept.id}`)} sx={{ color: tokens.tealDark, cursor: 'pointer', fontWeight: 700 }}>Department Master · Who works where</Box>.</>} />
-      )}
-
-      {totalT === 0 && !(labOn && labLines && !labLines.unit) && (
+      {totalT === 0 && (
         <EmptyState icon="🎯" title="Clean slate" sx={{ mb: '14px' }}
           desc={<>No department tasks for your position today. {dept.openingTasks.length || dept.closingTasks.length ? "The only configured tasks don't apply to your position." : <>Your department hasn't set up shift tasks yet — visit <Box component="a" onClick={() => navigate(`/departments/${dept.id}`)} sx={{ color: tokens.tealDark, cursor: 'pointer', fontWeight: 700 }}>Department Master</Box> to add them.</>}</>} />
       )}
 
-      {labOn ? readinessLane('opening', 'Opening Shift', '🌅') : lane('opening', 'Opening Shift', '🌅')}
-      {labOn ? readinessLane('closing', 'Closing Shift', '🌙') : lane('closing', 'Closing Shift', '🌙')}
+      {lane('opening', 'Opening Shift', '🌅')}
+      {lane('closing', 'Closing Shift', '🌙')}
       {lane('weekly', 'Weekly Task' + (lists.weekly.length > 1 ? 's' : ''), '📅')}
       {lane('monthly', 'Monthly Task' + (lists.monthly.length > 1 ? 's' : ''), '📆')}
 

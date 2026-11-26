@@ -12,6 +12,8 @@ import {
   useRemoveLabPhotoMutation, useReopenLabMutation, useSetLabItemMutation, useSetLabRemarkMutation,
   useSignOffLabMutation,
 } from '../../store/api/labReadinessApi';
+import { useUpdateMeMutation } from '../../store/api/authApi';
+import { errorMessage } from '../../store/api/baseApi';
 import ActivityRow from './components/ActivityRow';
 import UnitStrip from './components/UnitStrip';
 import SignedBanner from './components/SignedBanner';
@@ -48,12 +50,36 @@ export default function LabReadinessPage() {
   const day = useGetLabDayQuery({ date });
   const units = day.data?.units ?? [];
 
-  // Land on the first unit that still has something to do, so the board opens where the work is.
+  /**
+   * Which unit this person works in, kept on their own account.
+   *
+   * Nobody else can know it — a job title says "Lab Technician", not whether they are in
+   * Biochemistry or at Anantapur — so they are asked once, here, and the board opens on their own
+   * unit every day after that. An admin can still change it in Settings · Users.
+   */
+  const myUnit = me?.labUnit ?? '';
+  const [saveMyUnit, { isLoading: savingUnit }] = useUpdateMeMutation();
+  const [asking, setAsking] = useState(false);
+
   useEffect(() => {
     if (unitKey || units.length === 0) return;
+    const own = myUnit && units.find((u) => u.key === myUnit);
+    if (own) { go({ unit: own.key }); return; }
+    // Not said yet: ask, and meanwhile land on the round that still has work in it.
+    if (!myUnit) setAsking(true);
     const pending = units.find((u) => !u.phases[phase].signedAt) ?? units[0];
     go({ unit: pending.key });
-  }, [unitKey, units, phase]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [unitKey, units, phase, myUnit]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const rememberUnit = async (key) => {
+    try {
+      await saveMyUnit({ labUnit: key }).unwrap();
+      go({ unit: key });
+      setAsking(false);
+    } catch (err) {
+      await dlg.alert(errorMessage(err));
+    }
+  };
 
   const boardArg = { unitKey, date, phase };
   const boardQ = useGetLabBoardQuery(boardArg, { skip: !unitKey });
@@ -140,6 +166,32 @@ export default function LabReadinessPage() {
       <Box>
         {header}
         <ApiError error={day.error} onRetry={day.refetch} />
+      </Box>
+    );
+  }
+
+  // Asked before the board is drawn; once answered it never comes back.
+  if (asking && units.length > 0) {
+    return (
+      <Box>
+        {header}
+        <Box sx={{ p: '26px 28px', bgcolor: tokens.card, border: `1px solid ${tokens.line}`, borderRadius: tokens.radius, maxWidth: 560 }}>
+          <Box sx={{ fontSize: 18, fontWeight: 700, color: tokens.ink, mb: '5px' }}>Which unit do you work in?</Box>
+          <Box sx={{ fontSize: 13, color: tokens.slate, mb: '16px' }}>
+            Nobody else can know this, so pick it once and it is remembered — your own round opens
+            here every day after that. You can still look at any other unit.
+          </Box>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {units.map((u) => (
+              <Btn key={u.key} disabled={savingUnit} onClick={() => rememberUnit(u.key)} sx={{ justifyContent: 'space-between' }}>
+                {u.name} <Box component="span" sx={{ color: tokens.slateSoft }}>›</Box>
+              </Btn>
+            ))}
+          </Box>
+          <Box onClick={() => setAsking(false)} sx={{ mt: '16px', fontSize: 12, color: tokens.slate, cursor: 'pointer', textAlign: 'center', '&:hover': { color: tokens.ink } }}>
+            Not now — just show me the board
+          </Box>
+        </Box>
       </Box>
     );
   }

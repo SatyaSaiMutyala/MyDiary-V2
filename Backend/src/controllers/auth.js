@@ -16,7 +16,14 @@ export const loginSchema = z.object({
   email: z.string({ error: 'Enter your email.' }).trim().min(1, 'Enter your email.').max(200),
   password: z.string({ error: 'Enter your password.' }).min(1, 'Enter your password.').max(200),
 });
-export const meSchema = z.object({ name: nameField.optional(), title: titleField.optional() }).strict();
+export const meSchema = z
+  .object({
+    name: nameField.optional(),
+    title: titleField.optional(),
+    /** The unit of their own department they work in — they choose it once, themselves. */
+    labUnit: z.string({ error: 'Unit must be text.' }).trim().max(60, 'Unit is too long (max 60).').optional(),
+  })
+  .strict();
 export const changePasswordSchema = z.object({
   current: z.string({ error: 'Enter your current password.' }).min(1, 'Enter your current password.').max(200),
   next: passwordField,
@@ -32,11 +39,15 @@ export const changePasswordSchema = z.object({
  * @param {any} user
  */
 async function withLab(user) {
+  // An admin counts as a laboratory person whatever their own department says, so the board is
+  // never hidden from them — v1 does the same, through canSeeAllData().
+  const seesAll = user.role === 'admin';
   const name = (user.department ?? '').trim();
-  const lab = name
+  const runsABoard = name
     ? Boolean(await Department.exists({ name: new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i'), 'labReadiness.enabled': true }))
     : false;
-  return { ...serializeUser(user), lab, seesAll: user.role === 'admin' };
+  const lab = seesAll || runsABoard;
+  return { ...serializeUser(user), lab, seesAll };
 }
 
 /** POST /api/auth/login → { token, user } @type {import('express').RequestHandler} */
