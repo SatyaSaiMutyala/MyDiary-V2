@@ -4,12 +4,13 @@ import Grid from '@mui/material/Grid';
 import { ModalShell, Btn } from '../../../components';
 import { tokens, fonts } from '../../../theme/tokens';
 import { useListPeopleQuery } from '../../../store/api/usersApi';
+import PersonPicker from './PersonPicker';
 import { TODAY } from '../../../utils/dates';
 import { useDialog } from '../../../components/Dialogs';
 import { DateInput } from '../../../components/DateTimeInput';
 
 const labelSx = { fontFamily: fonts.mono, fontSize: 10, letterSpacing: '0.1em', color: tokens.slate, fontWeight: 700, textTransform: 'uppercase', display: 'block' };
-const ctrlSx = { width: '100%', mt: '6px', p: '10px 12px', border: `1px solid ${tokens.line}`, borderRadius: '6px', fontFamily: 'inherit', fontSize: 13, bgcolor: '#fff', color: tokens.ink, boxSizing: 'border-box', '&:focus': { outline: 'none', borderColor: tokens.teal, boxShadow: `0 0 0 3px ${tokens.tealSoft}` } };
+const ctrlSx = { width: '100%', mt: '6px', height: 40, p: '0 12px', border: `1px solid ${tokens.line}`, borderRadius: '6px', fontFamily: 'inherit', fontSize: 13, bgcolor: '#fff', color: tokens.ink, boxSizing: 'border-box', '&:focus': { outline: 'none', borderColor: tokens.teal, boxShadow: `0 0 0 3px ${tokens.tealSoft}` } };
 
 /** openStandaloneTask / submitStandaloneTask — "⚡ New Ad-hoc Task" composer */
 export default function StandaloneTaskModal({ open, onClose, onSubmit, me }) {
@@ -24,7 +25,6 @@ export default function StandaloneTaskModal({ open, onClose, onSubmit, me }) {
   // reach a person who can sign in and see it.
   const { data: people, isLoading: loadingPeople } = useListPeopleQuery(undefined, { skip: !open });
   const others = (people ?? []).filter(u => u.name !== me);
-  const groups = [...new Set(others.map(u => u.department || 'No department'))].sort();
 
   const submit = async () => {
     const d = desc.trim();
@@ -49,28 +49,32 @@ export default function StandaloneTaskModal({ open, onClose, onSubmit, me }) {
         <Box component="label" sx={labelSx}>Task Description ✱</Box>
         <Box component="textarea" autoFocus rows={3} value={desc} onChange={e => setDesc(e.target.value)} placeholder="What needs to be done?" sx={{ ...ctrlSx, resize: 'vertical' }} />
       </Box>
-      <Grid container spacing={1.5} sx={{ mb: '14px' }}>
+      {/* Both columns use the same control height so their boxes line up, and the note below only
+          ever grows the left one. */}
+      <Grid container spacing={1.5} alignItems="flex-start" sx={{ mb: '14px' }}>
         <Grid size={{ xs: 12, sm: 6 }}>
           <Box component="label" sx={labelSx}>Allocate To</Box>
-          <Box component="select" value={owner} onChange={e => setOwner(e.target.value)} sx={ctrlSx} disabled={loadingPeople}>
-            <option value="">⚡ Myself ({me})</option>
-            {groups.map(g => (
-              <optgroup key={g} label={g}>
-                {others.filter(u => (u.department || 'No department') === g).map(u => (
-                  <option key={u.id} value={u.name}>{u.name}{u.title ? ` — ${u.title}` : ''}</option>
-                ))}
-              </optgroup>
-            ))}
-          </Box>
-          <Box sx={{ fontSize: 10.5, color: tokens.slate, mt: '5px' }}>
-            Leave it as <strong>Myself</strong> and the task is yours. Pick somebody and it goes to them.
+          <Box sx={{ mt: '6px' }}>
+            <PersonPicker value={owner} onChange={setOwner} people={others} me={me} loading={loadingPeople} />
           </Box>
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
           <Box component="label" sx={labelSx}>Deadline ✱</Box>
-          <DateInput value={deadline} min={today} onChange={e => setDeadline(e.target.value)} sx={ctrlSx} />
+          <DateInput
+            value={deadline}
+            min={today}
+            onChange={e => setDeadline(e.target.value)}
+            sx={{ mt: '6px' }}
+            inputSx={{ height: 40, minHeight: 40 }}
+          />
         </Grid>
       </Grid>
+
+      <Box sx={{ fontSize: 11.5, color: tokens.slate, mb: '14px', mt: '-6px' }}>
+        {owner
+          ? <>It lands in <strong>{owner}&apos;s</strong> To-Do inbox, and they are told.</>
+          : <>Leave it as <strong>Myself</strong> and the task is yours. Pick somebody and it goes to them.</>}
+      </Box>
       <Box>
         <Box component="label" sx={labelSx}>Priority</Box>
         <Box component="select" value={priority} onChange={e => setPriority(e.target.value)} sx={ctrlSx}>
