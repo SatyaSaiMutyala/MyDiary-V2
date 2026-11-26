@@ -31,7 +31,26 @@ export const actionItemsApi = baseApi.injectEndpoints({
     listActionItems: build.query({
       query: params => ({ url: 'action-items', params: clean(params) }),
       providesTags: r =>
-        r ? [LIST, ...r.items.map(a => ({ type: 'Action', id: a.id }))] : [LIST],
+        r
+          ? [LIST, ...r.items.map(a => ({ type: 'Action', id: a.id }))]
+          : [LIST],
+    }),
+    /**
+     * A task allocated from My To-Do itself, with no meeting behind it.
+     *
+     * Named `allocateTask` rather than `createActionItem`: the meetings slice already owns that
+     * name, and two endpoints sharing one name silently leave the first in place.
+     */
+    allocateTask: build.mutation({
+      query: body => ({ url: 'action-items', method: 'POST', body }),
+      transformResponse: unwrap,
+      invalidatesTags: [LIST],
+    }),
+    /** Who there is to allocate to — names and departments, readable by anybody signed in. */
+    listPeople: build.query({
+      query: () => 'users/directory',
+      transformResponse: r => r.items ?? [],
+      providesTags: [{ type: 'Action', id: 'DIRECTORY' }],
     }),
     getActionItem: build.query({
       query: id => `action-items/${id}`,
@@ -83,6 +102,8 @@ export const actionItemsApi = baseApi.injectEndpoints({
 
 export const {
   useListActionItemsQuery,
+  useAllocateTaskMutation,
+  useListPeopleQuery,
   useGetActionItemQuery,
   useUpdateActionItemMutation,
   useRemoveActionItemMutation,

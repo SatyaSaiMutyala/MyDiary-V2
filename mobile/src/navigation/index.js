@@ -53,6 +53,7 @@ import { VisitDetailScreen } from '../screens/VisitDetailScreen';
 import { VisitFormScreen } from '../screens/VisitFormScreen';
 import { VisitsScreen } from '../screens/VisitsScreen';
 import { useAppDispatch, useAppSelector } from '../store';
+import { useMeQuery } from '../store/api/authApi';
 import { loadSession } from '../store/persist';
 import { restored } from '../store/slices/sessionSlice';
 import { navigationRef } from '../push';
@@ -75,14 +76,26 @@ const renderTabBar = props => <TabBar {...props} />;
 /**
  * The five tabs, in the same shape as the v1 app: the work you do every day is one tap away,
  * everything else lives under More.
+ *
+ * The fourth one depends on where the person works, exactly as v1 decides it. Somebody in a
+ * department that runs a readiness board gets **Lab** — the board itself, which is that
+ * department's opening and closing round. Everybody else gets **Activity**, their department's
+ * shift checklist. An admin gets both, because they have to be able to look at either.
  */
 function Tabs() {
+  const user = useAppSelector(st => st.session.user);
+  const lab = Boolean(user?.lab);
+  const activity = !lab || Boolean(user?.seesAll);
+
   return (
     <Tab.Navigator tabBar={renderTabBar} screenOptions={{ headerShown: false }}>
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="To-Do" component={TodoScreen} />
       <Tab.Screen name="Diary" component={DiaryScreen} />
-      <Tab.Screen name="Activity" component={ActivityScreen} />
+      {lab ? <Tab.Screen name="Lab" component={LabReadinessScreen} /> : null}
+      {activity ? (
+        <Tab.Screen name="Activity" component={ActivityScreen} />
+      ) : null}
       <Tab.Screen name="More" component={MoreScreen} />
     </Tab.Navigator>
   );
@@ -98,6 +111,9 @@ function PushGate() {
   usePush();
   // The phone books its own alarm for every upcoming reminder, so one rings even with no network.
   useReminderAlarms();
+  // And it asks who it is signed in as, which refreshes the stored session: a department, a module
+  // or a unit an admin changed reaches the phone on the next open, without a sign-out.
+  useMeQuery();
   return null;
 }
 
@@ -148,11 +164,20 @@ export function RootNavigator() {
         <Stack.Screen name="MeetingMinutes" component={MeetingMinutesScreen} />
         <Stack.Screen name="MeetingLive" component={MeetingLiveScreen} />
         <Stack.Screen name="MeetingActions" component={MeetingActionsScreen} />
-        <Stack.Screen name="MeetingDecisions" component={MeetingDecisionsScreen} />
+        <Stack.Screen
+          name="MeetingDecisions"
+          component={MeetingDecisionsScreen}
+        />
         <Stack.Screen name="MeetingSummary" component={MeetingSummaryScreen} />
-        <Stack.Screen name="MeetingRequests" component={MeetingRequestsScreen} />
+        <Stack.Screen
+          name="MeetingRequests"
+          component={MeetingRequestsScreen}
+        />
         <Stack.Screen name="RequestMeeting" component={RequestMeetingScreen} />
-        <Stack.Screen name="MeetingTemplates" component={MeetingTemplatesScreen} />
+        <Stack.Screen
+          name="MeetingTemplates"
+          component={MeetingTemplatesScreen}
+        />
 
         {/* My To-Do — built */}
         <Stack.Screen name="TaskDetail" component={TaskDetailScreen} />
@@ -198,12 +223,24 @@ export function RootNavigator() {
         <Stack.Screen name="Projects" component={ProjectsScreen} />
         <Stack.Screen name="ProjectDetail" component={ProjectDetailScreen} />
         <Stack.Screen name="ProjectForm" component={ProjectFormScreen} />
-        <Stack.Screen name="ProjectTemplates" component={ProjectTemplatesScreen} />
+        <Stack.Screen
+          name="ProjectTemplates"
+          component={ProjectTemplatesScreen}
+        />
         <Stack.Screen name="MilestoneForm" component={MilestoneFormScreen} />
-        <Stack.Screen name="ProjectTaskForm" component={ProjectTaskFormScreen} />
-        <Stack.Screen name="ProjectRiskForm" component={ProjectRiskFormScreen} />
+        <Stack.Screen
+          name="ProjectTaskForm"
+          component={ProjectTaskFormScreen}
+        />
+        <Stack.Screen
+          name="ProjectRiskForm"
+          component={ProjectRiskFormScreen}
+        />
         <Stack.Screen name="ProjectKpiForm" component={ProjectKpiFormScreen} />
-        <Stack.Screen name="ProjectMemberForm" component={ProjectMemberFormScreen} />
+        <Stack.Screen
+          name="ProjectMemberForm"
+          component={ProjectMemberFormScreen}
+        />
 
         {/* Every destination More offers now has a real screen — there are no stubs left.
              Settings (people, permissions, the activity log) is deliberately website-only, so

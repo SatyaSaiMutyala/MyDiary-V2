@@ -8,6 +8,8 @@ export const actionItemsRouter = Router();
 actionItemsRouter.use(requireAuth, requireModule('meetings', 'todo'));
 
 actionItemsRouter.get('/', actionItems.list);
+// A task allocated from My To-Do itself, with no meeting behind it.
+actionItemsRouter.post('/', validateBody(actionItems.standaloneSchema), actionItems.createStandalone);
 actionItemsRouter.get('/:id', actionItems.get);
 actionItemsRouter.patch('/:id', validateBody(actionItems.actionPatchSchema), actionItems.update);
 actionItemsRouter.delete('/:id', actionItems.remove);

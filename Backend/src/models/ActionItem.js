@@ -20,7 +20,13 @@ const historySchema = new Schema({ user: { type: String, default: '' }, action: 
  */
 const actionItemSchema = new Schema(
   {
-    meetingId: { type: Schema.Types.ObjectId, ref: 'Meeting', required: true },
+    /**
+     * The meeting this came out of, when it came out of one. A task somebody allocates straight
+     * from My To-Do has no meeting behind it, so this is null and `source` says 'standalone'.
+     */
+    meetingId: { type: Schema.Types.ObjectId, ref: 'Meeting', default: null },
+    /** Where it came from: a meeting's minutes, or allocated on its own. */
+    source: { type: String, enum: ['meeting', 'standalone'], default: 'meeting' },
     /** Denormalised for list views and search; kept in sync when the meeting is renamed. */
     meetingTitle: { type: String, default: '' },
     desc: { type: String, default: '' },
@@ -58,6 +64,8 @@ export function serializeAction(a) {
     id: a._id.toString(),
     meetingId: a.meetingId ? a.meetingId.toString() : null,
     meetingTitle: a.meetingTitle ?? '',
+    // Rows written before standalone tasks existed have no `source`; they all came from meetings.
+    source: a.source ?? (a.meetingId ? 'meeting' : 'standalone'),
     desc: a.desc ?? '',
     owner: a.owner ?? '',
     ownerShort: a.ownerShort ?? '??',

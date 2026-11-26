@@ -7,7 +7,7 @@ import { tokens, fonts } from '../../theme/tokens';
 import { PageHeader, Btn, Avatar, EmptyState, MonoHeading, TabBar, FilterPill } from '../../components';
 import { isOverdue } from '../../utils/dates';
 import { errorMessage } from '../../store/api/baseApi';
-import { useListActionItemsQuery, useUpdateActionItemMutation } from '../../store/api/actionItemsApi';
+import { useAllocateTaskMutation, useListActionItemsQuery, useUpdateActionItemMutation } from '../../store/api/actionItemsApi';
 import { ApiError, Fetching } from '../settings/components/listUi';
 import { actionToTodo, collectTodoItems, samePerson } from './utils';
 import TodoCard from './components/TodoCard';
@@ -44,6 +44,7 @@ export default function MyTodoPage() {
   // takes one list and keeps the rows whose createdBy is me.
   const allQ = useListActionItemsQuery({ limit: 200, sort: 'deadline' });
   const [updateActionItem] = useUpdateActionItemMutation();
+  const [allocateTask] = useAllocateTaskMutation();
 
   const mineFromApi = (mineQ.data?.items || []).map(actionToTodo).filter(x => x.ownerType !== 'external');
   const delegatedFromApi = (allQ.data?.items || []).map(actionToTodo).filter(x => samePerson(x.creator, me) && !samePerson(x.owner, me));
@@ -100,10 +101,26 @@ export default function MyTodoPage() {
     else if (src === 'standalone') mutate('standaloneTasks', ts => { const t = ts.find(x => x.id === tid); if (t) t.owner = name; });
     else if (src === 'visits') mutate('visits', vs => { const v = vs.find(x => x.id === srcId); if (!v) return; const parts = tid.split('-'); const idx = parseInt(parts[parts.length - 1], 10); const ai = v.actionItems && v.actionItems[idx]; if (ai) ai.owner = name; });
   };
-  const submitStandalone = ({ desc, owner, deadline, priority }) => {
-    mutate('standaloneTasks', ts => { ts.unshift({ id: 'sa' + Date.now(), desc, owner, ownerType: 'internal', creator: me, deadline, priority, status: 'open', createdAt: new Date().toISOString().slice(0, 10) }); });
-    notify({ type: 'action', icon: '⚡', text: `<strong>${owner}</strong>: new task allocated to you by ${me} — "${desc.slice(0, 60)}${desc.length > 60 ? '…' : ''}"` });
-    setStandaloneOpen(false);
+  /**
+   * Saves the task on the server, where the person it is for can see it. It used to be kept in
+   * this browser alone, so an "allocated" task never reached anybody — the owner's own To-Do read
+   * the real list and found nothing.
+   */
+  const submitStandalone = async ({ desc, owner, deadline, priority }) => {
+    try {
+      const saved = await allocateTask({ desc, owner: owner || undefined, deadline, priority }).unwrap();
+      notify({
+        type: 'action',
+        icon: '⚡',
+        text: saved.owner === me
+          ? `New task on your list — "${desc.slice(0, 60)}${desc.length > 60 ? '…' : ''}"`
+          : `Allocated to <strong>${saved.owner}</strong> — "${desc.slice(0, 60)}${desc.length > 60 ? '…' : ''}". They have been told.`,
+      });
+      setStandaloneOpen(false);
+    } catch (err) {
+      await dlg.alert(errorMessage(err));
+      return;
+    }
   };
 
   const card = (t, od) => (
@@ -182,7 +199,7 @@ export default function MyTodoPage() {
         </Box>
       )}
 
-      {standaloneOpen && <StandaloneTaskModal open onClose={() => setStandaloneOpen(false)} onSubmit={submitStandalone} />}
+      {standaloneOpen && <StandaloneTaskModal open me={me} onClose={() => setStandaloneOpen(false)} onSubmit={submitStandalone} />}
       {compCtx && <CompleteDialog key={compCtx.action.id + compCtx.mode} ctx={compCtx} onClose={() => setCompCtx(null)} />}
     </Box>
   );

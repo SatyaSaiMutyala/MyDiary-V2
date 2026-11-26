@@ -18,7 +18,9 @@ export const auth = (t) => ({ Authorization: `Bearer ${t}` });
  * @returns {Promise<{ app: import('express').Express, stop: () => Promise<void> }>}
  */
 export async function startTestApp() {
-  const mongod = await MongoMemoryServer.create();
+  // 30 seconds to start, not the default 10. The database binary runs under Rosetta on an Apple
+  // chip and takes its time on a loaded machine; the suite was failing for that alone.
+  const mongod = await MongoMemoryServer.create({ instance: { launchTimeout: 30_000 } });
   await mongoose.connect(mongod.getUri('mydiary-test'));
   const { ensureDefaultAdmin } = await import('../src/services/users.js');
   const { createApp } = await import('../src/app.js');

@@ -128,4 +128,30 @@ describe('requireModule', () => {
     await request(ctx.app).patch(`/api/users/${emp.user.id}`).set(auth(adminToken)).send({ modules: ['dashboard', 'todo'] }).expect(200);
     expect((await request(mini).get('/diary').set(auth(emp.token))).status).toBe(403);
   });
+
+});
+
+describe('the laboratory flag on the session user', () => {
+  it('says whether this person works somewhere that runs a readiness board', async () => {
+    // Nobody has a board yet, so nobody is a laboratory person.
+    const before = await request(ctx.app).get('/api/auth/me').set(auth(adminToken));
+    expect(before.body.user.lab).toBe(false);
+    expect(before.body.user.seesAll).toBe(true); // the first account is an admin
+
+    // Give a department a board, and put somebody in it.
+    const dept = await request(ctx.app).post('/api/departments').set(auth(adminToken)).send({ code: 'TDPL-LAB-X', name: 'Pathology Lab' });
+    const id = dept.body.department.id;
+    await request(ctx.app).post(`/api/departments/${id}/lab-readiness/restore`).set(auth(adminToken));
+    await request(ctx.app).put(`/api/departments/${id}/lab-readiness`).set(auth(adminToken)).send({ enabled: true });
+
+    const staff = await createAndLogin(ctx.app, adminToken, {
+      name: 'Meera Joshi', email: 'meera.lab@trustlab.co.in', role: 'employee', department: 'Pathology Lab',
+    });
+
+    // It rides on the sign-in answer too, so the phone can lay out its tabs straight away.
+    expect(staff.user.lab ?? (await login(ctx.app, 'meera.lab@trustlab.co.in', 'password123')).user.lab).toBe(true);
+    const mine = await request(ctx.app).get('/api/auth/me').set(auth(staff.token));
+    expect(mine.body.user.lab).toBe(true);
+    expect(mine.body.user.seesAll).toBe(false);
+  });
 });

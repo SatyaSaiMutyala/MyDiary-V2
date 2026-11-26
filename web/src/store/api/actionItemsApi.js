@@ -19,6 +19,18 @@ export const actionItemsApi = baseApi.injectEndpoints({
       query: (params) => ({ url: '/action-items', params: cleanParams(params) }),
       providesTags: (r) => (r ? [LIST, ...r.items.map((a) => ({ type: 'Action', id: a.id }))] : [LIST]),
     }),
+    /**
+     * A task allocated from My To-Do itself — no meeting behind it.
+     *
+     * Named `allocateTask`, not `createActionItem`: the meetings slice already owns that name, and
+     * two endpoints with one name silently leave the first in place, so the call would go to the
+     * meeting route instead.
+     */
+    allocateTask: b.mutation({
+      query: (body) => ({ url: '/action-items', method: 'POST', body }),
+      transformResponse: unwrap,
+      invalidatesTags: [LIST],
+    }),
     getActionItem: b.query({
       query: (id) => `/action-items/${id}`,
       transformResponse: unwrap,
@@ -58,7 +70,7 @@ export const actionItemsApi = baseApi.injectEndpoints({
 });
 
 export const {
-  useListActionItemsQuery, useLazyListActionItemsQuery, useGetActionItemQuery,
+  useListActionItemsQuery, useLazyListActionItemsQuery, useGetActionItemQuery, useAllocateTaskMutation,
   useUpdateActionItemMutation, useRemoveActionItemMutation,
   useAddSubtaskMutation, useSetSubtaskMutation, useAddCommentMutation, useAddDependencyMutation,
 } = actionItemsApi;

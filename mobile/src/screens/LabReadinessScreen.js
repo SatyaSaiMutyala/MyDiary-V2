@@ -63,6 +63,7 @@ export function LabReadinessScreen() {
   const fresh = useFresh(FRESH);
   const nav = useNavigation();
   const route = useRoute();
+  const isTab = route.name === 'Lab';
   const dispatch = useAppDispatch();
   const { date, phase, unit: chosen } = useAppSelector(st => st.lab);
   const TODAY = todayIso();
@@ -141,7 +142,13 @@ export function LabReadinessScreen() {
             : longDate(date)
         }
         title="Lab readiness"
-        onBack={() => (nav.canGoBack() ? nav.goBack() : nav.navigate('Tabs'))}
+        // It is a tab for laboratory people and a pushed screen for everyone else; an arrow only
+        // belongs on the second kind, which has somewhere to go back to.
+        onBack={
+          isTab
+            ? undefined
+            : () => (nav.canGoBack() ? nav.goBack() : nav.navigate('Tabs'))
+        }
         eyebrowAction={
           <DateField
             value={date}

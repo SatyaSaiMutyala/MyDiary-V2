@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { ActionItem } from '../models/ActionItem.js';
 import { badRequest, notFound } from '../utils/errors.js';
 import { notify } from './notifications.js';
-import { initials, nowIso, plusDays, short } from './people.js';
+import { cleanName, initials, nowIso, plusDays, short } from './people.js';
 import { html } from '../utils/html.js';
 
 /** @param {string} id */
@@ -24,6 +24,44 @@ const notifyOwner = (me, a) =>
     icon: '✓',
     text: html`<strong>${me.name}</strong> assigned you "${short(a.desc || 'an action item', 60)}" in <em>${a.meetingTitle}</em> — due <strong>${a.deadline}</strong>.`,
   });
+
+/**
+ * Allocates one task that came from no meeting — the "+ New Task" composer in My To-Do.
+ *
+ * Leaving the owner out means the person is giving it to themselves, which is the common case and
+ * the reason the field is not required: most tasks somebody types into their own inbox are their
+ * own. Naming somebody else notifies them, on screen and on their phone.
+ *
+ * @param {{ desc?: string, owner?: string, ownerType?: string, deadline?: string, priority?: string, status?: string }} input
+ * @param {any} me
+ */
+export async function createStandalone(input, me) {
+  const owner = (input.owner ?? '').trim() || me.name;
+  const a = await ActionItem.create({
+    meetingId: null,
+    meetingTitle: '',
+    source: 'standalone',
+    desc: input.desc ?? '',
+    owner,
+    ownerShort: initials(owner),
+    ownerType: input.ownerType ?? 'internal',
+    deadline: input.deadline ?? plusDays(7),
+    priority: input.priority ?? 'medium',
+    status: input.status ?? 'open',
+    history: [historyRow(me, 'created the task')],
+    createdBy: { id: me._id, name: me.name },
+  });
+  // Nobody needs telling about a task they just wrote for themselves.
+  if (cleanName(owner).toLowerCase() !== cleanName(me.name).toLowerCase()) {
+    await notify({
+      userName: owner,
+      type: 'action',
+      icon: '⚡',
+      text: html`<strong>${me.name}</strong> allocated you "${short(a.desc || 'a task', 60)}" — due <strong>${a.deadline}</strong>.`,
+    });
+  }
+  return a;
+}
 
 /**
  * Creates one action item for a meeting (defaults mirror the web's newAction(): deadline +7 days, priority medium,

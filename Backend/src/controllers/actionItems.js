@@ -25,6 +25,20 @@ export const actionSchema = z
   })
   .strict();
 export const actionPatchSchema = actionSchema.refine((v) => Object.keys(v).length > 0, 'Send at least one field to change.');
+
+/**
+ * A task allocated straight from My To-Do. The description is the only thing asked for: leaving
+ * the owner out gives it to yourself, and leaving the deadline out makes it a week from today.
+ */
+export const standaloneSchema = z
+  .object({
+    desc: text('Description', 1000).min(1, 'Enter what has to be done.'),
+    owner: text('Owner', 120).optional(),
+    ownerType: ownerTypeField.optional(),
+    deadline: dateField.optional(),
+    priority: priorityField.optional(),
+  })
+  .strict();
 export const subtaskSchema = z.object({ text: text('Sub-task', 300).min(1, 'Enter the sub-task text.') }).strict();
 export const subtaskPatchSchema = z.object({ done: z.boolean({ error: 'done must be true or false.' }) }).strict();
 export const commentSchema = z.object({ text: text('Comment', 2000).min(1, 'Enter a comment.') }).strict();
@@ -67,6 +81,15 @@ export const list = async (req, res) => {
 };
 
 /** POST /api/meetings/:id/action-items @type {import('express').RequestHandler} */
+/** POST /api/action-items — allocate a task with no meeting behind it. @type {import('express').RequestHandler} */
+export const createStandalone = async (req, res) => {
+  const me = currentUser(req);
+  const a = await actions.createStandalone(req.body, me);
+  const mine = a.owner === me.name;
+  res.locals.audit = { entity: a.desc || '(untitled task)', entityId: a._id.toString(), details: `Task allocated to ${mine ? 'themselves' : a.owner} · due ${a.deadline}` };
+  res.status(201).json({ action: serializeAction(a) });
+};
+
 export const createForMeeting = async (req, res) => {
   const me = currentUser(req);
   const m = await findMeetingOr404(req.params.id);

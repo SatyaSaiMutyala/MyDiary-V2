@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from 'react';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { StyleSheet } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { Check } from 'lucide-react-native';
+import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
 import { DateField } from '../components/DateField';
 import { Dropdown } from '../components/Dropdown';
@@ -10,53 +12,53 @@ import { Notice } from '../components/Notice';
 import { PriorityPicker } from '../components/PriorityPicker';
 import { TextField } from '../components/TextField';
 import { errorMessage, useMe } from '../store';
-import { useCreateActionItemMutation, useListMeetingsQuery } from '../store/api/meetingsApi';
-import { whenLabel } from '../model/meeting';
+import {
+  useAllocateTaskMutation,
+  useListPeopleQuery,
+} from '../store/api/actionItemsApi';
+import { colors, vs } from '../theme';
 
 /**
- * A new task.
+ * A new task — the same four fields the website's composer asks for, in the same order.
  *
- * Every action item belongs to a meeting — that is how the API stores them
- * (Backend/src/models/ActionItem.js: `meetingId` is required), and it is what makes a commitment
- * traceable back to the room it was made in. So the form asks which meeting, rather than inventing
- * a home for it.
+ * It asks nothing about meetings. A commitment made in a meeting is added on that meeting's own
+ * Action items screen, where it stays traceable to the room it was promised in; this form is for
+ * the other kind — a task somebody writes on their own list, or hands to a colleague.
  */
 export function TaskFormScreen() {
   const nav = useNavigation();
-  const route = useRoute();
   const me = useMe();
-  const [createAction, creating] = useCreateActionItemMutation();
+  const [allocateTask, allocating] = useAllocateTaskMutation();
+  // Real accounts, so a task allocated to somebody reaches a person who can sign in and see it.
+  const people = useListPeopleQuery();
 
-  // The meetings this can hang off: the most recent first, which is nearly always the right one.
-  const meetings = useListMeetingsQuery({
-    limit: 50,
-    sort: '-date',
-    mine: true,
-    fields: 'title,date,time,status',
-  });
-
-  const [meetingId, setMeetingId] = useState(route.params?.meetingId ?? '');
   const [desc, setDesc] = useState('');
-  const [owner, setOwner] = useState(me?.name ?? '');
+  // Blank means the person is giving it to themselves, which is what most tasks typed into one's
+  // own To-Do are. Choosing somebody sends it to them, and tells them.
+  const [owner, setOwner] = useState('');
   const [deadline, setDeadline] = useState('');
   const [priority, setPriority] = useState('medium');
   const [problem, setProblem] = useState('');
 
-  const meetingOptions = useMemo(
-    () =>
-      (meetings.data?.items ?? []).map(m => ({
-        id: m.id,
-        label: m.title,
-        detail: whenLabel(m),
-      })),
-    [meetings.data],
+  const ownerOptions = useMemo(
+    () => [
+      {
+        id: '',
+        label: `Myself (${me?.name ?? 'me'})`,
+        detail: 'It stays on your own list',
+      },
+      ...(people.data ?? [])
+        .filter(u => u.name !== me?.name)
+        .map(u => ({
+          id: u.name,
+          label: u.name,
+          detail: [u.title, u.department].filter(Boolean).join(' · '),
+        })),
+    ],
+    [people.data, me?.name],
   );
 
   const save = async () => {
-    if (!meetingId) {
-      setProblem('Choose the meeting this came out of.');
-      return;
-    }
     if (!desc.trim()) {
       setProblem('Say what has to be done.');
       return;
@@ -67,10 +69,9 @@ export function TaskFormScreen() {
     }
     setProblem('');
     try {
-      await createAction({
-        id: meetingId,
+      await allocateTask({
         desc: desc.trim(),
-        ...(owner.trim() ? { owner: owner.trim() } : null),
+        ...(owner ? { owner } : null),
         deadline,
         priority,
       }).unwrap();
@@ -85,25 +86,20 @@ export function TaskFormScreen() {
       title="New task"
       footer={
         <Button
-          label={creating.isLoading ? 'Adding…' : 'Add task'}
+          label={
+            allocating.isLoading
+              ? 'Adding…'
+              : owner
+              ? 'Allocate task'
+              : 'Add task'
+          }
           iconLeft={Check}
-          disabled={creating.isLoading}
+          disabled={allocating.isLoading}
           onPress={save}
         />
       }
     >
-      {problem ? (
-        <Notice tone="error" title={problem} />
-      ) : null}
-
-      {!meetings.isLoading && !meetingOptions.length ? (
-        <Notice
-          tone="warn"
-          title="No meetings yet"
-          text="A task belongs to a meeting, so plan one first and the task can hang off it."
-         
-        />
-      ) : null}
+      {problem ? <Notice tone="error" title={problem} /> : null}
 
       <FormCard title="What">
         <TextField
@@ -112,24 +108,25 @@ export function TaskFormScreen() {
           onChangeText={setDesc}
           placeholder="e.g. Pull the validation records"
         />
-        <Dropdown
-          label="Which meeting it came out of"
-          options={meetingOptions}
-          value={meetingId}
-          onChange={setMeetingId}
-          placeholder={
-            meetings.isLoading ? 'Loading meetings…' : 'Choose a meeting'
-          }
-        />
       </FormCard>
 
       <FormCard title="Who and when">
-        <TextField
-          label="Owner"
+        <Dropdown
+          label="Allocate to"
+          options={ownerOptions}
           value={owner}
-          onChangeText={setOwner}
-          placeholder="Who owes it"
+          onChange={setOwner}
+          placeholder={
+            people.isLoading
+              ? 'Loading people…'
+              : `Myself (${me?.name ?? 'me'})`
+          }
         />
+        <AppText variant="meta" color={colors.inkMuted} style={styles.hint}>
+          {owner
+            ? `${owner} gets it on their own To-Do, and is told.`
+            : 'Leave it as Myself and the task is yours.'}
+        </AppText>
         <DateField label="Deadline" value={deadline} onChange={setDeadline} />
         <PriorityPicker value={priority} onChange={setPriority} />
       </FormCard>
@@ -137,3 +134,6 @@ export function TaskFormScreen() {
   );
 }
 
+const styles = StyleSheet.create({
+  hint: { marginTop: vs(-4), marginBottom: vs(4) },
+});

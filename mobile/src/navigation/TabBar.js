@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Calendar,
   ClipboardPen,
+  FlaskConical,
   House,
   LayoutGrid,
   SquareCheck,
@@ -18,6 +19,7 @@ const icons = {
   'To-Do': SquareCheck,
   Diary: Calendar,
   Activity: ClipboardPen,
+  Lab: FlaskConical,
   More: LayoutGrid,
 };
 

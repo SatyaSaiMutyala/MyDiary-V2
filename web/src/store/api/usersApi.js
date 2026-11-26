@@ -9,6 +9,16 @@ const AUDIT = { type: 'Audit', id: 'LIST' };
  */
 export const usersApi = baseApi.injectEndpoints({
   endpoints: (b) => ({
+    /**
+     * Who there is to pick from — names, titles and departments, nothing private. Unlike the rest
+     * of this slice it is not admin-only, because any screen that offers a list of colleagues
+     * (allocating a task, naming an owner) has to work for an ordinary employee too.
+     */
+    listPeople: b.query({
+      query: () => '/users/directory',
+      transformResponse: (r) => r.items ?? [],
+      providesTags: [{ type: 'User', id: 'DIRECTORY' }],
+    }),
     listUsers: b.query({
       query: (params) => ({ url: '/users', params: cleanParams(params) }),
       providesTags: (r) => (r ? [LIST, ...r.items.map((u) => ({ type: 'User', id: u.id }))] : [LIST]),
@@ -37,6 +47,6 @@ export const usersApi = baseApi.injectEndpoints({
 });
 
 export const {
-  useListUsersQuery, useGetUserQuery, useUserModulesQuery,
+  useListUsersQuery, useListPeopleQuery, useGetUserQuery, useUserModulesQuery,
   useCreateUserMutation, useUpdateUserMutation, useRemoveUserMutation, useResetPasswordMutation,
 } = usersApi;

@@ -164,3 +164,33 @@ describe('GET/PATCH/DELETE /api/users/:id', () => {
     expect((await request(ctx.app).get('/api/auth/me').set(auth(employee.token))).status).toBe(401);
   });
 });
+
+describe('GET /api/users/directory', () => {
+  it('lets anybody signed in see who there is, without exposing anything private', async () => {
+    const staff = await createAndLogin(ctx.app, adminToken, {
+      name: 'Deepa Rao', email: 'deepa.dir@trustlab.co.in', role: 'employee',
+      department: 'Commercial', title: 'Sales Lead', modules: ['todo'],
+    });
+
+    // The admin-only list stays admin-only.
+    expect((await request(ctx.app).get('/api/users').set(auth(staff.token))).status).toBe(403);
+
+    // The directory does not.
+    const r = await request(ctx.app).get('/api/users/directory').set(auth(staff.token));
+    expect(r.status).toBe(200);
+    const her = r.body.items.find((u) => u.name === 'Deepa Rao');
+    expect(her).toMatchObject({ name: 'Deepa Rao', department: 'Commercial', title: 'Sales Lead' });
+    // Names, not credentials: no email, role, modules or status comes back.
+    expect(Object.keys(her).sort()).toEqual(['department', 'id', 'name', 'position', 'title']);
+  });
+
+  it('leaves out people who can no longer sign in', async () => {
+    const made = await request(ctx.app).post('/api/users').set(auth(adminToken)).send({
+      name: 'Gone Person', email: 'gone.dir@trustlab.co.in', password: 'password123', role: 'employee', status: 'inactive',
+    });
+    expect(made.status).toBe(201);
+    const r = await request(ctx.app).get('/api/users/directory').set(auth(adminToken));
+    expect(r.body.items.some((u) => u.name === 'Gone Person')).toBe(false);
+  });
+});
+

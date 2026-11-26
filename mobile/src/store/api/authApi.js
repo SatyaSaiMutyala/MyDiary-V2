@@ -34,6 +34,20 @@ export const authApi = baseApi.injectEndpoints({
       query: () => 'auth/me',
       transformResponse: r => r.user ?? r,
       providesTags: ['Me'],
+      // The stored session is written once, at sign-in, and everything that lays the app out reads
+      // it: the tabs, the menu, which modules are granted, which department the person is in. An
+      // admin changing any of that used to reach the phone only after a sign-out and back in, so
+      // the answer to this is written back to the session every time it is asked for.
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          if (data?.id) {
+            dispatch(userUpdated(data));
+          }
+        } catch {
+          // Offline or refused: the session already on the phone stands.
+        }
+      },
     }),
     updateMe: build.mutation({
       query: body => ({ url: 'auth/me', method: 'PATCH', body }),

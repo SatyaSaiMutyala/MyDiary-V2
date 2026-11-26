@@ -1,7 +1,7 @@
 /** Module 2 — action items: the To-Do source of truth (own collection, queried across meetings). */
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { auth, login, startTestApp } from './helpers.js';
+import { auth, createAndLogin, login, startTestApp } from './helpers.js';
 
 let ctx;
 let token = '';
@@ -132,3 +132,64 @@ describe('extract from minutes', () => {
     expect(r.body.message).toMatch(/No commitment/i);
   });
 });
+
+describe('a task allocated from My To-Do, with no meeting behind it', () => {
+  it('gives it to you when you name nobody', async () => {
+    const r = await post('/api/action-items', { desc: 'Chase the courier contract', deadline: '2026-12-01' });
+    expect(r.status).toBe(201);
+    expect(r.body.action).toMatchObject({
+      owner: 'Venkata Cherukuri', // the signed-in person
+      source: 'standalone',
+      meetingId: null,
+      meetingTitle: '',
+      status: 'open',
+      priority: 'medium',
+    });
+
+    // And it is in their own inbox, which is the whole point.
+    const mine = await get('/api/action-items?mine=true&limit=200');
+    expect(mine.body.items.some((a) => a.desc === 'Chase the courier contract')).toBe(true);
+  });
+
+  it('gives it to somebody else when you name them, and tells them', async () => {
+    const staff = await createAndLogin(ctx.app, token, {
+      name: 'Arjun Mehta', email: 'arjun.todo@trustlab.co.in', role: 'employee', modules: ['todo', 'meetings'],
+    });
+
+    const r = await post('/api/action-items', { desc: 'Send the revised pricing deck', owner: 'Arjun Mehta', deadline: '2026-12-02', priority: 'high' });
+    expect(r.status).toBe(201);
+    expect(r.body.action).toMatchObject({ owner: 'Arjun Mehta', ownerShort: 'AM', priority: 'high', source: 'standalone' });
+
+    // It reaches them: it is in their inbox, not only in the sender's list.
+    const theirs = await request(ctx.app).get('/api/action-items?mine=true&limit=200').set(auth(staff.token));
+    expect(theirs.body.items.some((a) => a.desc === 'Send the revised pricing deck')).toBe(true);
+
+    // And they were told, on screen and on their phone.
+    const bell = await request(ctx.app).get('/api/notifications').set(auth(staff.token));
+    expect(bell.body.items.some((n) => n.text.includes('allocated you') && n.text.includes('Send the revised pricing deck'))).toBe(true);
+  });
+
+  it('does not notify you about a task you wrote for yourself', async () => {
+    const before = (await get('/api/notifications')).body.items.length;
+    await post('/api/action-items', { desc: 'Read the NABL circular', deadline: '2026-12-03' });
+    const after = (await get('/api/notifications')).body.items.length;
+    expect(after).toBe(before);
+  });
+
+  it('defaults the deadline to a week out, and still insists on a description', async () => {
+    const r = await post('/api/action-items', { desc: 'Book the auditor' });
+    expect(r.status).toBe(201);
+    expect(r.body.action.deadline).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+
+    const empty = await post('/api/action-items', { desc: '   ' });
+    expect(empty.status).toBe(400);
+    expect(empty.body.error.message).toContain('Enter what has to be done.');
+  });
+
+  it('keeps meeting actions working exactly as before', async () => {
+    const a = await addAction();
+    expect(a).toMatchObject({ source: 'meeting', meetingTitle: 'Adani AHC — Pricing' });
+    expect(a.meetingId).toBe(meetingId);
+  });
+});
+

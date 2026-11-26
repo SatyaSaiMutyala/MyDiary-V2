@@ -65,6 +65,29 @@ const CHANGE_FIELDS = ['name', 'email', 'title', 'department', 'position', 'labU
 const snapshot = (u) => ({ name: u.name, email: u.email, title: u.title, department: u.department, position: u.position, labUnit: u.labUnit, role: u.role, status: u.status, modules: [...u.modules] });
 
 /** GET /api/users/modules — the module registry for the permissions editor. @type {import('express').RequestHandler} */
+/**
+ * GET /api/users/directory — who there is to pick from, for anybody signed in.
+ *
+ * The rest of this file is admin-only, and rightly so: it carries emails, roles and module
+ * grants. But allocating a task, inviting somebody to a meeting or naming an owner all need a
+ * list of colleagues, and an ordinary employee has to be able to do those. So this returns the
+ * one thing those screens need — who exists, and where they sit — and nothing else.
+ * @type {import('express').RequestHandler}
+ */
+export const directory = async (_req, res) => {
+  const people = await User.find({ status: 'active' }, { name: 1, title: 1, department: 1, position: 1 }).sort({ name: 1 }).limit(1000);
+  res.json({
+    items: people.map((u) => ({
+      id: u._id.toString(),
+      name: u.name,
+      title: u.title ?? '',
+      department: u.department ?? '',
+      position: u.position ?? '',
+    })),
+    total: people.length,
+  });
+};
+
 export const modules = (_req, res) => {
   res.json({ modules: MODULES, roles: ROLES, defaults: Object.fromEntries(ROLES.map((r) => [r, defaultModules(r)])) });
 };

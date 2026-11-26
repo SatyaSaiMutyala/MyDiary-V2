@@ -35,6 +35,7 @@ const freshBoard = () => ({
   },
 });
 
+const stores = [];
 const newStore = () => {
   const store = configureStore({
     reducer: {
@@ -43,6 +44,7 @@ const newStore = () => {
     },
     middleware: getDefault => getDefault().concat(baseApi.middleware),
   });
+  stores.push(store);
   return store;
 };
 
@@ -97,9 +99,11 @@ describe('the board while the server is still thinking', () => {
     await sub;
     expect(cached(store).run).toBeNull();
   };
-  // Let the cache go, or its keep-alive timer holds the test runner open.
+  // Let the cache go, or its keep-alive timers outlive the test and the runner complains about
+  // reaching into an environment that has been torn down.
   afterEach(() => {
     open.splice(0).forEach(sub => sub.unsubscribe());
+    stores.splice(0).forEach(st => st.dispatch(baseApi.util.resetApiState()));
   });
 
   it('shows a tick before the server has answered, and settles on what it saved', async () => {

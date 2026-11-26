@@ -4,7 +4,13 @@ import { requireAuth, requireRole } from '../middleware/auth.js';
 import { validateBody } from '../middleware/validate.js';
 
 export const usersRouter = Router();
-usersRouter.use(requireAuth, requireRole('admin'));
+usersRouter.use(requireAuth);
+
+// Names only, for the screens that have to offer a list of colleagues to anybody signed in.
+usersRouter.get('/directory', users.directory);
+
+// Everything else on this router carries emails, roles and module grants: admins only.
+usersRouter.use(requireRole('admin'));
 usersRouter.get('/modules', users.modules);
 usersRouter.get('/departments', users.departments);
 usersRouter.get('/', users.list);
