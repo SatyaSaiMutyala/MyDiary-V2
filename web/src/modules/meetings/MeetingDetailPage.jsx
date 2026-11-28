@@ -6,7 +6,7 @@ import { useAppStore } from '../../store/AppStore';
 import { useCrumbs } from '../../store/CrumbsContext';
 import { errorCode } from '../../store/api/baseApi';
 import {
-  useAddParkingMutation, useAppendTranscriptMutation, useApplyAiActionsMutation, useCirculateMinutesMutation,
+  useAddParkingMutation, useAppendTranscriptMutation, useApplyAiActionsMutation, useCirculateMinutesMutation, useClearTranscriptMutation,
   useCreateActionItemMutation, useCreateDecisionMutation, useCyclePresenceMutation, useDuplicateMeetingMutation,
   useExtractActionsMutation, useFinaliseMinutesMutation, useGetMeetingQuery, useLogAiDecisionsMutation,
   usePatchExternalMutation, usePutAiSummaryMutation, usePutMinutesMutation, useRemindOwnersMutation,
@@ -98,6 +98,7 @@ function MeetingDetail({ id }) {
   const [patchExternal] = usePatchExternalMutation();
   const [rsvpApi] = useRsvpMutation();
   const [appendTranscript] = useAppendTranscriptMutation();
+  const [clearTranscript] = useClearTranscriptMutation();
   const [putAiSummary] = usePutAiSummaryMutation();
   const [applyAi] = useApplyAiActionsMutation();
   const [logAi] = useLogAiDecisionsMutation();
@@ -296,6 +297,26 @@ function MeetingDetail({ id }) {
     set('recording', { active: true, meetingId: m.id, elapsed: 0, feedIdx: 0 });
   };
 
+  /**
+   * Throws the transcript away and keeps the meeting.
+   *
+   * Spoken words are the one thing on this page that cannot be recovered, so this asks twice over:
+   * it says how many lines go, that nothing else about the meeting is touched, and it refuses while
+   * the microphone is still running rather than deleting from under a recording.
+   */
+  const clearTheTranscript = async () => {
+    if (recording.active && recording.meetingId === m.id) {
+      await dlg.alert('Stop the recording first — the transcript cannot be cleared while it is still being written to.');
+      return;
+    }
+    const n = transcriptLen;
+    const ok = await dlg.confirm(
+      `Delete all ${n} transcript line${n === 1 ? '' : 's'} of "${m.title}"?\n\nThe words are gone for good — there is no copy and no undo. The meeting, its minutes, actions and decisions are not touched.\n\nDownload the transcript first if you may want it.`,
+    );
+    if (!ok) return;
+    await run(clearTranscript(m.id), `Transcript cleared — ${n} line${n === 1 ? '' : 's'} deleted. The meeting is untouched.`);
+  };
+
   // ============ AI SUMMARY ============
   const generateAISummary = () => {
     setAiLoading(true);
@@ -439,7 +460,7 @@ function MeetingDetail({ id }) {
       <TabBar tabs={tabs} value={tab} onChange={setTab} sx={{ mb: '18px' }} />
 
       {tab === 'agenda' && <DetailAgendaPane m={view} onEdit={editMeeting} onAddParking={addParkingItem} onRmParking={rmParkingItem} onCyclePresence={cyclePresence} />}
-      {tab === 'live' && <DetailLivePane m={view} recording={recording} live={live} sink={sink} speaker={speaker || me} onSpeaker={setSpeaker} lang={lang} onLang={setLang} onToggleRecording={toggleRecording} onDownload={() => downloadTranscript(view, dlg)} onGenerateAI={() => { setTab('ai'); setTimeout(generateAISummary, 100); }} />}
+      {tab === 'live' && <DetailLivePane m={view} recording={recording} live={live} sink={sink} speaker={speaker || me} onSpeaker={setSpeaker} lang={lang} onLang={setLang} onToggleRecording={toggleRecording} onDownload={() => downloadTranscript(view, dlg)} onClearTranscript={clearTheTranscript} onGenerateAI={() => { setTab('ai'); setTimeout(generateAISummary, 100); }} />}
       {tab === 'ai' && <DetailAIPane m={view} loading={aiLoading} onGoLive={() => setTab('live')} onGenerate={generateAISummary} onLogDecisions={logAllAIDecisions} onApplyActions={applyAIActions} />}
       {tab === 'decisions' && <DetailDecisionsPane m={view} decisions={myDecisions} onViewRegistry={() => navigate('/decisions')} />}
       {tab === 'minutes' && <DetailMinutesPane m={view} onUpdateMinutes={updateMinutes} onConvertToAction={addActionFromMinutes} onAttachFile={attachFile} onLinkDecision={linkDecision}

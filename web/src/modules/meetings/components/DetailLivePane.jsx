@@ -37,7 +37,7 @@ function LiveBtn({ primary, sx, children, ...rest }) {
  * neither. Who is speaking is said by the person minuting, and the language is chosen rather than
  * detected.
  */
-export default function DetailLivePane({ m, recording, live, sink, speaker, onSpeaker, lang, onLang, onToggleRecording, onDownload, onGenerateAI }) {
+export default function DetailLivePane({ m, recording, live, sink, speaker, onSpeaker, lang, onLang, onToggleRecording, onDownload, onClearTranscript, onGenerateAI }) {
   const isRecording = recording.active && recording.meetingId === m.id;
   const transcript = m.transcript || [];
   const timer = isRecording ? String(Math.floor(recording.elapsed / 60)).padStart(2, '0') + ':' + String(recording.elapsed % 60).padStart(2, '0') : '00:00';
@@ -123,6 +123,14 @@ export default function DetailLivePane({ m, recording, live, sink, speaker, onSp
             {isRecording ? '⏹ Stop' : '● Start Recording'}
           </LiveBtn>
           {transcript.length > 0 && <LiveBtn onClick={onDownload}>⬇ Download</LiveBtn>}
+          {/* Deliberately not beside Stop: clearing is next to Download, so the obvious move before
+              throwing the words away is to take a copy of them. */}
+          {transcript.length > 0 && !isRecording && (
+            <LiveBtn onClick={onClearTranscript} title="Delete every transcript line — the meeting itself is kept"
+              sx={{ bgcolor: 'rgba(0,0,0,0.18)', borderColor: 'rgba(255,255,255,0.35)', '&:hover': { bgcolor: tokens.red, borderColor: tokens.red } }}>
+              Clear transcript
+            </LiveBtn>
+          )}
         </Box>
       </Box>
 
