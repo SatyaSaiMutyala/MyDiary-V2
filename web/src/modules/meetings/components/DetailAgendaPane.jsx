@@ -20,13 +20,25 @@ export default function DetailAgendaPane({ m, onEdit, onAddParking, onRmParking,
 
       <Card num="A" title="Agenda" sub="What was planned to be discussed" right={m.status === 'upcoming' ? <Btn size="sm" sx={barBtnSx} onClick={onEdit}>✎ Edit Agenda</Btn> : null}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {m.agenda.map((a, i) => (
-            <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: '14px', p: '14px 16px', bgcolor: tokens.cream, border: `1px solid ${tokens.line}`, borderRadius: tokens.radiusSm }}>
-              <Box sx={{ width: 28, height: 28, borderRadius: '50%', bgcolor: tokens.greenDeep, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: fonts.mono, fontSize: 12, fontWeight: 700, flexShrink: 0 }}>{String(i + 1).padStart(2, '0')}</Box>
-              <Box sx={{ flex: 1, fontSize: 14, fontWeight: 500 }}>{a}</Box>
-              <AgendaTime>{m.agendaTimes[i] || '—'}</AgendaTime>
-            </Box>
-          ))}
+          {m.agenda.map((a, i) => {
+            const note = m.agendaNotes?.[i];
+            return (
+              <Box key={i} sx={{ p: '14px 16px', bgcolor: tokens.cream, border: `1px solid ${tokens.line}`, borderRadius: tokens.radiusSm }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                  <Box sx={{ width: 28, height: 28, borderRadius: '50%', bgcolor: tokens.greenDeep, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: fonts.mono, fontSize: 12, fontWeight: 700, flexShrink: 0 }}>{String(i + 1).padStart(2, '0')}</Box>
+                  <Box sx={{ flex: 1, fontSize: 14, fontWeight: 500 }}>{a}</Box>
+                  <AgendaTime>{m.agendaTimes[i] || '—'}</AgendaTime>
+                </Box>
+                {/* Only when there is one: an empty note line under every item would be noise in the room. */}
+                {note ? (
+                  <Box sx={{ display: 'flex', gap: '8px', mt: '8px', ml: '42px', fontSize: 12.5, color: tokens.slate, lineHeight: 1.5 }}>
+                    <Icon name="note" size={14} sx={{ color: tokens.slateSofter, mt: '2px' }} />
+                    <Box sx={{ flex: 1, whiteSpace: 'pre-wrap' }}>{note}</Box>
+                  </Box>
+                ) : null}
+              </Box>
+            );
+          })}
         </Box>
         {m.parkingLot !== undefined && <ParkingLot items={m.parkingLot} onAdd={onAddParking} onRemove={onRmParking} />}
       </Card>

@@ -19,14 +19,22 @@ function MinutesTextarea({ variant, sx, ...rest }) {
 }
 
 /** .minutes-block */
-function MinutesBlock({ num, numSx, title, time, children }) {
+function MinutesBlock({ num, numSx, title, time, note, children }) {
   return (
     <Box sx={{ bgcolor: tokens.card, border: `1px solid ${tokens.line}`, borderRadius: tokens.radius, p: { xs: '16px', md: '20px 22px' }, mb: '14px', boxShadow: tokens.shadowSm, transition: 'box-shadow 0.15s', position: 'relative', '&:hover': { boxShadow: tokens.shadow } }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px', mb: '14px' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px', mb: note ? '8px' : '14px' }}>
         <Box sx={{ width: 26, height: 26, borderRadius: '6px', bgcolor: tokens.teal, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: fonts.mono, fontSize: 11, fontWeight: 700, flexShrink: 0, ...numSx }}>{num}</Box>
         <Box sx={{ fontSize: 14, fontWeight: 700, flex: 1 }}>{title}</Box>
         {time !== undefined && <AgendaTime>{time}</AgendaTime>}
       </Box>
+      {/* The note written when the meeting was scheduled, shown to the minute-taker as context — not
+          a field here: minutes are what happened, the note is what was planned. */}
+      {note ? (
+        <Box sx={{ display: 'flex', gap: '8px', mb: '14px', ml: '38px', fontSize: 12.5, color: tokens.slate, lineHeight: 1.5 }}>
+          <Icon name="note" size={14} sx={{ color: tokens.slateSofter, mt: '2px' }} />
+          <Box sx={{ flex: 1, whiteSpace: 'pre-wrap' }}>{note}</Box>
+        </Box>
+      ) : null}
       {children}
     </Box>
   );
@@ -101,7 +109,7 @@ export default function DetailMinutesPane({ m, onUpdateMinutes, onConvertToActio
         const ag = 'ag' + i;
         const mins = (m.minutes && m.minutes[ag]) || { disc: '', dec: '' };
         return (
-          <MinutesBlock key={ag} num={String(i + 1).padStart(2, '0')} title={a} time={m.agendaTimes[i] || '—'}>
+          <MinutesBlock key={ag} num={String(i + 1).padStart(2, '0')} title={a} time={m.agendaTimes[i] || '—'} note={m.agendaNotes?.[i]}>
             <SectionLabel><Icon name="chat" />Discussion Notes</SectionLabel>
             <MinutesTextarea variant="discussion" placeholder="Key points raised, who said what, data cited, questions asked..." value={mins.disc || ''} onChange={(e) => onUpdateMinutes(ag, 'disc', e.target.value)} />
             <SectionLabel><Icon name="target" />Decisions & Outcomes</SectionLabel>

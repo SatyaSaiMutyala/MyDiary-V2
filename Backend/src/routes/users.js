@@ -18,4 +18,6 @@ usersRouter.post('/', validateBody(users.createSchema), users.create);
 usersRouter.get('/:id', users.get);
 usersRouter.patch('/:id', validateBody(users.patchSchema), users.update);
 usersRouter.delete('/:id', users.remove);
+// Fixed path before /:id/… so it is not read as a user id.
+usersRouter.post('/reset-passwords', validateBody(users.bulkResetPasswordSchema), users.bulkResetPassword);
 usersRouter.post('/:id/reset-password', validateBody(users.resetPasswordSchema), users.resetPassword);

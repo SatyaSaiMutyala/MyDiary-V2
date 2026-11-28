@@ -43,10 +43,16 @@ export const usersApi = baseApi.injectEndpoints({
       query: ({ id, password }) => ({ url: `/users/${id}/reset-password`, method: 'POST', body: { password } }),
       invalidatesTags: [AUDIT],
     }),
+    // One password onto many accounts, each of them then made to replace it.
+    bulkResetPasswords: b.mutation({
+      query: ({ userIds, password }) => ({ url: '/users/reset-passwords', method: 'POST', body: { userIds, password } }),
+      invalidatesTags: [LIST, AUDIT],
+    }),
   }),
 });
 
 export const {
   useListUsersQuery, useListPeopleQuery, useGetUserQuery, useUserModulesQuery,
   useCreateUserMutation, useUpdateUserMutation, useRemoveUserMutation, useResetPasswordMutation,
+  useBulkResetPasswordsMutation,
 } = usersApi;

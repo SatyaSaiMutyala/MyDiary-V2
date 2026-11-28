@@ -23,17 +23,31 @@ const SUB_BADGE = { internal: 'subType', customer: 'purpose', supplier: 'topic',
 const CLIENT_NAME = { customer: 'customer', supplier: 'supplier', consultants: 'consultant', other: 'host' };
 const SUB_BADGE_DEFAULT = { internal: 'Ops Review', customer: 'New Business Pitch', supplier: 'Price Negotiation', consultants: 'QMS / NABL', board: 'Board Meeting (Ordinary)' };
 
-/** One .agenda-item row (editable) */
+/**
+ * One .agenda-item row (editable): the line itself, its minutes, and a note under it.
+ *
+ * The note is the half-sentence the chair needs in the room and nowhere else — who presents, what to
+ * bring, the figure to have ready. It sits under the item it belongs to rather than in one block at
+ * the end, so it stays attached when items are added, deleted or reordered.
+ */
 function AgendaItem({ idx, item, onChange, onDelete, autoFocus }) {
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: '6px', sm: '10px' }, p: '10px 12px', bgcolor: tokens.cream, border: `1px solid ${tokens.line}`, borderRadius: tokens.radiusSm }}>
-      <Box component="span" sx={{ color: tokens.slateSofter, cursor: 'grab', p: '2px', fontSize: 14, userSelect: 'none' }}>⋮⋮</Box>
-      <Box sx={{ width: 24, height: 24, borderRadius: '50%', bgcolor: tokens.greenDeep, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: fonts.mono, fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{String(idx + 1).padStart(2, '0')}</Box>
-      <Box component="input" type="text" autoFocus={autoFocus} value={item.text} placeholder="Agenda item..." onChange={e => onChange({ ...item, text: e.target.value })}
-        sx={{ flex: 1, minWidth: 0, bgcolor: 'transparent', border: 'none', fontSize: 13, outline: 'none', p: '2px 4px', borderRadius: '3px', fontFamily: 'inherit', color: tokens.ink, '&:focus': { bgcolor: '#fff', boxShadow: `0 0 0 2px ${tokens.teal}` }, '&::placeholder': { color: tokens.slateSoft } }} />
-      <DurationInput size="sm" value={item.time} onChange={e => onChange({ ...item, time: e.target.value })}
-        sx={{ width: 64, flexShrink: 0 }} inputSx={{ bgcolor: '#fff' }} />
-      <DelBtn onClick={onDelete} />
+    <Box sx={{ p: '10px 12px', bgcolor: tokens.cream, border: `1px solid ${tokens.line}`, borderRadius: tokens.radiusSm }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: '6px', sm: '10px' } }}>
+        <Box component="span" sx={{ color: tokens.slateSofter, cursor: 'grab', p: '2px', fontSize: 14, userSelect: 'none' }}>⋮⋮</Box>
+        <Box sx={{ width: 24, height: 24, borderRadius: '50%', bgcolor: tokens.greenDeep, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: fonts.mono, fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{String(idx + 1).padStart(2, '0')}</Box>
+        <Box component="input" type="text" autoFocus={autoFocus} value={item.text} placeholder="Agenda item..." onChange={e => onChange({ ...item, text: e.target.value })}
+          sx={{ flex: 1, minWidth: 0, bgcolor: 'transparent', border: 'none', fontSize: 13, outline: 'none', p: '2px 4px', borderRadius: '3px', fontFamily: 'inherit', color: tokens.ink, '&:focus': { bgcolor: '#fff', boxShadow: `0 0 0 2px ${tokens.teal}` }, '&::placeholder': { color: tokens.slateSoft } }} />
+        <DurationInput size="sm" value={item.time} onChange={e => onChange({ ...item, time: e.target.value })}
+          sx={{ width: 64, flexShrink: 0 }} inputSx={{ bgcolor: '#fff' }} />
+        <DelBtn onClick={onDelete} />
+      </Box>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px', mt: '6px', ml: { xs: '28px', sm: '44px' }, mr: { xs: 0, sm: '96px' } }}>
+        <Icon name="note" size={14} sx={{ color: tokens.slateSofter }} />
+        <Box component="input" type="text" value={item.note ?? ''} placeholder="Note (optional) — who presents, what to bring, numbers to have ready"
+          onChange={e => onChange({ ...item, note: e.target.value })}
+          sx={{ flex: 1, minWidth: 0, bgcolor: 'transparent', border: 'none', borderBottom: `1px dashed ${tokens.line}`, fontSize: 12, outline: 'none', p: '2px 4px', fontFamily: 'inherit', color: tokens.slate, '&:focus': { bgcolor: '#fff', borderBottomColor: tokens.teal, color: tokens.ink }, '&::placeholder': { color: tokens.slateSofter } }} />
+      </Box>
     </Box>
   );
 }
@@ -83,10 +97,10 @@ export default function ScheduleMeetingPage() {
   const setTg = (k, v) => setTgState(s => ({ ...s, [k]: v }));
 
   // Card 3 — agenda
-  const [agenda, setAgenda] = useState([{ text: 'Opening & context setting', time: '5m' }, { text: '', time: '15m' }, { text: '', time: '10m' }]);
+  const [agenda, setAgenda] = useState([{ text: 'Opening & context setting', time: '5m', note: '' }, { text: '', time: '15m', note: '' }, { text: '', time: '10m', note: '' }]);
   const [focusIdx, setFocusIdx] = useState(-1);
   const [outcome, setOutcome] = useState('');
-  const addAgenda = () => { setAgenda(a => [...a, { text: '', time: '10m' }]); setFocusIdx(agenda.length); };
+  const addAgenda = () => { setAgenda(a => [...a, { text: '', time: '10m', note: '' }]); setFocusIdx(agenda.length); };
   const delAgenda = (i) => { setAgenda(a => a.filter((_, j) => j !== i)); setFocusIdx(-1); };
 
   // Card 4 — attendees
@@ -150,7 +164,9 @@ export default function ScheduleMeetingPage() {
     setInternals(existing.attendees ?? []);
     setExternals((existing.external ?? []).map((e) => ({ name: e.name, email: e.email || '' })));
     const items = existing.agenda ?? [];
-    setAgenda(items.length ? items.map((t, i) => ({ text: t, time: existing.agendaTimes?.[i] || '10m' })) : [{ text: '', time: '10m' }]);
+    setAgenda(items.length
+      ? items.map((t, i) => ({ text: t, time: existing.agendaTimes?.[i] || '10m', note: existing.agendaNotes?.[i] ?? '' }))
+      : [{ text: '', time: '10m', note: '' }]);
     setTsState({
       ...(SUB_BADGE[existing.type] && existing.subBadge ? { [SUB_BADGE[existing.type]]: existing.subBadge } : {}),
       ...(CLIENT_NAME[existing.type] && existing.clientName ? { [CLIENT_NAME[existing.type]]: existing.clientName } : {}),
@@ -171,7 +187,7 @@ export default function ScheduleMeetingPage() {
     templateFilled.current = template.id;
     setSelected(template.type);
     setType(template.type);
-    if (template.agenda?.length) setAgenda(template.agenda.map(a => ({ text: a.text, time: a.time || '10m' })));
+    if (template.agenda?.length) setAgenda(template.agenda.map(a => ({ text: a.text, time: a.time || '10m', note: a.note ?? '' })));
   }, [template]);
 
   const attendeeTotal = internals.length + externals.length;
@@ -185,6 +201,8 @@ export default function ScheduleMeetingPage() {
     if (!type) { await dlg.alert('Please choose a meeting type first.'); return; }
     const agendaItems = agenda.map(a => a.text || '').filter(Boolean);
     const agendaTimes = agenda.filter(a => a.text).map(a => a.time || '10m');
+    // Notes travel in the same order as the items they belong to; a dropped (blank) item drops its note.
+    const agendaNotes = agenda.filter(a => a.text).map(a => (a.note || '').trim());
     const subBadge = (ts[SUB_BADGE[type]] ?? SUB_BADGE_DEFAULT[type] ?? '').replace('— Select —', '').trim();
     const clientName = (ts[CLIENT_NAME[type]] || '').trim();
     const body = {
@@ -199,7 +217,7 @@ export default function ScheduleMeetingPage() {
       ...(loc.trim() ? { loc: loc.trim() } : {}),
       ...(internals.length ? { attendees: internals } : {}),
       ...(externals.length ? { external: externals.map(e => ({ name: e.name, email: e.email || '' })) } : {}),
-      ...(agendaItems.length ? { agenda: agendaItems, agendaTimes } : {}),
+      ...(agendaItems.length ? { agenda: agendaItems, agendaTimes, agendaNotes } : {}),
       ...(subBadge ? { subBadge } : {}),
       ...(clientName ? { clientName } : {}),
     };
@@ -215,6 +233,7 @@ export default function ScheduleMeetingPage() {
           external: externals.map((e) => ({ name: e.name, email: e.email || '' })),
           agenda: agendaItems,
           agendaTimes,
+          agendaNotes,
         }).unwrap();
         await dlg.alert('✓ Meeting updated.');
         navigate(`/meetings/${m.id}`);

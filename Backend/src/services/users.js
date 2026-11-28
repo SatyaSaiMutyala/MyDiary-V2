@@ -71,6 +71,29 @@ export async function createUser(input) {
  * @param {Partial<{ name: string, email: string, title: string, department: string, role: string, status: string,
  *   modules: string[] }>} patch
  */
+/** The accounts behind a list of ids, skipping any that are gone. @param {string[]} ids */
+export async function findUsersByIds(ids) {
+  return User.find({ _id: { $in: ids } });
+}
+
+/**
+ * Puts one password onto many accounts, and makes every one of them replace it.
+ *
+ * The hash is computed once by the caller and reused: hashing is deliberately slow, and doing it
+ * per person would turn a 200-account reset into a minute of held connection for no benefit —
+ * the password is the same for all of them by definition.
+ *
+ * @param {any[]} users @param {string} hash
+ * @returns the names changed, in the order they were stored
+ */
+export async function setPasswordForAll(users, hash) {
+  await User.updateMany(
+    { _id: { $in: users.map((u) => u._id) } },
+    { $set: { passwordHash: hash, mustChangePassword: true } },
+  );
+  return users.map((u) => u.name);
+}
+
 export async function updateUser(user, patch) {
   const before = { name: user.name, email: user.email, title: user.title, department: user.department, position: user.position, labUnit: user.labUnit, role: user.role, status: user.status, modules: [...user.modules], mustChangePassword: user.mustChangePassword === true };
   if (patch.name !== undefined) user.name = patch.name;

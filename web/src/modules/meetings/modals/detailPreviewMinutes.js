@@ -8,6 +8,9 @@ import { TDPL_LOGO_FULL, TDPL_LOGO_ICON } from '../../../data/logos';
 import { parseDate, formatDateLong, formatTime, isOverdue } from '../../../utils/dates';
 import { normExt } from '../../../utils/people';
 
+/** Free text typed by a person going into a printed page: the five characters that would break it. */
+const escHtml = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
 const LOGO_FULL_IMG = `<img src="${TDPL_LOGO_FULL}" alt="TrustLab Diagnostics" style="max-height:48px;width:auto;display:block">`;
 const LOGO_ICON_IMG = `<img src="${TDPL_LOGO_ICON}" alt="TrustLab Diagnostics" style="max-width:100%;max-height:100%;object-fit:contain;display:block">`;
 
@@ -58,6 +61,7 @@ export function previewMinutes(m, allDecisions, dlg) {
             <div class="ag-title">${a}</div>
             <div class="ag-time">${m.agendaTimes[i] || ''}</div>
           </div>
+          ${m.agendaNotes && m.agendaNotes[i] ? '<div style="font-size:9pt;color:#5C6B64;margin:2px 0 8px 34px;line-height:1.45">' + escHtml(m.agendaNotes[i]).replace(/\n/g, '<br>') + '</div>' : ''}
           ${mins && mins.disc ? '<div class="disc"><span class="disc-label">Discussion</span>' + mins.disc.replace(/\n/g, '<br>') + '</div>' : ''}
           ${mins && mins.dec ? '<div class="dec"><span class="dec-label">Decision / Outcome</span>' + mins.dec.replace(/\n/g, '<br>') + '</div>' : ''}
           ${!mins || (!mins.disc && !mins.dec) ? '<div style="font-size:9pt;color:#9A9A9A;font-style:italic;padding:6px 0">— No notes recorded for this item —</div>' : ''}

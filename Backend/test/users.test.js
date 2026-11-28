@@ -99,9 +99,13 @@ describe('GET /api/users', () => {
     const act = await request(ctx.app).get('/api/users?status=inactive').set(auth(adminToken));
     expect(act.body.total).toBe(0);
 
+    // Users allow a longer page than the other lists (500): the bulk password screen ticks every
+    // member of staff off one list, so 200 would hide people from it.
+    const long = await request(ctx.app).get('/api/users?limit=500').set(auth(adminToken));
+    expect(long.status).toBe(200);
     const bad = await request(ctx.app).get('/api/users?limit=999').set(auth(adminToken));
     expect(bad.status).toBe(400);
-    expect(bad.body.error.message).toBe('limit must be a whole number from 1 to 200.');
+    expect(bad.body.error.message).toBe('limit must be a whole number from 1 to 500.');
     const badRole = await request(ctx.app).get('/api/users?role=king').set(auth(adminToken));
     expect(badRole.status).toBe(400);
   });
@@ -194,3 +198,76 @@ describe('GET /api/users/directory', () => {
   });
 });
 
+
+describe('resetting many passwords at once', () => {
+  /** Three colleagues, so a reset can leave one of them out. Fresh every time: this suite does not
+   *  clear its users between tests, and an email already taken is a 409. */
+  let seq = 0;
+  const trio = async () => {
+    const run = ++seq;
+    const mk = async (n) => {
+      const r = await request(ctx.app).post('/api/users').set(auth(adminToken))
+        .send({ name: `Bulk ${n} ${run}`, email: `bulk.${n}.${run}@trustlab.co.in`, role: 'employee', password: 'password123' });
+      expect(r.status).toBe(201);
+      return r.body.user;
+    };
+    return [await mk('one'), await mk('two'), await mk('three')];
+  };
+
+  it('sets one password on the chosen accounts and leaves the rest alone', async () => {
+    const [a, b, c] = await trio();
+    // Two are picked; the third is unticked and must keep the password it had.
+    const r = await request(ctx.app).post('/api/users/reset-passwords').set(auth(adminToken))
+      .send({ userIds: [a.id, b.id], password: 'sharedtemp1' });
+    expect(r.status).toBe(200);
+    expect(r.body).toMatchObject({ ok: true, count: 2, missing: 0 });
+    expect(r.body.names.sort()).toEqual([a.name, b.name].sort());
+
+    // The two picked sign in with the new one, and are made to replace it.
+    for (const u of [a, b]) {
+      const s = await login(ctx.app, u.email, 'sharedtemp1');
+      expect(s.user.mustChangePassword).toBe(true);
+      expect((await request(ctx.app).post('/api/auth/login').send({ email: u.email, password: 'password123' })).status).toBe(401);
+    }
+    // The unticked one is untouched, and is not forced.
+    const left = await login(ctx.app, c.email, 'password123');
+    expect(left.user.mustChangePassword).toBe(true); // still true from creation, not from this reset
+    expect((await request(ctx.app).post('/api/auth/login').send({ email: c.email, password: 'sharedtemp1' })).status).toBe(401);
+  });
+
+  it('each of them can clear the gate on their own', async () => {
+    const [a, b] = await trio();
+    await request(ctx.app).post('/api/users/reset-passwords').set(auth(adminToken))
+      .send({ userIds: [a.id, b.id], password: 'sharedtemp1' }).expect(200);
+    const one = await login(ctx.app, a.email, 'sharedtemp1');
+    await request(ctx.app).post('/api/auth/change-password').set(auth(one.token)).send({ next: 'myveryownpass1' }).expect(200);
+    expect((await request(ctx.app).get('/api/auth/me').set(auth(one.token))).body.user.mustChangePassword).toBe(false);
+    // …and the colleague is still behind it.
+    expect((await login(ctx.app, b.email, 'sharedtemp1')).user.mustChangePassword).toBe(true);
+  });
+
+  it('refuses an empty list, a weak password and junk ids', async () => {
+    const [a] = await trio();
+    const empty = await request(ctx.app).post('/api/users/reset-passwords').set(auth(adminToken)).send({ userIds: [], password: 'sharedtemp1' });
+    expect(empty.status).toBe(400);
+    expect(empty.body.error.message).toBe('Pick at least one person.');
+    expect((await request(ctx.app).post('/api/users/reset-passwords').set(auth(adminToken)).send({ userIds: [a.id], password: 'short' })).status).toBe(400);
+    expect((await request(ctx.app).post('/api/users/reset-passwords').set(auth(adminToken)).send({ userIds: ['not-an-id'], password: 'sharedtemp1' })).status).toBe(400);
+    expect((await request(ctx.app).post('/api/users/reset-passwords').set(auth(adminToken)).send({ userIds: [a.id], password: 'sharedtemp1', extra: 1 })).status).toBe(400);
+  });
+
+  it('says how many ids no longer exist rather than failing the whole run', async () => {
+    const [a] = await trio();
+    const r = await request(ctx.app).post('/api/users/reset-passwords').set(auth(adminToken))
+      .send({ userIds: [a.id, '6b02dd827da25d9a175e14e8'], password: 'sharedtemp1' });
+    expect(r.status).toBe(200);
+    expect(r.body).toMatchObject({ count: 1, missing: 1 });
+  });
+
+  it('is admins only', async () => {
+    const [a] = await trio();
+    const staff = await createAndLogin(ctx.app, adminToken, { name: 'Not Admin Bulk', email: `notadmin.bulk.${seq}@trustlab.co.in`, role: 'employee' });
+    const r = await request(ctx.app).post('/api/users/reset-passwords').set(auth(staff.token)).send({ userIds: [a.id], password: 'sharedtemp1' });
+    expect(r.status).toBe(403);
+  });
+});

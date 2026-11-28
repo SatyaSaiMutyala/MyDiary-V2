@@ -53,6 +53,8 @@ function AgendaBlock({ m }) {
     <FormCard title={`Agenda · ${m.agenda.length}`} style={styles.card}>
       {m.agenda.map((item, i) => {
         const note = m.minutes?.[`ag${i}`];
+        // What was written when the meeting was planned, as against `note`, which is what happened.
+        const plan = m.agendaNotes?.[i];
         return (
           <View key={`${item}-${i}`} style={styles.agendaItem}>
             <View style={styles.agendaHead}>
@@ -68,6 +70,15 @@ function AgendaBlock({ m }) {
                 <Pill label={m.agendaTimes[i]} tone="low" />
               ) : null}
             </View>
+            {plan ? (
+              <AppText
+                variant="meta"
+                color={colors.inkMuted}
+                style={styles.plan}
+              >
+                {plan}
+              </AppText>
+            ) : null}
             {note?.disc ? (
               <AppText
                 variant="bodyRegular"
@@ -387,6 +398,7 @@ const styles = StyleSheet.create({
   },
   agendaTitle: { flex: 1 },
   note: { marginTop: vs(6), marginLeft: s(34) },
+  plan: { marginTop: vs(4), marginLeft: s(34), fontStyle: 'italic' },
   divider: { marginTop: vs(10) },
   actionRow: {
     flexDirection: 'row',

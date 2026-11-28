@@ -8,6 +8,7 @@ import { useAppStore } from '../../../store/AppStore';
 import { tokens, fonts } from '../../../theme/tokens';
 import { MODULES, ROLES, ROLE_LABEL } from '../../../data/users';
 import { useDebounced } from '../../../utils/useDebounced';
+import BulkResetDialog from './BulkResetDialog';
 import { useGetUserQuery, useListUsersQuery, useRemoveUserMutation, useResetPasswordMutation, useUpdateUserMutation, useUserModulesQuery } from '../../../store/api/usersApi';
 import { useListDepartmentsQuery } from '../../../store/api/departmentsApi';
 import UserDialog from './UserDialog';
@@ -69,6 +70,13 @@ export default function UsersTab() {
   const [update, { isLoading: updating }] = useUpdateUserMutation();
   const [remove, { isLoading: removing }] = useRemoveUserMutation();
   const [resetPassword, { isLoading: resetting }] = useResetPasswordMutation();
+  const [bulkOpen, setBulkOpen] = useState(false);
+  // The bulk dialog ticks people off a list, so it needs everybody — not the page being viewed.
+  // Only fetched once it is opened.
+  const { data: everyone } = useListUsersQuery(
+    { limit: 500, sort: 'name', fields: 'name,email,department,title,status' },
+    { skip: !bulkOpen },
+  );
   const busy = updating || removing || resetting;
 
   const toggleStatus = async (u) => {
@@ -107,7 +115,8 @@ export default function UsersTab() {
         <FilterSelect value={status} onChange={e => setStatus(e.target.value)}><option value="">All statuses</option><option value="active">Active</option><option value="inactive">Inactive</option></FilterSelect>
         <FilterSelect value={dept} onChange={e => setDept(e.target.value)}><option value="">All departments</option>{depts.map(d => <option key={d} value={d}>{d}</option>)}</FilterSelect>
         {hasFilters && <Btn size="sm" variant="ghost" onClick={() => { setQ(''); setRole(''); setStatus(''); setDept(''); }}>Clear filters</Btn>}
-        <Btn variant="primary" onClick={() => setEditing('new')} sx={{ ml: { sm: 'auto' } }}>+ Add user</Btn>
+        <Btn onClick={() => setBulkOpen(true)} sx={{ ml: { sm: 'auto' } }} title="Give many people a new password at once"><Icon name="key" />Reset passwords</Btn>
+        <Btn variant="primary" onClick={() => setEditing('new')}>+ Add user</Btn>
       </Box>
 
       <ApiError error={error} onRetry={refetch} sx={{ mb: 1.5 }} />
@@ -182,6 +191,16 @@ export default function UsersTab() {
       )}
       <Typography sx={{ fontSize: 12, color: tokens.faint, mt: 1.5 }}>Permissions apply immediately: a user without a module does not see it in the menu and cannot open its pages. Use the “View as” switch in the top bar to check what someone sees.</Typography>
 
+      {bulkOpen && everyone && (
+        <BulkResetDialog
+          open
+          users={everyone?.items ?? []}
+          total={everyone?.total ?? 0}
+          me={me?.id}
+          onClose={() => setBulkOpen(false)}
+          onDone={(r) => show(`${r.count} password${r.count === 1 ? '' : 's'} reset. Hand the new one over — each of them has to set their own before they can use MyDiary.`)}
+        />
+      )}
       {editing && <UserDialog user={editing === 'new' ? null : editing} departments={depts} deptRecords={deptRecords} onClose={() => setEditing(null)} onSaved={(msg) => show(msg)} />}
       {toast}
     </>

@@ -6,6 +6,7 @@ import {
   ClipboardList,
   MapPin,
   Monitor,
+  NotebookPen,
   Plus,
   Shuffle,
   X,
@@ -36,40 +37,59 @@ import { colors, fieldGap, hairline, radius, s, vs } from '../theme';
 const typeOptions = meetingTypes.map(t => ({ id: t.id, label: t.label }));
 const durationOptions = durations.map(d => ({ id: d.id, label: d.label }));
 
-/** One agenda line being edited: number, text, duration, remove. */
+/**
+ * One agenda line being edited: number, text, duration, remove — and a note under it.
+ *
+ * The note is the half-sentence the chair wants in the room: who presents, what to bring, the figure
+ * to have ready. It is kept with the item rather than in one block at the end, so it stays attached
+ * when lines are added or removed, and it is the same field the website writes.
+ */
 function AgendaRow({ index, item, onChange, onRemove }) {
   return (
-    <View style={styles.agendaRow}>
-      <View style={styles.number}>
-        <AppText variant="metaStrong" color={colors.white}>
-          {String(index + 1).padStart(2, '0')}
-        </AppText>
+    <View style={styles.agendaItem}>
+      <View style={styles.agendaRow}>
+        <View style={styles.number}>
+          <AppText variant="metaStrong" color={colors.white}>
+            {String(index + 1).padStart(2, '0')}
+          </AppText>
+        </View>
+        <View style={styles.agendaField}>
+          <TextField
+            value={item.text}
+            onChangeText={text => onChange({ ...item, text })}
+            placeholder="Agenda item…"
+          />
+        </View>
+        <View style={styles.agendaTime}>
+          <TextField
+            value={item.time}
+            onChangeText={time => onChange({ ...item, time })}
+            placeholder="10m"
+            textAlign="center"
+            maxLength={6}
+          />
+        </View>
+        <Pressable
+          onPress={onRemove}
+          hitSlop={s(8)}
+          accessibilityRole="button"
+          accessibilityLabel={`Remove agenda item ${index + 1}`}
+          style={styles.remove}
+        >
+          <X size={s(16)} color={colors.inkMuted} strokeWidth={2} />
+        </Pressable>
       </View>
-      <View style={styles.agendaField}>
-        <TextField
-          value={item.text}
-          onChangeText={text => onChange({ ...item, text })}
-          placeholder="Agenda item…"
-        />
+      <View style={styles.noteRow}>
+        <NotebookPen size={s(14)} color={colors.inkMuted} strokeWidth={2} />
+        <View style={styles.noteField}>
+          <TextField
+            value={item.note ?? ''}
+            onChangeText={note => onChange({ ...item, note })}
+            placeholder="Note (optional)"
+            accessibilityLabel={`Note for agenda item ${index + 1}`}
+          />
+        </View>
       </View>
-      <View style={styles.agendaTime}>
-        <TextField
-          value={item.time}
-          onChangeText={time => onChange({ ...item, time })}
-          placeholder="10m"
-          textAlign="center"
-          maxLength={6}
-        />
-      </View>
-      <Pressable
-        onPress={onRemove}
-        hitSlop={s(8)}
-        accessibilityRole="button"
-        accessibilityLabel={`Remove agenda item ${index + 1}`}
-        style={styles.remove}
-      >
-        <X size={s(16)} color={colors.inkMuted} strokeWidth={2} />
-      </Pressable>
     </View>
   );
 }
@@ -107,7 +127,7 @@ export function MeetingFormScreen() {
   const [chair, setChair] = useState(me?.name ?? '');
   const [attendees, setAttendees] = useState([]);
   const [person, setPerson] = useState('');
-  const [agenda, setAgenda] = useState([{ text: '', time: '10m' }]);
+  const [agenda, setAgenda] = useState([{ text: '', time: '10m', note: '' }]);
   const [problem, setProblem] = useState('');
 
   // Editing: fill every field once, when the meeting arrives.
@@ -131,8 +151,9 @@ export function MeetingFormScreen() {
         ? editing.agenda.map((text, i) => ({
             text,
             time: editing.agendaTimes?.[i] ?? '10m',
+            note: editing.agendaNotes?.[i] ?? '',
           }))
-        : [{ text: '', time: '10m' }],
+        : [{ text: '', time: '10m', note: '' }],
     );
   }, [editing]);
 
@@ -153,7 +174,11 @@ export function MeetingFormScreen() {
     }
     if (chosen.agenda?.length) {
       setAgenda(
-        chosen.agenda.map(a => ({ text: a.text, time: a.time || '10m' })),
+        chosen.agenda.map(a => ({
+          text: a.text,
+          time: a.time || '10m',
+          note: a.note ?? '',
+        })),
       );
     }
   }, [templateId, templates]);
@@ -209,6 +234,7 @@ export function MeetingFormScreen() {
         ? {
             agenda: items.map(a => a.text.trim()),
             agendaTimes: items.map(a => (a.time || '10m').trim()),
+            agendaNotes: items.map(a => (a.note || '').trim()),
           }
         : null),
     };
@@ -377,7 +403,9 @@ export function MeetingFormScreen() {
           size="sm"
           variant="outline"
           iconLeft={Plus}
-          onPress={() => setAgenda(list => [...list, { text: '', time: '10m' }])}
+          onPress={() =>
+            setAgenda(list => [...list, { text: '', time: '10m', note: '' }])
+          }
           style={styles.addAgenda}
         />
       </FormCard>
@@ -421,8 +449,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: fieldGap,
   },
+  agendaItem: { marginBottom: vs(4) },
   agendaField: { flex: 1 },
   agendaTime: { width: s(54) },
+  noteRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: s(6),
+    marginLeft: s(32),
+    marginTop: -vs(4),
+  },
+  noteField: { flex: 1 },
   remove: { marginBottom: fieldGap },
   addAgenda: { alignSelf: 'flex-start', marginBottom: vs(12) },
 });

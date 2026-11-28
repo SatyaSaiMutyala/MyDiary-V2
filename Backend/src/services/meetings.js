@@ -41,6 +41,13 @@ export function peopleDefaults(attendees, existing = {}) {
 export const alignAgendaTimes = (agenda, times) => agenda.map((_, i) => times?.[i] || '10m');
 
 /**
+ * The same for the per-item notes, which default to empty: a note is optional, and an agenda item
+ * added without one must not borrow the note of whatever used to sit at that position.
+ * @param {string[]} agenda @param {string[] | undefined} notes
+ */
+export const alignAgendaNotes = (agenda, notes) => agenda.map((_, i) => notes?.[i] ?? '');
+
+/**
  * Normalises an incoming external list; entries whose name is already on the meeting keep their RSVP unless the
  * request sets one.
  * @param {any[]} incoming @param {any[]} [existing]
@@ -81,6 +88,7 @@ export async function createMeeting(input, me) {
     external: mergeExternal(input.external ?? []),
     agenda,
     agendaTimes: alignAgendaTimes(agenda, input.agendaTimes),
+    agendaNotes: alignAgendaNotes(agenda, input.agendaNotes),
     subBadge: input.subBadge ?? '',
     cancelReason: input.status === 'cancelled' ? (input.cancelReason ?? '') : '',
     parkingLot: input.parkingLot ?? [],
@@ -96,7 +104,7 @@ export async function createMeeting(input, me) {
   });
 }
 
-export const MEETING_CHANGE_FIELDS = ['title', 'type', 'date', 'time', 'dur', 'chair', 'loc', 'mode', 'attendees', 'external', 'agenda', 'agendaTimes', 'subBadge', 'clientCode', 'clientName'];
+export const MEETING_CHANGE_FIELDS = ['title', 'type', 'date', 'time', 'dur', 'chair', 'loc', 'mode', 'attendees', 'external', 'agenda', 'agendaTimes', 'agendaNotes', 'subBadge', 'clientCode', 'clientName'];
 /** @param {any} m */
 export const meetingSnapshot = (m) => ({
   title: m.title,
@@ -111,6 +119,7 @@ export const meetingSnapshot = (m) => ({
   external: m.external.map((e) => e.name),
   agenda: [...m.agenda],
   agendaTimes: [...m.agendaTimes],
+  agendaNotes: [...(m.agendaNotes ?? [])],
   subBadge: m.subBadge,
   clientCode: m.clientCode,
   clientName: m.clientName,
@@ -139,9 +148,10 @@ export async function patchMeeting(m, patch) {
   }
   if (patch.preRead !== undefined) m.preRead = patch.preRead;
   if (patch.external !== undefined) m.external = mergeExternal(patch.external, m.external);
-  if (patch.agenda !== undefined || patch.agendaTimes !== undefined) {
+  if (patch.agenda !== undefined || patch.agendaTimes !== undefined || patch.agendaNotes !== undefined) {
     const agenda = patch.agenda ?? m.agenda;
     m.agendaTimes = alignAgendaTimes(agenda, patch.agendaTimes ?? m.agendaTimes);
+    m.agendaNotes = alignAgendaNotes(agenda, patch.agendaNotes ?? m.agendaNotes);
     m.agenda = agenda;
   }
   await m.save();

@@ -93,6 +93,7 @@ export async function acceptRequest(r, me, note = '') {
     external: [],
     agenda: [],
     agendaTimes: [],
+    agendaNotes: [],
     minutes: {},
     parkingLot: [],
     ...peopleDefaults(attendees),

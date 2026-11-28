@@ -54,6 +54,8 @@ const meetingSchema = new Schema(
     external: { type: [externalSchema], default: [] },
     agenda: { type: [String], default: [] },
     agendaTimes: { type: [String], default: [] },
+    /** One short note per agenda item — context for the chair, kept beside the line it belongs to. */
+    agendaNotes: { type: [String], default: [] },
     /** { ag0: { disc, dec }, …, general: { disc } } */
     minutes: { type: Schema.Types.Mixed, default: () => ({}) },
     subBadge: { type: String, default: '' },
@@ -121,6 +123,7 @@ export function serializeMeeting(m, actions = []) {
     external: (m.external ?? []).map(serializeExternal),
     agenda: [...(m.agenda ?? [])],
     agendaTimes: [...(m.agendaTimes ?? [])],
+    agendaNotes: [...(m.agendaNotes ?? [])],
     minutes: m.minutes ?? {},
     subBadge: m.subBadge ?? '',
     cancelReason: m.cancelReason ?? '',

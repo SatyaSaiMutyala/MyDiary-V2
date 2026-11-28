@@ -96,6 +96,7 @@ export const attendeeCount = m =>
  * @property {{ name: string, email?: string, rsvp?: string }[]} external
  * @property {string[]} agenda
  * @property {string[]} agendaTimes
+ * @property {string[]} agendaNotes
  * @property {Record<string, { disc?: string, dec?: string }>} minutes
  * @property {Record<string, 'tbd'|'present'|'late'|'absent'>} presence
  * @property {string[]} parkingLot

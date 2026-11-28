@@ -50,6 +50,7 @@ const meetingShape = {
   external: z.array(externalSchema, { error: 'external must be a list of { name, email }.' }).max(50).optional(),
   agenda: strList('Agenda item', 100, 500).optional(),
   agendaTimes: strList('Agenda time', 100, 20).optional(),
+  agendaNotes: strList('Agenda note', 100, 500).optional(),
   subBadge: text('Sub-badge', 60).optional(),
   clientCode: text('Client code', 40).optional(),
   clientName: text('Client name', 200).optional(),
@@ -142,7 +143,7 @@ export const MEETINGS_LIST = {
   sortFields: ['date', 'time', 'title', 'status', 'type', 'chair', 'createdAt', 'updatedAt'],
   defaultSort: 'date,time',
   fields: [
-    'type', 'title', 'date', 'time', 'dur', 'status', 'chair', 'loc', 'mode', 'attendees', 'external', 'agenda', 'agendaTimes', 'minutes', 'subBadge', 'cancelReason',
+    'type', 'title', 'date', 'time', 'dur', 'status', 'chair', 'loc', 'mode', 'attendees', 'external', 'agenda', 'agendaTimes', 'agendaNotes', 'minutes', 'subBadge', 'cancelReason',
     'presence', 'parkingLot', 'preRead', 'contributions', 'carriedOver', 'polls', 'contextCard', 'transcript', 'aiSummary', 'minutesFinalised', 'minutesCirculatedAt',
     'clientCode', 'clientName', 'fromRequest', 'createdBy', 'createdAt', 'updatedAt', 'actions', 'openActions', 'totalActions',
   ],

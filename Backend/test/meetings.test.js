@@ -35,10 +35,43 @@ describe('create & read', () => {
     const m = r.body.meeting;
     expect(m).toMatchObject({ status: 'upcoming', dur: '1h', mode: '📍 In-person', loc: 'TBD', minutesFinalised: false });
     expect(m.agendaTimes).toEqual(['10m', '10m']);
+    // No note was sent, so each item gets its own empty one rather than none at all.
+    expect(m.agendaNotes).toEqual(['', '']);
     expect(m.presence).toEqual({ 'Venkata Cherukuri': 'tbd', 'N. Sharma (CFO)': 'tbd' });
     expect(m.preRead).toEqual([{ name: 'Venkata Cherukuri', opened: false }, { name: 'N. Sharma (CFO)', opened: false }]);
     expect(m.actions).toEqual([]);
     expect(m.id).toMatch(/^[0-9a-f]{24}$/);
+  });
+
+  it('keeps a note beside the agenda item it was written for', async () => {
+    const r = await post('/api/meetings', {
+      ...base,
+      agenda: ['Opening', 'TAT dip', 'Decisions'],
+      agendaTimes: ['5m', '20m', '10m'],
+      agendaNotes: ['', 'CFO to bring the W45–W46 branch table', ''],
+    });
+    expect(r.status).toBe(201);
+    const id = r.body.meeting.id;
+    expect(r.body.meeting.agendaNotes).toEqual(['', 'CFO to bring the W45–W46 branch table', '']);
+
+    // Editing the agenda re-aligns the notes the same way it re-aligns the times: an item added at
+    // the end starts with no note instead of inheriting one, and a dropped item takes its note away.
+    const edit = await patch(`/api/meetings/${id}`, {
+      agenda: ['Opening', 'TAT dip', 'Decisions', 'AoB'],
+      agendaTimes: ['5m', '20m', '10m', '5m'],
+      agendaNotes: ['', 'CFO to bring the W45–W46 branch table', 'Park anything that needs the board', ''],
+    });
+    expect(edit.status).toBe(200);
+    expect(edit.body.meeting.agendaNotes).toEqual(['', 'CFO to bring the W45–W46 branch table', 'Park anything that needs the board', '']);
+
+    // A client that knows nothing about notes (an older app) shortens the agenda and sends no notes:
+    // what is left keeps its own note, and nothing is carried past the end of the list.
+    const older = await patch(`/api/meetings/${id}`, { agenda: ['Opening', 'TAT dip'], agendaTimes: ['5m', '20m'] });
+    expect(older.status).toBe(200);
+    expect(older.body.meeting.agendaNotes).toEqual(['', 'CFO to bring the W45–W46 branch table']);
+
+    const read = await get(`/api/meetings/${id}`);
+    expect(read.body.meeting.agendaNotes).toEqual(['', 'CFO to bring the W45–W46 branch table']);
   });
 
   it('rejects bad input with a readable message', async () => {

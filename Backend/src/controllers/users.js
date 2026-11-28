@@ -5,6 +5,7 @@ import { describeChanges } from '../services/audit.js';
 import { MODULES, ROLES, defaultModules } from '../services/modules.js';
 import * as usersService from '../services/users.js';
 import { badRequest } from '../utils/errors.js';
+import { short } from '../services/people.js';
 import { buildListQuery } from '../utils/listQuery.js';
 import { runList } from '../utils/paginate.js';
 import { nameField, passwordField, titleField } from './auth.js';
@@ -51,8 +52,31 @@ export const patchSchema = z
 
 export const resetPasswordSchema = z.object({ password: passwordField }).strict();
 
+/**
+ * POST /api/users/reset-passwords — one password onto many accounts at once.
+ *
+ * Every account named here is put behind the "set your password" gate, because by the time one
+ * password has been handed to a roomful of people it is a way in, not a secret. The ids are listed
+ * explicitly rather than "everybody except these": the admin sees exactly who is in the list before
+ * pressing the button, and a person added to the company between loading the screen and pressing it
+ * is not swept in by accident.
+ */
+export const bulkResetPasswordSchema = z
+  .object({
+    userIds: z
+      .array(z.string({ error: 'Each id must be text.' }).regex(/^[0-9a-f]{24}$/i, 'That is not a valid user id. Refresh the page and try again.'),
+      { error: 'Send the accounts to reset as a list of ids.' })
+      .min(1, 'Pick at least one person.')
+      .max(500, 'Too many accounts at once (max 500).'),
+    password: passwordField,
+  })
+  .strict();
+
 /** List contract for GET /api/users (utils/listQuery.js). @type {import('../utils/listQuery.js').ListSpec} */
 export const USERS_LIST = {
+  // 500 rather than the usual 200: the bulk password screen ticks people off one list and accepts up
+  // to 500 ids, so a shorter page here would quietly hide the rest of the staff from it.
+  maxLimit: 500,
   searchFields: ['name', 'email', 'title', 'department', 'position'],
   filterFields: { role: 'enum', status: 'enum', department: 'string', position: 'string', labUnit: 'string' },
   enums: { role: ROLES, status: USER_STATUSES },
@@ -144,6 +168,32 @@ export const remove = async (req, res) => {
   await user.deleteOne();
   res.locals.audit = { entity: user.name, entityId: user._id.toString(), details: `Deleted ${user.role} account ${user.email}` };
   res.json({ ok: true });
+};
+
+/**
+ * POST /api/users/reset-passwords { userIds, password } @type {import('express').RequestHandler}
+ */
+export const bulkResetPassword = async (req, res) => {
+  const me = currentUser(req);
+  const { userIds, password } = req.body;
+  const ids = [...new Set(userIds)];
+  const found = await usersService.findUsersByIds(ids);
+  if (!found.length) throw badRequest('None of those accounts exist any more. Refresh the page and try again.');
+
+  const hash = await usersService.hashPassword(password);
+  const names = await usersService.setPasswordForAll(found, hash);
+  // Whether the admin included themselves is worth seeing in the trail: it is the one row that
+  // explains why they are being asked to set a password the next time they look at MyDiary.
+  const self = found.some((u) => u._id.equals(me._id));
+  const missing = ids.length - found.length;
+
+  res.locals.audit = {
+    action: 'update',
+    entity: `${names.length} account${names.length === 1 ? '' : 's'}`,
+    entityId: me._id.toString(),
+    details: `Bulk password reset for ${names.length} account${names.length === 1 ? '' : 's'} — they must each set their own before using the apps${self ? ', including the admin who ran it' : ''}${missing ? ` (${missing} no longer existed)` : ''}: ${short(names.join(', '), 400)}`,
+  };
+  res.json({ ok: true, count: names.length, names, missing });
 };
 
 /** POST /api/users/:id/reset-password @type {import('express').RequestHandler} */
