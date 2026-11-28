@@ -217,3 +217,65 @@ describe('presence, parking lot and RSVP', () => {
     expect((await post(`/api/meetings/${m.id}/rsvp`, { index: 5, rsvp: 'accepted' })).status).toBe(404);
   });
 });
+
+/**
+ * Who a meeting is shown to.
+ *
+ * A meeting is a private conversation between the people on it — a board paper, a salary review, a
+ * supplier dispute. Until this was fixed the list was unscoped, so anybody with the meetings module
+ * was shown every meeting in the company, and the apps only narrowed it by asking for `mine=true`
+ * in some places. A default is not a rule, so the rule is tested here from three sides at once: the
+ * list, the meeting's own URL, and global search.
+ */
+describe('who can see a meeting', () => {
+  let kavya = '';
+  let sravan = '';
+
+  beforeAll(async () => {
+    kavya = (await createAndLogin(ctx.app, token, { name: 'Kavya Reddy', email: 'kavya.see@trustlab.co.in', role: 'employee', title: 'Technologist', department: 'Clinical Laboratory', modules: ['dashboard', 'meetings'] })).token;
+    sravan = (await createAndLogin(ctx.app, token, { name: 'Sravan Rao', email: 'sravan.see@trustlab.co.in', role: 'employee', title: 'Accountant', department: 'Finance', modules: ['dashboard', 'meetings'] })).token;
+  });
+
+  it('shows it to the people on it and to nobody else', async () => {
+    const m = await makeMeeting({ type: 'board', title: 'Private — CMD and Kavya', attendees: ['Venkata Cherukuri', 'Kavya Reddy'] });
+
+    const hers = await get('/api/meetings?limit=50&fields=title', kavya);
+    expect(hers.body.items.map((x) => x.title)).toContain('Private — CMD and Kavya');
+    expect((await get(`/api/meetings/${m.id}`, kavya)).status).toBe(200);
+
+    const his = await get('/api/meetings?limit=50&fields=title', sravan);
+    expect(his.body.items.map((x) => x.title)).not.toContain('Private — CMD and Kavya');
+    // 404 rather than 403: the id of a meeting he is not on should not confirm that it exists.
+    expect((await get(`/api/meetings/${m.id}`, sravan)).status).toBe(404);
+  });
+
+  it('does not let global search go around it', async () => {
+    await makeMeeting({ title: 'Needle — CMD and Kavya only', attendees: ['Venkata Cherukuri', 'Kavya Reddy'] });
+    const titles = async (t) => {
+      const r = await get('/api/search?q=Needle', t);
+      const g = (r.body.groups ?? []).find((x) => x.key === 'meetings');
+      return (g?.items ?? []).map((i) => i.title);
+    };
+    expect(await titles(kavya)).toContain('Needle — CMD and Kavya only');
+    expect(await titles(sravan)).toEqual([]);
+  });
+
+  it('shows the organiser their own meeting even when they are not on the attendee list', async () => {
+    const mine = await (await post('/api/meetings', { ...base, title: 'Booked for other people', attendees: ['Kavya Reddy'] }, sravan)).body;
+    const back = await get('/api/meetings?limit=50&fields=title', sravan);
+    expect(back.body.items.map((x) => x.title)).toContain('Booked for other people');
+    expect((await get(`/api/meetings/${mine.meeting.id}`, sravan)).status).toBe(200);
+  });
+
+  it('still shows an admin everything', async () => {
+    // Made here rather than leaned on from the tests above: every test in this file starts from an
+    // empty diary of meetings.
+    await makeMeeting({ title: 'Kavya and Pavan only', attendees: ['Kavya Reddy', 'Pavan Kumar'] });
+    await post('/api/meetings', { ...base, title: 'Booked by Sravan for other people', attendees: ['Kavya Reddy'] }, sravan);
+
+    const all = await get('/api/meetings?limit=50&fields=title');
+    expect(all.body.items.map((x) => x.title)).toEqual(
+      expect.arrayContaining(['Kavya and Pavan only', 'Booked by Sravan for other people']),
+    );
+  });
+});

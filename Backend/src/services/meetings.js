@@ -10,12 +10,41 @@ import { notify } from './notifications.js';
 import { nameClause, plusDays, sameName, short } from './people.js';
 import { html } from '../utils/html.js';
 
-/** @param {string} id */
-export async function findMeetingOr404(id) {
+/**
+ * Everything this person may read: the meetings they chair, the ones they were put on, and the ones
+ * they scheduled themselves. An admin sees all of them, as "can see all data" did in v1.
+ *
+ * Without this a meeting was listed to the whole company — a board meeting, a salary discussion or a
+ * supplier dispute was one page away from anybody with the meetings module. The apps asked for
+ * `mine=true` in some places and not others, which is a default, not a rule; this is the rule.
+ *
+ * @param {any} me a User document
+ */
+export function visibleClause(me) {
+  if (me.role === 'admin') return {};
+  return { $or: [nameClause('chair', me.name), nameClause('attendees', me.name), { 'createdBy.id': me._id }] };
+}
+
+/**
+ * The meeting behind an id, or 404 — and 404 rather than 403 for one this person may not read, so
+ * the id of a meeting they are not on tells them nothing about whether it exists.
+ *
+ * @param {string} id @param {any} [me] the viewer; omitted only where the caller has already checked
+ */
+export async function findMeetingOr404(id, me) {
   if (!mongoose.isValidObjectId(id)) throw notFound('That meeting does not exist.');
   const m = await Meeting.findById(id);
   if (!m) throw notFound('That meeting does not exist.');
+  if (me && !canRead(m, me)) throw notFound('That meeting does not exist.');
   return m;
+}
+
+/** The same rule as `visibleClause`, applied to a meeting already in hand. @param {any} m @param {any} me */
+export function canRead(m, me) {
+  if (me.role === 'admin') return true;
+  if (sameName(m.chair, me.name)) return true;
+  if ((m.attendees ?? []).some((a) => sameName(a, me.name))) return true;
+  return Boolean(m.createdBy?.id && String(m.createdBy.id) === String(me._id));
 }
 
 /** `attendee=` filter: the name is in `attendees` (with or without a "(role)" suffix). @param {string} name */

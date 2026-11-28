@@ -53,11 +53,11 @@ export default function MeetingsListPage() {
   const [q, setQ] = useState('');
   const search = useDebounced(q.trim(), 300);
   const [typeFilter, setTypeFilter] = useState('');
-  const [ownerFilter, setOwnerFilter] = useState('All owners');
+  const [ownerFilter, setOwnerFilter] = useState('all');
   const [reqOpen, setReqOpen] = useState(false);
 
   // The owner select maps onto the server's viewer-relative filters.
-  const ownerArgs = ownerFilter === 'My meetings' ? { mine: 'true' } : ownerFilter === 'Delegated to me' ? { attendee: me } : {};
+  const ownerArgs = ownerFilter === 'mine' ? { mine: 'true' } : ownerFilter === 'delegated' ? { attendee: me } : {};
 
   // Filters / search always start again from page 1 (page is tied to the filter signature).
   const sig = JSON.stringify([tab, search, typeFilter, ownerFilter]);
@@ -86,7 +86,7 @@ export default function MeetingsListPage() {
     openActions: openCt?.total ?? 0, pastDue: overdueCt?.total ?? 0, month: monthCt?.total ?? 0,
   };
   const rows = data?.items || [];
-  const hasFilters = !!(search || typeFilter || ownerFilter !== 'All owners');
+  const hasFilters = !!(search || typeFilter || ownerFilter !== 'all');
 
   const tabs = [
     { key: 'upcoming', icon: '⌛', label: 'Upcoming', count: counts.up },
@@ -128,9 +128,11 @@ export default function MeetingsListPage() {
           <option value="other">Other</option>
         </FilterSelect>
         <FilterSelect value={ownerFilter} onChange={e => setOwnerFilter(e.target.value)} sx={{ flex: { xs: 1, md: 'none' } }}>
-          <option>All owners</option>
-          <option>My meetings</option>
-          <option>Delegated to me</option>
+          {/* An admin reads every meeting; everybody else only the ones they are on, which the
+              server enforces — so for them "all owners" would be a promise the list cannot keep. */}
+          <option value="all">{user?.seesAll ? 'All owners' : 'All my meetings'}</option>
+          <option value="mine">Chaired / attended by me</option>
+          <option value="delegated">Delegated to me</option>
         </FilterSelect>
       </Box>
 

@@ -165,6 +165,10 @@ export const list = async (req, res) => {
   const me = currentUser(req);
   const { query, flags } = extractFlags(req.query, { mine: ['true', 'false'] });
   const lq = buildListQuery(query, MEETINGS_LIST);
+  // The floor: nobody is shown a meeting they are not part of. `mine=true` narrows it further, to
+  // the ones they chair or attend rather than everything they may read.
+  const visible = meetings.visibleClause(me);
+  if (Object.keys(visible).length) andClause(lq, visible, 'visible', true);
   if (flags.mine === 'true') andClause(lq, meetings.mineClause(me.name), 'mine', true);
   res.json(await meetings.listMeetings(lq));
 };
@@ -180,12 +184,12 @@ export const create = async (req, res) => {
 
 /** GET /api/meetings/:id @type {import('express').RequestHandler} */
 export const get = async (req, res) => {
-  await respond(req, res, await meetings.findMeetingOr404(req.params.id));
+  await respond(req, res, await meetings.findMeetingOr404(req.params.id, currentUser(req)));
 };
 
 /** PATCH /api/meetings/:id @type {import('express').RequestHandler} */
 export const update = async (req, res) => {
-  const m = await meetings.findMeetingOr404(req.params.id);
+  const m = await meetings.findMeetingOr404(req.params.id, currentUser(req));
   const before = await meetings.patchMeeting(m, req.body);
   const details = describeChanges(before, meetings.meetingSnapshot(m), meetings.MEETING_CHANGE_FIELDS);
   res.locals.audit = details ? { entity: m.title, entityId: m._id.toString(), details } : false;
@@ -195,7 +199,7 @@ export const update = async (req, res) => {
 /** DELETE /api/meetings/:id — admin or creator. @type {import('express').RequestHandler} */
 export const remove = async (req, res) => {
   const me = currentUser(req);
-  const m = await meetings.findMeetingOr404(req.params.id);
+  const m = await meetings.findMeetingOr404(req.params.id, currentUser(req));
   if (me.role !== 'admin' && !(m.createdBy?.id && m.createdBy.id.equals(me._id))) throw forbidden('Only an admin or the person who created this meeting can delete it.');
   await meetings.deleteMeetingCascade(m);
   res.locals.audit = { entity: m.title, entityId: m._id.toString(), details: `Deleted ${m.status} meeting of ${m.date} (with its action items and decisions)` };
@@ -204,7 +208,7 @@ export const remove = async (req, res) => {
 
 /** POST /api/meetings/:id/status { status, cancelReason? } @type {import('express').RequestHandler} */
 export const setStatus = async (req, res) => {
-  const m = await meetings.findMeetingOr404(req.params.id);
+  const m = await meetings.findMeetingOr404(req.params.id, currentUser(req));
   const from = await meetings.setStatus(m, req.body.status, req.body.cancelReason);
   res.locals.audit = { action: 'update', entity: m.title, entityId: m._id.toString(), details: `status: ${from} → ${m.status}${m.cancelReason ? ` · reason: ${m.cancelReason}` : ''}` };
   await respond(req, res, m);
@@ -213,7 +217,7 @@ export const setStatus = async (req, res) => {
 /** POST /api/meetings/:id/duplicate @type {import('express').RequestHandler} */
 export const duplicate = async (req, res) => {
   const me = currentUser(req);
-  const src = await meetings.findMeetingOr404(req.params.id);
+  const src = await meetings.findMeetingOr404(req.params.id, currentUser(req));
   const m = await meetings.duplicateMeeting(src, me);
   res.locals.audit = { entity: m.title, entityId: m._id.toString(), details: `Duplicated from "${src.title}" (${src.date}) → ${m.date}` };
   res.status(201);
@@ -224,7 +228,7 @@ export const duplicate = async (req, res) => {
 
 /** PUT /api/meetings/:id/minutes { minutes } — replaces the whole map. @type {import('express').RequestHandler} */
 export const putMinutes = async (req, res) => {
-  const m = await meetings.findMeetingOr404(req.params.id);
+  const m = await meetings.findMeetingOr404(req.params.id, currentUser(req));
   if (m.minutesFinalised) throw conflict('Minutes are finalised. Re-open them before editing.');
   m.minutes = req.body.minutes;
   m.markModified('minutes');
@@ -236,7 +240,7 @@ export const putMinutes = async (req, res) => {
 
 /** POST /api/meetings/:id/minutes/finalise @type {import('express').RequestHandler} */
 export const finaliseMinutes = async (req, res) => {
-  const m = await meetings.findMeetingOr404(req.params.id);
+  const m = await meetings.findMeetingOr404(req.params.id, currentUser(req));
   if (m.minutesFinalised) throw conflict('Minutes are already finalised.');
   m.minutesFinalised = true;
   await m.save();
@@ -246,7 +250,7 @@ export const finaliseMinutes = async (req, res) => {
 
 /** POST /api/meetings/:id/minutes/reopen @type {import('express').RequestHandler} */
 export const reopenMinutes = async (req, res) => {
-  const m = await meetings.findMeetingOr404(req.params.id);
+  const m = await meetings.findMeetingOr404(req.params.id, currentUser(req));
   if (!m.minutesFinalised) throw conflict('Minutes are not finalised.');
   m.minutesFinalised = false;
   await m.save();
@@ -256,7 +260,7 @@ export const reopenMinutes = async (req, res) => {
 
 /** POST /api/meetings/:id/minutes/circulate → recipient summary. @type {import('express').RequestHandler} */
 export const circulateMinutes = async (req, res) => {
-  const m = await meetings.findMeetingOr404(req.params.id);
+  const m = await meetings.findMeetingOr404(req.params.id, currentUser(req));
   const recipients = await meetings.circulateMinutes(m);
   res.locals.audit = {
     action: 'update',
@@ -271,7 +275,7 @@ export const circulateMinutes = async (req, res) => {
 
 /** PATCH /api/meetings/:id/presence { name, status } @type {import('express').RequestHandler} */
 export const patchPresence = async (req, res) => {
-  const m = await meetings.findMeetingOr404(req.params.id);
+  const m = await meetings.findMeetingOr404(req.params.id, currentUser(req));
   const r = await meetings.setPresence(m, req.body.name, req.body.status);
   res.locals.audit = { entity: m.title, entityId: m._id.toString(), details: `Presence · ${r.name}: ${r.from} → ${r.to}` };
   await respond(req, res, m, { presence: r });
@@ -279,7 +283,7 @@ export const patchPresence = async (req, res) => {
 
 /** POST /api/meetings/:id/presence/cycle { name } @type {import('express').RequestHandler} */
 export const cyclePresence = async (req, res) => {
-  const m = await meetings.findMeetingOr404(req.params.id);
+  const m = await meetings.findMeetingOr404(req.params.id, currentUser(req));
   const r = await meetings.cyclePresence(m, req.body.name);
   res.locals.audit = { action: 'update', entity: m.title, entityId: m._id.toString(), details: `Presence · ${r.name}: ${r.from} → ${r.to}` };
   await respond(req, res, m, { presence: r });
@@ -287,7 +291,7 @@ export const cyclePresence = async (req, res) => {
 
 /** POST /api/meetings/:id/parking { text } @type {import('express').RequestHandler} */
 export const addParking = async (req, res) => {
-  const m = await meetings.findMeetingOr404(req.params.id);
+  const m = await meetings.findMeetingOr404(req.params.id, currentUser(req));
   m.parkingLot.push(req.body.text);
   await m.save();
   res.locals.audit = { action: 'update', entity: m.title, entityId: m._id.toString(), details: `Parking lot + "${short(req.body.text, 60)}"` };
@@ -296,7 +300,7 @@ export const addParking = async (req, res) => {
 
 /** DELETE /api/meetings/:id/parking/:index @type {import('express').RequestHandler} */
 export const removeParking = async (req, res) => {
-  const m = await meetings.findMeetingOr404(req.params.id);
+  const m = await meetings.findMeetingOr404(req.params.id, currentUser(req));
   const idx = indexParam(req.params.index);
   if (idx >= m.parkingLot.length) throw notFound('That parking lot item does not exist.');
   const [removed] = m.parkingLot.splice(idx, 1);
@@ -320,13 +324,13 @@ async function applyExternal(req, res, m, idx, patch) {
 
 /** PATCH /api/meetings/:id/external/:index { email?, rsvp?, respondedNote? } @type {import('express').RequestHandler} */
 export const patchExternal = async (req, res) => {
-  const m = await meetings.findMeetingOr404(req.params.id);
+  const m = await meetings.findMeetingOr404(req.params.id, currentUser(req));
   await applyExternal(req, res, m, indexParam(req.params.index), req.body);
 };
 
 /** POST /api/meetings/:id/rsvp { index, rsvp, note? } — the invitee's answer. @type {import('express').RequestHandler} */
 export const rsvp = async (req, res) => {
-  const m = await meetings.findMeetingOr404(req.params.id);
+  const m = await meetings.findMeetingOr404(req.params.id, currentUser(req));
   await applyExternal(req, res, m, req.body.index, { rsvp: req.body.rsvp, respondedNote: req.body.note ?? '' });
 };
 
@@ -334,7 +338,7 @@ export const rsvp = async (req, res) => {
 
 /** POST /api/meetings/:id/transcript/append { lines } @type {import('express').RequestHandler} */
 export const appendTranscript = async (req, res) => {
-  const m = await meetings.findMeetingOr404(req.params.id);
+  const m = await meetings.findMeetingOr404(req.params.id, currentUser(req));
   for (const l of req.body.lines) m.transcript.push({ speaker: l.speaker ?? '', chip: l.chip ?? '', time: l.time ?? '', text: l.text });
   await m.save();
   res.locals.audit = { action: 'update', entity: m.title, entityId: m._id.toString(), details: `Transcript + ${req.body.lines.length} line${req.body.lines.length === 1 ? '' : 's'} (${m.transcript.length} total)` };
@@ -343,7 +347,7 @@ export const appendTranscript = async (req, res) => {
 
 /** DELETE /api/meetings/:id/transcript @type {import('express').RequestHandler} */
 export const clearTranscript = async (req, res) => {
-  const m = await meetings.findMeetingOr404(req.params.id);
+  const m = await meetings.findMeetingOr404(req.params.id, currentUser(req));
   const n = m.transcript.length;
   m.transcript = [];
   await m.save();
@@ -353,7 +357,7 @@ export const clearTranscript = async (req, res) => {
 
 /** PUT /api/meetings/:id/ai-summary { aiSummary } @type {import('express').RequestHandler} */
 export const putAiSummary = async (req, res) => {
-  const m = await meetings.findMeetingOr404(req.params.id);
+  const m = await meetings.findMeetingOr404(req.params.id, currentUser(req));
   m.aiSummary = req.body.aiSummary;
   m.markModified('aiSummary');
   await m.save();
@@ -365,7 +369,7 @@ export const putAiSummary = async (req, res) => {
 /** POST /api/meetings/:id/ai-summary/apply-actions @type {import('express').RequestHandler} */
 export const applyAiActions = async (req, res) => {
   const me = currentUser(req);
-  const m = await meetings.findMeetingOr404(req.params.id);
+  const m = await meetings.findMeetingOr404(req.params.id, currentUser(req));
   const created = await meetings.applyAiActions(m, me);
   res.locals.audit = { entity: m.title, entityId: m._id.toString(), details: `${created.length} AI-extracted action item${created.length === 1 ? '' : 's'} added` };
   res.status(201);
@@ -375,7 +379,7 @@ export const applyAiActions = async (req, res) => {
 /** POST /api/meetings/:id/ai-summary/log-decisions @type {import('express').RequestHandler} */
 export const logAiDecisions = async (req, res) => {
   const me = currentUser(req);
-  const m = await meetings.findMeetingOr404(req.params.id);
+  const m = await meetings.findMeetingOr404(req.params.id, currentUser(req));
   const created = await meetings.logAiDecisions(m, me);
   res.locals.audit = { entity: m.title, entityId: m._id.toString(), details: `${created.length} AI-detected decision${created.length === 1 ? '' : 's'} logged to the registry` };
   res.status(201).json({ created: created.map(serializeDecision), meeting: serializeMeeting(m, (await meetings.actionsByMeeting([m._id])).get(m._id.toString()) ?? []) });
@@ -384,7 +388,7 @@ export const logAiDecisions = async (req, res) => {
 /** POST /api/meetings/:id/remind-owners — notify stub: in-app nudges only. @type {import('express').RequestHandler} */
 export const remindOwners = async (req, res) => {
   const me = currentUser(req);
-  const m = await meetings.findMeetingOr404(req.params.id);
+  const m = await meetings.findMeetingOr404(req.params.id, currentUser(req));
   const open = await ActionItem.find({ meetingId: m._id, status: { $ne: 'done' }, owner: { $nin: ['', null] } }).sort({ deadline: 1 });
   if (!open.length) throw badRequest('No open actions with assigned owners to remind.');
   /** @type {Map<string, any[]>} */

@@ -12,6 +12,7 @@ import { Department } from '../models/Department.js';
 import { DiaryEntry } from '../models/DiaryEntry.js';
 import { DiscussionLog } from '../models/DiscussionLog.js';
 import { Reminder } from '../models/Reminder.js';
+import { visibleClause } from './meetings.js';
 import { Integration } from '../models/Integration.js';
 import { Meeting } from '../models/Meeting.js';
 import { MeetingRequest } from '../models/MeetingRequest.js';
@@ -62,8 +63,11 @@ registerSearch({
   key: 'meetings',
   label: 'Meetings',
   canUse: (u) => hasModule(u, 'meetings'),
-  async search(q, limit) {
-    const docs = await Meeting.find(searchFilter(q, ['title', 'chair', 'loc', 'attendees', 'external.name', 'agenda', 'clientName', 'subBadge'])).sort({ date: -1, time: -1, _id: -1 }).limit(limit);
+  async search(q, limit, user) {
+    // Scoped like the meetings list: search must not be the way around who may read a meeting.
+    const scope = visibleClause(user);
+    const match = searchFilter(q, ['title', 'chair', 'loc', 'attendees', 'external.name', 'agenda', 'clientName', 'subBadge']);
+    const docs = await Meeting.find(Object.keys(scope).length ? { $and: [match, scope] } : match).sort({ date: -1, time: -1, _id: -1 }).limit(limit);
     return docs.map((m) => ({
       id: m._id.toString(),
       title: m.title,
