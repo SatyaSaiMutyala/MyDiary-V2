@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Box } from '@mui/material';
 import { Btn, EmptyState, TabBar, Icon } from '../../components';
@@ -19,7 +19,9 @@ import {
 } from '../../store/api/actionItemsApi';
 import { useListDecisionsQuery } from '../../store/api/decisionsApi';
 import { ApiError, Fetching, useToast } from '../settings/components/listUi';
-import { TRANSCRIPT_DEMO, AI_SUMMARY_DEMO } from '../../data/meetings';
+import { AI_SUMMARY_DEMO } from '../../data/meetings';
+import { useLiveTranscription } from './useLiveTranscription';
+import { useTranscriptSink } from './useTranscriptSink';
 import { TDPL_LOGO_FULL } from '../../data/logos';
 import { parseDate, formatDateLong, formatTime } from '../../utils/dates';
 import { normExt, tdplEmail } from '../../utils/people';
@@ -35,6 +37,7 @@ import { previewMinutes } from './modals/detailPreviewMinutes';
 import { exportMinutes, downloadTranscript } from './components/detailShared';
 import { openRsvpPreview } from './rsvpPreview';
 import { useDialog } from '../../components/Dialogs';
+import { useAuth } from '../../auth/AuthContext';
 
 const NO_CANDIDATES = 'No commitment-language sentences found in Decisions text. Try writing more explicit commitments (e.g. "CFO to send report by Friday").';
 /** Fields the action table edits inline; text ones are written back after a pause, selects immediately. */
@@ -65,6 +68,9 @@ function MeetingDetail({ id }) {
   const navigate = useNavigate();
   const { state, set } = useAppStore();
   const { toast, show } = useToast();
+  const { user } = useAuth();
+  // Who a captured sentence is recorded against until somebody says otherwise.
+  const me = user?.name || state.viewer.name;
 
   const { data: m, error, isLoading, isFetching, refetch } = useGetMeetingQuery(id);
   const { data: decisionPage } = useListDecisionsQuery({ meetingId: id, limit: 200, sort: 'agendaIdx' }, { skip: !m });
@@ -134,24 +140,69 @@ function MeetingDetail({ id }) {
     });
   }, [m]);
 
-  // ============ LIVE TRANSCRIPTION — 1s ticker, feeds one TRANSCRIPT_DEMO line every 2s ============
+  // ============ LIVE TRANSCRIPTION — the browser's recogniser, on the real microphone ============
   const recording = state.recording;
   const recordingRef = useRef(recording);
   useEffect(() => { recordingRef.current = recording; }, [recording]);
+
+  /**
+   * Who the next sentence is attributed to. The browser cannot tell voices apart, so rather than
+   * pretend to (the bar used to claim "speaker diarization · via Deepgram"), whoever is minuting
+   * says who is speaking and it is recorded against them. It starts on the person at the keyboard.
+   */
+  const [speaker, setSpeaker] = useState('');
+  const [lang, setLang] = useState('en-IN');
+  const speakerRef = useRef('');
+  useEffect(() => { speakerRef.current = speaker || me; }, [speaker, me]);
+
+  /**
+   * A stable colour per speaker, in the order they first talk.
+   *
+   * Read through a ref rather than the rendered meeting: a sentence arrives from the recogniser, not
+   * from a render, and the callback that handles it is made once.
+   */
+  const transcriptRef = useRef([]);
+  useEffect(() => { transcriptRef.current = m?.transcript ?? []; }, [m?.transcript]);
+  const chipFor = (name) => {
+    const seen = [];
+    for (const line of transcriptRef.current) if (!seen.includes(line.speaker)) seen.push(line.speaker);
+    const at = seen.indexOf(name);
+    return `s${((at < 0 ? seen.length : at) % 5) + 1}`;
+  };
+
+  // Lines go into the sink, not straight at the server: a sentence that fails to save is kept and
+  // tried again rather than lost, because it cannot be said twice.
+  const sink = useTranscriptSink({
+    send: useCallback((lines) => appendTranscript({ id, lines }).unwrap(), [id]), // eslint-disable-line react-hooks/exhaustive-deps
+  });
+
+  const onLine = useCallback((text) => {
+    const r = recordingRef.current;
+    const who = speakerRef.current || me;
+    const elapsed = r.elapsed ?? 0;
+    const stamp = `${String(Math.floor(elapsed / 3600)).padStart(2, '0')}:${String(Math.floor((elapsed % 3600) / 60)).padStart(2, '0')}:${String(elapsed % 60).padStart(2, '0')}`;
+    sink.push({ speaker: who, chip: chipFor(who), time: stamp, text });
+  }, [sink.push, me]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const live = useLiveTranscription({ onLine, lang });
+
+  // The clock beside the bar; the recogniser keeps its own counsel about time.
   useEffect(() => {
-    if (!recording.active || recording.meetingId !== id) return;
+    if (!recording.active || recording.meetingId !== id) return undefined;
     const t = setInterval(() => {
       const r = recordingRef.current;
-      const elapsed = r.elapsed + 1;
-      const feed = elapsed % 2 === 0 && r.feedIdx < TRANSCRIPT_DEMO.length;
-      const line = feed ? TRANSCRIPT_DEMO[r.feedIdx] : null;
-      set('recording', { ...r, elapsed, feedIdx: feed ? r.feedIdx + 1 : r.feedIdx });
-      // The captured line is persisted, so the transcript survives a reload like any other server data.
-      if (line) appendTranscript({ id, lines: [{ speaker: line.speaker, chip: line.chip, time: line.time, text: line.text }] })
-        .unwrap().catch(err => show(err, 'error'));
+      set('recording', { ...r, elapsed: (r.elapsed ?? 0) + 1 });
     }, 1000);
     return () => clearInterval(t);
   }, [recording.active, recording.meetingId, id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // A language change mid-meeting restarts the recogniser on the new one.
+  useEffect(() => {
+    if (!live.listening) return;
+    live.stop();
+    const t = setTimeout(() => live.start(), 60);
+    return () => clearTimeout(t);
+  }, [lang]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (error && errorCode(error) === 'not_found') {
     return (
@@ -227,11 +278,22 @@ function MeetingDetail({ id }) {
   // ============ LIVE ============
   const toggleRecording = async () => {
     if (recording.active) {
+      live.stop();
       set('recording', { active: false, meetingId: null, elapsed: 0, feedIdx: 0 });
-      await dlg.alert('Recording stopped. ' + transcriptLen + ' transcript lines captured. Click "Generate AI Summary" on the AI Summary tab to process.');
-    } else {
-      set('recording', { active: true, meetingId: m.id, elapsed: 0, feedIdx: 0 });
+      if (sink.pending) {
+        await dlg.alert(`Recording stopped. ${sink.pending} line${sink.pending === 1 ? '' : 's'} are still being saved — keep this page open until they are through.`);
+        return;
+      }
+      await dlg.alert(transcriptLen
+        ? `Recording stopped. ${transcriptLen} line${transcriptLen === 1 ? '' : 's'} captured. "Generate AI Summary" on the AI Summary tab turns them into minutes.`
+        : 'Recording stopped. Nothing was captured — check the microphone is the one you are speaking into.');
+      return;
     }
+    // The microphone has to come up before the bar says it is recording, or a refused permission
+    // leaves a red bar that is listening to nothing.
+    if (!live.start()) return;
+    setSpeaker((v) => v || me);
+    set('recording', { active: true, meetingId: m.id, elapsed: 0, feedIdx: 0 });
   };
 
   // ============ AI SUMMARY ============
@@ -377,7 +439,7 @@ function MeetingDetail({ id }) {
       <TabBar tabs={tabs} value={tab} onChange={setTab} sx={{ mb: '18px' }} />
 
       {tab === 'agenda' && <DetailAgendaPane m={view} onEdit={editMeeting} onAddParking={addParkingItem} onRmParking={rmParkingItem} onCyclePresence={cyclePresence} />}
-      {tab === 'live' && <DetailLivePane m={view} recording={recording} onToggleRecording={toggleRecording} onDownload={() => downloadTranscript(view, dlg)} onGenerateAI={() => { setTab('ai'); setTimeout(generateAISummary, 100); }} />}
+      {tab === 'live' && <DetailLivePane m={view} recording={recording} live={live} sink={sink} speaker={speaker || me} onSpeaker={setSpeaker} lang={lang} onLang={setLang} onToggleRecording={toggleRecording} onDownload={() => downloadTranscript(view, dlg)} onGenerateAI={() => { setTab('ai'); setTimeout(generateAISummary, 100); }} />}
       {tab === 'ai' && <DetailAIPane m={view} loading={aiLoading} onGoLive={() => setTab('live')} onGenerate={generateAISummary} onLogDecisions={logAllAIDecisions} onApplyActions={applyAIActions} />}
       {tab === 'decisions' && <DetailDecisionsPane m={view} decisions={myDecisions} onViewRegistry={() => navigate('/decisions')} />}
       {tab === 'minutes' && <DetailMinutesPane m={view} onUpdateMinutes={updateMinutes} onConvertToAction={addActionFromMinutes} onAttachFile={attachFile} onLinkDecision={linkDecision}

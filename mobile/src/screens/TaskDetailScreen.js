@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { Calendar, Check, MessageSquare, Plus, Users } from 'lucide-react-native';
+import { Calendar, Check, CircleDot, MessageSquare, Plus, TriangleAlert, Users } from 'lucide-react-native';
 import { AppText } from '../components/AppText';
 import { Avatar } from '../components/Avatar';
 import { Button } from '../components/Button';
@@ -88,6 +88,27 @@ export function TaskDetailScreen() {
   }
 
   const done = t.status === 'done';
+  const started = t.status === 'in-progress';
+  const blocked = t.status === 'blocked';
+
+  /**
+   * Moves the task and, when something was typed, puts that on its trail.
+   *
+   * The website has had these two since the beginning; the phone only had "Mark complete", so
+   * somebody held up had no way to say so from the one device they had with them. Whoever set the
+   * task is told, which is the point of raising a blocker at all.
+   */
+  const setStatus = (status) =>
+    run(
+      () => updateAction({ id: t.id, meetingId: t.meetingId, status }),
+      async () => {
+        const text = note.trim();
+        if (!text) return;
+        setNote('');
+        await addComment({ id: t.id, meetingId: t.meetingId, text }).unwrap().catch(() => {});
+      },
+    );
+
   const run = async (fn, after) => {
     setProblem('');
     try {
@@ -168,6 +189,45 @@ export function TaskDetailScreen() {
           />
         ) : null}
       </FormCard>
+
+      {/* A finished task needs neither, so they are only offered while there is work left. */}
+      {done ? null : (
+        <FormCard title="Where are you with it?" style={styles.card}>
+          <TextField
+            label="Add a note (optional)"
+            value={note}
+            onChangeText={setNote}
+            placeholder={blocked ? 'What would unblock you?' : 'Where you are, anything in the way…'}
+            accessibilityLabel="Note for this status change"
+          />
+          <View style={styles.statusActions}>
+            <Button
+              label={started ? 'Already in progress' : 'In progress'}
+              variant="outline"
+              size="sm"
+              iconLeft={CircleDot}
+              disabled={started || updating.isLoading}
+              style={styles.statusAction}
+              onPress={() => setStatus('in-progress')}
+            />
+            <Button
+              label={blocked ? 'Blocker raised' : 'Raise a blocker'}
+              variant="outline"
+              size="sm"
+              iconLeft={TriangleAlert}
+              iconColor={blocked ? colors.inkFaint : colors.red}
+              disabled={blocked || updating.isLoading}
+              style={styles.statusAction}
+              onPress={() => setStatus('blocked')}
+            />
+          </View>
+          <AppText variant="meta" color={colors.inkMuted} style={styles.statusHint}>
+            {blocked
+              ? 'Whoever set this task has been told you are blocked.'
+              : 'Whoever set this task is told when you move it.'}
+          </AppText>
+        </FormCard>
+      )}
 
       {editing ? (
         <FormCard title="Change the deadline or priority" style={styles.card}>
@@ -364,6 +424,9 @@ const styles = StyleSheet.create({
   info: { marginTop: vs(2) },
   openMeeting: { alignSelf: 'flex-start', marginBottom: vs(12) },
   editButton: { alignSelf: 'flex-start', marginTop: vs(12) },
+  statusActions: { flexDirection: 'row', gap: s(8), marginTop: vs(4) },
+  statusAction: { flex: 1 },
+  statusHint: { marginTop: vs(8) },
   editActions: { flexDirection: 'row', gap: s(10), marginBottom: vs(12) },
   editAction: { flex: 1 },
   subRow: {

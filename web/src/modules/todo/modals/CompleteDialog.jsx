@@ -10,9 +10,9 @@ import { useAuth } from '../../../auth/AuthContext';
 import { samePerson } from '../utils';
 
 const CONFIG = {
-  complete: { ico: '✓', label: 'Mark Task as Complete', sub: 'Status will update in the source meeting and your comment is added to the action trail.', placeholder: 'Completion note — what was done, any output / document produced, follow-up needed? (optional)', btnText: '✓ Mark Complete & Notify Chair', btnClass: 'primary', headClass: '', required: false },
+  complete: { ico: '✓', label: 'Mark Task as Complete', sub: 'Your note is added to the task’s trail, and whoever set it is told.', placeholder: 'Completion note — what was done, any output / document produced, follow-up needed? (optional)', btnText: '✓ Mark Complete', btnClass: 'primary', headClass: '', required: false },
   progress: { ico: '⏳', label: 'Update: In Progress', sub: 'Signal that you have started on this task.', placeholder: 'Quick status update — where you are, any early blockers? (optional)', btnText: '⏳ Update Status', btnClass: 'primary', headClass: 'progress-head', required: false },
-  blocker: { ico: '⚠', label: 'Raise a Blocker', sub: 'Status will change to Blocked and the meeting chair will be notified. Please describe what is holding you up.', placeholder: 'What is blocking you? What do you need to unblock? Who could help? (required)', btnText: '⚠ Raise Blocker & Notify', btnClass: 'danger', headClass: 'blocker-head', required: true },
+  blocker: { ico: '⚠', label: 'Raise a Blocker', sub: 'Whoever set this task is told you are blocked. Say what is holding you up.', placeholder: 'What is blocking you? What do you need to unblock? Who could help? (required)', btnText: '⚠ Raise Blocker', btnClass: 'danger', headClass: 'blocker-head', required: true },
 };
 
 /**
