@@ -61,7 +61,11 @@ export default function TodoCard({ t, isOverdueFlag, me, extras = {}, onOpenSour
         {onEdit && <SecBtn onClick={onEdit}>✎ Edit</SecBtn>}
       </Box>
     </>;
-  } else if (t.source === 'meetings') {
+  } else if (t.fromApi) {
+    // Anything the server holds — a meeting's action item or an ad-hoc task — is changed through the
+    // API. Choosing this branch by `source` instead sent every ad-hoc task down the path below,
+    // which only ever edited this browser's own copy: the buttons appeared to work and nothing was
+    // saved, which is the bug this replaces.
     actionBtns = <>
       <PrimaryBtn onClick={() => onComplete('complete')}>✓ Mark Complete</PrimaryBtn>
       <Box sx={{ display: 'flex', gap: '4px', width: '100%' }}>

@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Box, ButtonBase, Typography } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { ModalShell, Btn, Field, FieldLabel, TextInput, TextArea, SelectInput, Chip, AddBtn, FootNote, Icon } from '../../../components';
+import { ModalShell, Btn, Field, FieldLabel, TextInput, TextArea, SelectInput, Chip, AddBtn, FootNote, Icon, PeoplePicker } from '../../../components';
 import { tokens, fonts } from '../../../theme/tokens';
 import { DIARY_CATS } from '../../../data/diary';
-import { EMPLOYEES } from '../../../data/employees';
+import { usePeopleOptions } from '../../../data/people';
 import { CAT_BTN_SELECTED, toISO } from '../utils';
 import { useDialog } from '../../../components/Dialogs';
 import { DateInput, TimeInput } from '../../../components/DateTimeInput';
@@ -26,18 +26,17 @@ export default function EntryModal({ open, onClose, owner, viewer, date, preset,
     title: '', loc: '', notes: '', reminder: '15 min before',
     attendees: [], external: [],
   }));
-  const [intAdd, setIntAdd] = useState('');
+  const { people, loading: loadingPeople } = usePeopleOptions();
   const [extAdd, setExtAdd] = useState('');
   const [saving, setSaving] = useState(false);   // one click, one entry: onSave is a POST
   const patch = (p) => setD(prev => ({ ...prev, ...p }));
 
-  const addAttendee = async (kind) => {
-    if (kind === 'int') {
-      const v = intAdd.trim();
-      if (!v) return;
-      patch({ attendees: [...d.attendees, v] });
-      setIntAdd('');
-    } else {
+  /** Colleagues come off the staff list, so every name invited is an account that can be told. */
+  const setAttendees = (names) => patch({ attendees: names });
+
+  /** Guests from outside TrustLab, who have no account — still typed, with an email for the invite. */
+  const addExternal = async () => {
+    {
       const raw = extAdd.trim();
       if (!raw) return;
       const em = raw.match(/^(.*?)\s*<\s*([^@<>]+@[^@<>]+\.[a-z]{2,})\s*>?\s*$/i);
@@ -155,12 +154,9 @@ export default function EntryModal({ open, onClose, owner, viewer, date, preset,
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '6px', mt: '10px' }}>
               {d.attendees.map(a => <Chip key={a} onRemove={() => removeAttendee('int', a)}>{a}</Chip>)}
             </Box>
-            <Box sx={{ display: 'flex', gap: '6px', mt: '8px' }}>
-              <TextInput sx={{ flex: 1 }} value={intAdd} onChange={e => setIntAdd(e.target.value)} placeholder="Search employee..." inputProps={{ list: 'entry-int-datalist' }} onKeyDown={e => { if (e.key === 'Enter') { addAttendee('int'); e.preventDefault(); } }} />
-              <datalist id="entry-int-datalist">
-                {EMPLOYEES.flatMap(g => g.people.map(p => <option key={p.name} value={p.name}>{p.role}</option>))}
-              </datalist>
-              <AddBtn onClick={() => addAttendee('int')}>+ Add</AddBtn>
+            <Box sx={{ mt: '8px' }}>
+              <PeoplePicker value={d.attendees} onChange={setAttendees} people={people} loading={loadingPeople}
+                placeholder="Add a colleague from the staff list…" emptyNote="No staff accounts yet." />
             </Box>
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -169,8 +165,8 @@ export default function EntryModal({ open, onClose, owner, viewer, date, preset,
               {d.external.map((e, i) => <Chip key={i} external noEmail={!e.email} email={e.email || undefined} onRemove={() => removeAttendee('ext', i)}>{e.name}</Chip>)}
             </Box>
             <Box sx={{ display: 'flex', gap: '6px', mt: '8px' }}>
-              <TextInput sx={{ flex: 1 }} value={extAdd} onChange={e => setExtAdd(e.target.value)} placeholder="Name <email> or just name..." onKeyDown={e => { if (e.key === 'Enter') { addAttendee('ext'); e.preventDefault(); } }} />
-              <AddBtn ext onClick={() => addAttendee('ext')}>+ Add</AddBtn>
+              <TextInput sx={{ flex: 1 }} value={extAdd} onChange={e => setExtAdd(e.target.value)} placeholder="Name <email> or just name..." onKeyDown={e => { if (e.key === 'Enter') { addExternal(); e.preventDefault(); } }} />
+              <AddBtn ext onClick={addExternal}>+ Add</AddBtn>
             </Box>
           </Grid>
         </Grid>

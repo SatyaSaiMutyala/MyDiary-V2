@@ -1,6 +1,5 @@
 // Discussion-log helpers — 1:1 ports of the prototype's logic (lines 10700–11324)
 import { TODAY, parseDate, formatDate, DAYS, MONTHS, todayStr } from '../../utils/dates';
-import { EMPLOYEES } from '../../data/employees';
 
 // Who can see my logs and who I have spoken with are both answered by the API now:
 // GET /api/logs?mine=true scopes the list to the signed-in person (the prototype's myLogs), and
@@ -22,7 +21,6 @@ export function groupLogsByDay(logs) {
 
 // Fallback for the internal-person datalist. People come from GET /api/users (fields=name,title); that
 // endpoint is admin-only, so for everyone else the modal falls back to this roster.
-export const EMPLOYEE_OPTIONS = EMPLOYEES.flatMap(g => g.people.map(p => ({ name: p.name, role: p.role })));
 
 // Fresh draft for the New Log modal (openLogModal(preset) in the prototype)
 export function newLogDraft(preset) {

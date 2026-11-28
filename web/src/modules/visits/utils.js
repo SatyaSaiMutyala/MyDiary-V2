@@ -1,11 +1,9 @@
 // Visit-observation helpers — 1:1 ports of the prototype (lines 13033–13873)
 import { tokens } from '../../theme/tokens';
 import { VISIT_TYPES, RATING_AREAS } from '../../data/visits';
-import { EMPLOYEES } from '../../data/employees';
 import { parseDate, formatDateLong, todayStr } from '../../utils/dates';
 
 /** Fallback for the team picker when GET /api/users is not allowed (it is admin-only). */
-export const EMPLOYEE_OPTIONS = EMPLOYEES.flatMap(g => g.people.map(p => ({ name: p.name, role: p.role })));
 
 /** "Venkata Cherukuri (CMD)" and "venkata cherukuri" are the same person (server-side rule, mirrored here). */
 export const samePerson = (a, b) =>

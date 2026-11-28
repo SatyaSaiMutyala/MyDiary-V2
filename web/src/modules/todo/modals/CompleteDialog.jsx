@@ -6,6 +6,8 @@ import { errorMessage } from '../../../store/api/baseApi';
 import { useAddCommentMutation, useUpdateActionItemMutation } from '../../../store/api/actionItemsApi';
 import { useGetMeetingQuery } from '../../../store/api/meetingsApi';
 import { useDialog } from '../../../components/Dialogs';
+import { useAuth } from '../../../auth/AuthContext';
+import { samePerson } from '../utils';
 
 const CONFIG = {
   complete: { ico: '✓', label: 'Mark Task as Complete', sub: 'Status will update in the source meeting and your comment is added to the action trail.', placeholder: 'Completion note — what was done, any output / document produced, follow-up needed? (optional)', btnText: '✓ Mark Complete & Notify Chair', btnClass: 'primary', headClass: '', required: false },
@@ -21,6 +23,8 @@ const CONFIG = {
  */
 export default function CompleteDialog({ ctx, onClose }) {
   const dlg = useDialog();
+  const { user } = useAuth();
+  const me = user?.name || '';
   const [txt, setTxt] = useState('');
   const [updateActionItem, { isLoading: saving }] = useUpdateActionItemMutation();
   const [addComment, { isLoading: commenting }] = useAddCommentMutation();
@@ -28,7 +32,10 @@ export default function CompleteDialog({ ctx, onClose }) {
   const { data: meeting } = useGetMeetingQuery(a?.meetingId, { skip: !a?.meetingId });
   if (!ctx || !a) return null;
   const { mode } = ctx;
-  const m = { title: a.meetingTitle || meeting?.title || '', chair: meeting?.chair || 'the chair' };
+  // Who hears about it: a meeting's chair, or — for a task that came from nobody's meeting — whoever
+  // handed it over. Saying "the chair" on an ad-hoc task names somebody who does not exist.
+  const toldAbout = meeting?.chair || a.createdBy?.name || 'whoever set it';
+  const m = { title: a.meetingTitle || meeting?.title || '', chair: toldAbout };
   const c = CONFIG[mode];
   const icoColors = mode === 'blocker' ? { bg: tokens.redSoft, color: tokens.red } : mode === 'progress' ? { bg: tokens.blueSoft, color: tokens.blue } : { bg: tokens.tealSoft, color: tokens.tealDark };
 
@@ -43,9 +50,13 @@ export default function CompleteDialog({ ctx, onClose }) {
       await dlg.alert(errorMessage(err));
       return;
     }
-    const toast = mode === 'complete' ? `✓ Completed. ${m.chair} notified. Visible in meeting under Action Items.` :
-      mode === 'progress' ? '⏳ Status set to In Progress. Chair notified.' :
-      `⚠ Blocker raised. ${m.chair} notified — expect a reply.`;
+    // Only claims a notification when one actually goes out: the server tells whoever set the task,
+    // and a task you set for yourself notifies nobody.
+    const tellsSomeone = m.chair && m.chair !== 'whoever set it' && !samePerson(m.chair, me);
+    const alsoTold = tellsSomeone ? ` ${m.chair} notified.` : '';
+    const toast = mode === 'complete' ? `✓ Completed.${alsoTold}${a.meetingId ? ' Visible in the meeting under Action Items.' : ''}` :
+      mode === 'progress' ? `⏳ Status set to In Progress.${alsoTold}` :
+      `⚠ Blocker raised.${tellsSomeone ? ` ${m.chair} notified — expect a reply.` : ' It is flagged on your board.'}`;
     onClose();
     setTimeout(() => dlg.alert(toast), 100);
   };

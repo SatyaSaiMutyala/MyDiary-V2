@@ -546,3 +546,46 @@ describe('the project template library', () => {
     expect((await post('/api/projects/templates/tpl-nabl/use', {}, empToken)).status).toBe(403);
   });
 });
+
+/**
+ * Telling people they are on a project.
+ *
+ * A name on a team list is not the same as somebody who knows they are on the team. The person who
+ * creates it hears nothing — they were there — and an edit tells only the people who were not on it
+ * before.
+ */
+describe('telling people they are on a project', () => {
+  let kavya;
+  const inbox = async (t) => (await request(ctx.app).get('/api/notifications?limit=20').set(auth(t))).body.items ?? [];
+
+  beforeAll(async () => {
+    kavya = await createAndLogin(ctx.app, token, { name: 'Kavya Project', email: 'kavya.project@trustlab.co.in', role: 'employee', title: 'Technologist', department: 'Clinical Laboratory', modules: ['dashboard', 'projects'] });
+  });
+
+  it('tells a team member when the project is created, exactly once', async () => {
+    const r = await request(ctx.app).post('/api/projects').set(auth(token)).send({
+      name: 'NABL re-accreditation', owner: 'Venkata Cherukuri', endDate: '2027-02-01',
+      team: [{ name: 'Kavya Project', role: 'Lead' }],
+    });
+    expect(r.status).toBe(201);
+    const about = (await inbox(kavya.token)).filter((n) => n.text.includes('NABL re-accreditation'));
+    // One message, not two: creating a project notifies from one place only.
+    expect(about).toHaveLength(1);
+  });
+
+  it('tells only the newly added on an edit', async () => {
+    const made = await request(ctx.app).post('/api/projects').set(auth(token)).send({
+      name: 'Cold chain audit', endDate: '2027-03-01', team: [{ name: 'Kavya Project', role: 'Lead' }],
+    });
+    const id = made.body.project.id;
+    const hersBefore = (await inbox(kavya.token)).length;
+
+    const sravan = await createAndLogin(ctx.app, token, { name: 'Sravan Project', email: 'sravan.project@trustlab.co.in', role: 'employee', title: 'Accountant', department: 'Finance', modules: ['dashboard', 'projects'] });
+    await request(ctx.app).patch(`/api/projects/${id}`).set(auth(token)).send({
+      team: [{ name: 'Kavya Project', role: 'Lead' }, { name: 'Sravan Project', role: 'Analyst' }],
+    });
+
+    expect((await inbox(sravan.token)).some((n) => n.text.includes('Cold chain audit'))).toBe(true);
+    expect((await inbox(kavya.token)).length).toBe(hersBefore);
+  });
+});

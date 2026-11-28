@@ -7,7 +7,9 @@ import { ProjectTemplate } from '../models/ProjectTemplate.js';
 import { badRequest, notFound } from '../utils/errors.js';
 import { listResponse, pickFields } from '../utils/paginate.js';
 import { MODULE_LABELS } from './audit.js';
-import { nameClause, plusDays, todayStr } from './people.js';
+import { cleanName, nameClause, plusDays, short, todayStr } from './people.js';
+import { notify } from './notifications.js';
+import { html } from '../utils/html.js';
 import { seedingAllowed as seedGuard } from './seedGuard.js';
 
 /** The Activity Log module label every project change is filed under. */
@@ -243,7 +245,7 @@ export async function nextProjectCode() {
 export async function createProject(input, me, template = null) {
   const { milestones, refs } = buildMilestones([], input.milestones ?? []);
   const start = input.startDate || todayStr();
-  return Project.create({
+  const p = await Project.create({
     code: input.code || (await nextProjectCode()),
     name: input.name,
     description: input.description ?? '',
@@ -262,6 +264,40 @@ export async function createProject(input, me, template = null) {
     risks: buildRisks([], input.risks ?? [], refs),
     template: template ? template._id : null,
     createdBy: { id: me._id, name: me.name },
+  });
+  return p;
+}
+
+/**
+ * Tells somebody added to a project's team after it was created.
+ *
+ * Creating one already notifies the owner and the whole team (controllers/projects.js), and adding
+ * a member through the Team tab notifies that person; this covers the one way in that did not — the
+ * edit screen, which saves the whole team list at once. The person doing the editing is left out.
+ *
+ * @param {any} p @param {string[]} names @param {any} me @param {boolean} [added]
+ */
+async function notifyOnTeam(p, names, me, added = false) {
+  const others = [...new Set(names.filter(Boolean))].filter((n) => cleanName(n).toLowerCase() !== cleanName(me.name).toLowerCase());
+  if (!others.length) return 0;
+  return notify({
+    userNames: others,
+    type: 'project',
+    icon: '📁',
+    text: added
+      ? html`<strong>${me.name}</strong> added you to the project <em>${short(p.name, 70)}</em>.`
+      : html`<strong>${me.name}</strong> put you on the project <em>${short(p.name, 70)}</em> — due ${p.endDate}.`,
+  });
+}
+
+/** A project handed to a new owner through the edit screen; creating one is covered already. */
+async function notifyOwner(p, me, verb = 'owns') {
+  if (cleanName(p.owner).toLowerCase() === cleanName(me.name).toLowerCase()) return 0;
+  return notify({
+    userName: p.owner,
+    type: 'project',
+    icon: '📁',
+    text: html`<strong>${me.name}</strong> made you the owner of <em>${short(p.name, 70)}</em> — due ${p.endDate}.`,
   });
 }
 
@@ -293,8 +329,10 @@ export const projectSnapshot = (p) => ({
  * records that are still in it (so links from tasks and risks survive an edit in the wizard).
  * @param {any} p @param {Record<string, any>} patch
  */
-export async function patchProject(p, patch) {
+export async function patchProject(p, patch, me) {
   const before = projectSnapshot(p);
+  const teamBefore = p.team.map((t) => t.name);
+  const ownerBefore = p.owner;
   for (const f of ['code', 'name', 'description', 'category', 'priority', 'status', 'owner', 'startDate', 'endDate', 'progress']) {
     if (patch[f] !== undefined) p[f] = patch[f];
   }
@@ -315,6 +353,12 @@ export async function patchProject(p, patch) {
   if (patch.kpis !== undefined) p.kpis = buildKpis(p.kpis, patch.kpis);
   if (patch.risks !== undefined) p.risks = buildRisks(p.risks, patch.risks, refs);
   await p.save();
+  if (me) {
+    // Only the people who were not on it before: the rest were told when they were added.
+    const added = p.team.map((t) => t.name).filter((n) => !teamBefore.some((b) => cleanName(b).toLowerCase() === cleanName(n).toLowerCase()));
+    if (added.length) await notifyOnTeam(p, added, me, true);
+    if (p.owner && p.owner !== ownerBefore) await notifyOwner(p, me);
+  }
   return before;
 }
 

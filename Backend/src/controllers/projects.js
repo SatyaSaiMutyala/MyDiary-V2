@@ -271,7 +271,7 @@ export const get = async (req, res) => {
 /** PATCH /api/projects/:id @type {import('express').RequestHandler} */
 export const update = async (req, res) => {
   const p = await projects.findProjectOr404(req.params.id);
-  const before = await projects.patchProject(p, req.body);
+  const before = await projects.patchProject(p, req.body, currentUser(req));
   const changes = describeChanges(before, projects.projectSnapshot(p), projects.PROJECT_CHANGE_FIELDS);
   if (changes) audit(res, p, `updated the project — ${changes}`);
   else res.locals.audit = false;

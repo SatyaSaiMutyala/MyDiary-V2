@@ -249,3 +249,52 @@ describe('the two To-Do lists, narrowed on the server', () => {
   });
 });
 
+
+/**
+ * Telling the person who set a task that it moved.
+ *
+ * "Blocker raised — expect a reply" is a promise the screen makes on the server's behalf. Until this
+ * was sent it was not kept: a blocked task sat on the owner's board and the one person who could
+ * clear it heard nothing. Nobody is told about their own change.
+ */
+describe('status changes reach whoever set the task', () => {
+  let kavya;
+  const inbox = async (t) => (await request(ctx.app).get('/api/notifications?limit=20').set(auth(t))).body.items ?? [];
+
+  beforeAll(async () => {
+    kavya = await createAndLogin(ctx.app, token, { name: 'Kavya Status', email: 'kavya.status@trustlab.co.in', role: 'employee', title: 'Technologist', department: 'Clinical Laboratory', modules: ['dashboard', 'meetings', 'todo'] });
+  });
+
+  /** A task the admin allocates to Kavya. */
+  const allocate = async (desc) => (await request(ctx.app).post('/api/action-items').set(auth(token))
+    .send({ desc, owner: 'Kavya Status', deadline: '2026-12-20', priority: 'high' })).body.action;
+
+  it('tells the setter when the owner raises a blocker', async () => {
+    const a = await allocate('Pull the NABL validation records');
+    const before = (await inbox(token)).length;
+
+    const r = await request(ctx.app).patch(`/api/action-items/${a.id}`).set(auth(kavya.token)).send({ status: 'blocked' });
+    expect(r.status).toBe(200);
+
+    const mine = await inbox(token);
+    expect(mine.length).toBe(before + 1);
+    expect(mine[0].text).toContain('blocked');
+    expect(mine[0].text).toContain('Pull the NABL validation records');
+  });
+
+  it('tells the setter when it is started and when it is finished', async () => {
+    const a = await allocate('Collect the W48 branch figures');
+    await request(ctx.app).patch(`/api/action-items/${a.id}`).set(auth(kavya.token)).send({ status: 'in-progress' });
+    expect((await inbox(token))[0].text).toContain('started on');
+    await request(ctx.app).patch(`/api/action-items/${a.id}`).set(auth(kavya.token)).send({ status: 'done' });
+    expect((await inbox(token))[0].text).toContain('completed');
+  });
+
+  it('says nothing when somebody moves their own task', async () => {
+    const own = (await request(ctx.app).post('/api/action-items').set(auth(token))
+      .send({ desc: 'Something I set myself', deadline: '2026-12-20' })).body.action;
+    const before = (await inbox(token)).length;
+    await request(ctx.app).patch(`/api/action-items/${own.id}`).set(auth(token)).send({ status: 'done' });
+    expect((await inbox(token)).length).toBe(before);
+  });
+});

@@ -279,3 +279,41 @@ describe('who can see a meeting', () => {
     );
   });
 });
+
+/**
+ * Being told you are on a meeting.
+ *
+ * Somebody put on a meeting has no reason to go looking for it, so the invitation has to come to
+ * them. The organiser is left out of their own notification, and a second one only goes to people
+ * who were not already on it.
+ */
+describe('telling people they are on a meeting', () => {
+  let kavyaToken = '';
+  const inbox = async (t) => (await get('/api/notifications?limit=20', t)).body.items ?? [];
+
+  beforeAll(async () => {
+    kavyaToken = (await createAndLogin(ctx.app, token, { name: 'Kavya Invited', email: 'kavya.invited@trustlab.co.in', role: 'employee', title: 'Technologist', department: 'Clinical Laboratory', modules: ['dashboard', 'meetings'] })).token;
+  });
+
+  it('notifies the people put on it, and not the organiser', async () => {
+    const before = (await inbox(token)).length;
+    await makeMeeting({ title: 'Invite test', attendees: ['Venkata Cherukuri', 'Kavya Invited'] });
+
+    const hers = await inbox(kavyaToken);
+    expect(hers.some((n) => n.text.includes('Invite test'))).toBe(true);
+    // The organiser already knows; their own inbox should not have grown.
+    expect((await inbox(token)).length).toBe(before);
+  });
+
+  it('notifies only the people added later, not the ones already on it', async () => {
+    const m = await makeMeeting({ title: 'Later additions', attendees: ['Venkata Cherukuri', 'Kavya Invited'] });
+    const hersBefore = (await inbox(kavyaToken)).length;
+
+    const sravan = await createAndLogin(ctx.app, token, { name: 'Sravan Added', email: 'sravan.added@trustlab.co.in', role: 'employee', title: 'Accountant', department: 'Finance', modules: ['dashboard', 'meetings'] });
+    await patch(`/api/meetings/${m.id}`, { attendees: ['Venkata Cherukuri', 'Kavya Invited', 'Sravan Added'] });
+
+    expect((await inbox(sravan.token)).some((n) => n.text.includes('Later additions'))).toBe(true);
+    // Kavya was on it already, so the edit is not news to her.
+    expect((await inbox(kavyaToken)).length).toBe(hersBefore);
+  });
+});

@@ -158,8 +158,14 @@ describe('fields= and invalid params', () => {
     const page = await users('?page=0');
     expect(page.status).toBe(400);
     expect(page.body.error.message).toBe('page must be a whole number of 1 or more.');
-    const limit = await users('?limit=201');
-    expect(limit.body.error.message).toBe('limit must be a whole number from 1 to 200.');
+    // Users allow a longer page than the 200 the other lists cap at, so the bulk password screen can
+    // show everybody on one list; the message names whatever that list's own ceiling is.
+    const limit = await users('?limit=501');
+    expect(limit.status).toBe(400);
+    expect(limit.body.error.message).toBe('limit must be a whole number from 1 to 500.');
+    const otherList = await audit('?limit=201');
+    expect(otherList.status).toBe(400);
+    expect(otherList.body.error.message).toBe('limit must be a whole number from 1 to 200.');
   });
 
   it('the CSV export honours the same filters and records them', async () => {

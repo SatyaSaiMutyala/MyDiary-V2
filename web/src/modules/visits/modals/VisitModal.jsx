@@ -1,14 +1,11 @@
-import { useState } from 'react';
 import { Box, InputBase } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { tokens, fonts } from '../../../theme/tokens';
 import { VISIT_TYPES, RATING_AREAS, OBS_CATEGORIES, OVERALL_OPTIONS } from '../../../data/visits';
-import { ModalShell, FootNote, Btn, TextLink, AddBtn, Chip, FieldLabel, Field, TextInput, TextArea, SelectInput, VSection, DelBtn, Icon } from '../../../components';
-import { useListUsersQuery } from '../../../store/api/usersApi';
-import { EMPLOYEE_OPTIONS } from '../utils';
+import { ModalShell, FootNote, Btn, TextLink, Chip, FieldLabel, Field, TextInput, TextArea, SelectInput, VSection, DelBtn, Icon, PeoplePicker } from '../../../components';
+import { usePeopleOptions } from '../../../data/people';
 import { DateInput, TimeInput } from '../../../components/DateTimeInput';
 
-const DATALIST_ID = 'visit-team-datalist';
 // .obs-row input/select/textarea + .v-action-row input
 const smallInput = { p: '7px 9px', border: `1px solid ${tokens.line}`, borderRadius: '4px', bgcolor: tokens.cream, fontSize: 12, fontFamily: 'inherit', height: 'auto', boxSizing: 'border-box', '&:focus': { outline: 'none', borderColor: tokens.teal } };
 const smallSelectSx = { p: '7px 28px 7px 9px', borderRadius: '4px', fontSize: 12, backgroundPosition: 'right 8px center' };
@@ -48,11 +45,10 @@ const obsHeadCell = { fontFamily: fonts.mono, fontSize: 9, color: tokens.slate, 
  * onSave(targetStatus, draft) runs validation + upsert in the page.
  */
 export default function VisitModal({ open, draft, setDraft, onClose, onSave }) {
-  const [teamAdd, setTeamAdd] = useState('');
-  // The team picker lists the real people (GET /api/users). That endpoint is admin-only, so when it refuses
-  // the picker falls back to the static roster rather than offering nothing.
-  const { data: users, error: usersError } = useListUsersQuery({ limit: 200, fields: 'name,title', sort: 'name' });
-  const people = users ? users.items.map(u => ({ name: u.name, role: u.title || '' })) : (usersError ? EMPLOYEE_OPTIONS : []);
+  // The real staff list, through the directory every signed-in person may read. It used to come from
+  // GET /api/users (admin-only) and fall back to the bundled sample roster, so an employee writing a
+  // visit report was offered names that belong to no account.
+  const { people, loading: loadingPeople } = usePeopleOptions();
   if (!draft) return null;
   const v = draft;
   const upd = fn => setDraft(prev => { const c = JSON.parse(JSON.stringify(prev)); fn(c); return c; });
@@ -60,7 +56,6 @@ export default function VisitModal({ open, draft, setDraft, onClose, onSave }) {
     value: path.split('.').reduce((o, k) => o?.[k], v) ?? '',
     onChange: e => upd(c => { const ks = path.split('.'); const last = ks.pop(); const tgt = ks.reduce((o, k) => o[k], c); tgt[last] = parse(e.target.value); }),
   });
-  const addVisitTeam = () => { const t = teamAdd.trim(); if (!t) return; upd(c => c.team.push(t)); setTeamAdd(''); };
   const setRating = (area, score) => upd(c => { c.ratings[area] = c.ratings[area] === score ? 0 : score; });
 
   const footer = (
@@ -119,11 +114,8 @@ export default function VisitModal({ open, draft, setDraft, onClose, onSave }) {
           {v.team.length ? v.team.map((a, i) => <Chip key={i} onRemove={() => upd(c => c.team.splice(i, 1))}>{a}</Chip>)
             : <Box component="span" sx={{ fontSize: 12, color: tokens.slate, fontStyle: 'italic' }}>No team members added yet.</Box>}
         </Box>
-        <Box sx={{ display: 'flex', gap: '6px' }}>
-          <TextInput value={teamAdd} onChange={e => setTeamAdd(e.target.value)} inputProps={{ list: DATALIST_ID }} placeholder="+ Add team member" onKeyDown={e => { if (e.key === 'Enter') { addVisitTeam(); e.preventDefault(); } }} sx={{ flex: 1 }} />
-          <datalist id={DATALIST_ID}>{people.map(p => <option key={p.name} value={p.name}>{p.role}</option>)}</datalist>
-          <AddBtn onClick={addVisitTeam}>+ Add</AddBtn>
-        </Box>
+        <PeoplePicker value={v.team} onChange={(names) => upd(c => { c.team = names; })} people={people} loading={loadingPeople}
+          placeholder="Add a team member from the staff list…" emptyNote="No staff accounts yet." />
         <FieldLabel hint="if any" sx={{ mt: '14px' }}>External Participants</FieldLabel>
         <TextInput {...bind('externalParticipants')} placeholder="Names of external attendees from the visited organisation" />
       </VSection>
@@ -193,7 +185,14 @@ export default function VisitModal({ open, draft, setDraft, onClose, onSave }) {
         {v.actionItems.map((a, i) => (
           <Grid key={i} container spacing={1} sx={{ alignItems: 'center', p: '8px 10px', bgcolor: tokens.card, border: `1px solid ${tokens.line}`, borderLeft: `3px solid ${tokens.yellow}`, borderRadius: '5px', mb: '5px' }}>
             <Grid size={{ xs: 12, md: 'grow' }}><InputBase value={a.text || ''} placeholder="Action to be taken" onChange={e => upd(c => { c.actionItems[i].text = e.target.value; })} sx={{ width: '100%' }} inputSx={smallInput} /></Grid>
-            <Grid size={{ xs: 6, md: 3 }}><InputBase value={a.owner || ''} placeholder="Owner" inputProps={{ list: DATALIST_ID }} onChange={e => upd(c => { c.actionItems[i].owner = e.target.value; })} sx={{ width: '100%' }} inputSx={smallInput} /></Grid>
+            {/* The owner is told about this action when the report is submitted, so it has to be an account. */}
+            <Grid size={{ xs: 6, md: 3 }}>
+              <Box component="select" value={a.owner || ''} onChange={e => upd(c => { c.actionItems[i].owner = e.target.value; })}
+                sx={{ width: '100%', ...smallInput, border: `1px solid ${tokens.line}`, borderRadius: '4px', bgcolor: tokens.card, fontFamily: 'inherit', cursor: 'pointer' }}>
+                <option value="">Owner…</option>
+                {people.map(p => <option key={p.name} value={p.name}>{p.name}</option>)}
+              </Box>
+            </Grid>
             <Grid size={{ xs: 5, md: 3 }}><DateInput value={a.deadline || ''} onChange={e => upd(c => { c.actionItems[i].deadline = e.target.value; })} sx={{ width: '100%' }} inputSx={smallInput} /></Grid>
             <Grid size={{ xs: 1, md: 'auto' }} sx={{ width: { md: 40 }, display: 'flex', justifyContent: 'center' }}><DelBtn onClick={() => upd(c => c.actionItems.splice(i, 1))} /></Grid>
           </Grid>

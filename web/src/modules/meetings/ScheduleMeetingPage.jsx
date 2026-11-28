@@ -1,13 +1,15 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Box, ButtonBase, Typography } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { tokens, fonts, TYPE_COLORS } from '../../theme/tokens';
-import { PageHeader, Btn, TextLink, AddBtn, Card, Field, FieldLabel, TextInput, TextArea, SelectInput, Segmented, ToggleRow, Chip, DelBtn, Icon } from '../../components';
+import { PageHeader, Btn, TextLink, AddBtn, Card, Field, FieldLabel, TextInput, TextArea, SelectInput, Segmented, ToggleRow, Chip, DelBtn, Icon, PeoplePicker } from '../../components';
+import { useAuth } from '../../auth/AuthContext';
 import { useCrumbs } from '../../store/CrumbsContext';
 import { errorMessage } from '../../store/api/baseApi';
 import { useCreateMeetingMutation, useGetMeetingQuery, useUpdateMeetingMutation } from '../../store/api/meetingsApi';
 import { useGetTemplateQuery } from '../../store/api/templatesApi';
+import { useListPeopleQuery } from '../../store/api/usersApi';
 import { TYPES } from '../../data/meetings';
 import { parseDate, formatDate, formatTime } from '../../utils/dates';
 import ScheduleStepper from './components/scheduleStepper';
@@ -94,6 +96,8 @@ function AgendaItem({ idx, item, onChange, onDelete, canDelete, autoFocus }) {
 export default function ScheduleMeetingPage() {
   const dlg = useDialog();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const meName = user?.name || '';
   // "Load from template…" sends the person to /templates; picking a card comes back here with
   // { type, templateId } so the chosen agenda can pre-fill this form.
   const { state: navState } = useLocation();
@@ -146,16 +150,30 @@ export default function ScheduleMeetingPage() {
   const agendaMinutes = agenda.filter(a => a.text.trim()).reduce((n, a) => n + toMinutes(a.time), 0);
   const delAgenda = (i) => { setAgenda(a => a.filter((_, j) => j !== i)); setFocusIdx(-1); };
 
-  // Card 4 — attendees
-  const [internals, setInternals] = useState(['Venkata Cherukuri', 'N. Sharma (CFO)', 'Pallavi (EA)']);
+  // Card 4 — attendees.
+  // Colleagues are picked from the real staff directory, never typed: the name stored here is what
+  // decides who is shown the meeting and who is notified about it, so it has to be an account.
+  const { data: directory, isLoading: loadingPeople } = useListPeopleQuery();
+  const people = directory ?? [];
+  const [internals, setInternals] = useState([]);
   const [externals, setExternals] = useState([]);
-  const [intAdd, setIntAdd] = useState('');
   const [extAdd, setExtAdd] = useState('');
-  const [chair, setChair] = useState('Venkata Cherukuri (CMD)');
-  const [minuteTaker, setMinuteTaker] = useState('Pallavi (EA)');
+  const [chair, setChair] = useState('');
+  const [minuteTaker, setMinuteTaker] = useState('');
+
+  // The person scheduling it is on it and chairs it until they change either — they are a real
+  // account, unlike the three names this form used to invent.
+  useEffect(() => {
+    if (isEdit || !meName) return;
+    setInternals(x => (x.length ? x : [meName]));
+    setChair(c => c || meName);
+  }, [isEdit, meName]);
+
+  /** Who may chair or take the minutes: the colleagues on the meeting, and always the organiser. */
+  const candidates = useMemo(() => [...new Set([meName, ...internals].filter(Boolean))], [meName, internals]);
 
   const addChip = async (kind) => {
-    const v = (kind === 'ext' ? extAdd : intAdd).trim();
+    const v = (kind === 'ext' ? extAdd : '').trim();
     if (!v) return;
     if (kind === 'ext') {
       // Try to parse "Name <email>" format, otherwise prompt
@@ -174,9 +192,6 @@ export default function ScheduleMeetingPage() {
       }
       setExternals(x => [...x, { name, email }]);
       setExtAdd('');
-    } else {
-      setInternals(x => [...x, v]);
-      setIntAdd('');
     }
   };
   const onEnter = (kind) => (e) => { if (e.key === 'Enter') { addChip(kind); e.preventDefault(); } };
@@ -205,6 +220,7 @@ export default function ScheduleMeetingPage() {
     setLoc(existing.loc && existing.loc !== 'TBD' ? existing.loc : '');
     setChair(existing.chair || '');
     setInternals(existing.attendees ?? []);
+    setMinuteTaker('');
     setExternals((existing.external ?? []).map((e) => ({ name: e.name, email: e.email || '' })));
     const items = existing.agenda ?? [];
     setAgenda(items.length
@@ -256,7 +272,7 @@ export default function ScheduleMeetingPage() {
       mode,
       // Everything left blank is omitted so the API's own defaults apply (chair = me, loc = TBD, agenda times 10m,
       // presence / pre-read built from the attendee list).
-      ...(chair.startsWith('Venkata Cherukuri') ? { chair: 'Venkata Cherukuri' } : {}),
+      ...(chair.trim() ? { chair: chair.trim() } : {}),
       ...(loc.trim() ? { loc: loc.trim() } : {}),
       ...(internals.length ? { attendees: internals } : {}),
       ...(externals.length ? { external: externals.map(e => ({ name: e.name, email: e.email || '' })) } : {}),
@@ -394,9 +410,12 @@ export default function ScheduleMeetingPage() {
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '6px', mt: '10px' }}>
                   {internals.map((n, i) => <Chip key={n + i} onRemove={() => setInternals(x => x.filter((_, j) => j !== i))}>{n}</Chip>)}
                 </Box>
-                <Box sx={{ display: 'flex', gap: '6px', mt: 1 }}>
-                  <TextInput value={intAdd} onChange={e => setIntAdd(e.target.value)} onKeyDown={onEnter('int')} placeholder="Search employee..." sx={{ flex: 1 }} />
-                  <AddBtn onClick={() => addChip('int')}>+ Add</AddBtn>
+                <Box sx={{ mt: 1 }}>
+                  <PeoplePicker value={internals} onChange={setInternals} people={people} me={meName} loading={loadingPeople}
+                    placeholder="Add a colleague from the staff list…" emptyNote="No staff accounts yet. Add people in Settings → Users." />
+                </Box>
+                <Box sx={{ fontSize: 11, color: tokens.slate, mt: '6px' }}>
+                  Everyone added here is shown the meeting in their own MyDiary and told about it when you save.
                 </Box>
               </Grid>
               <Grid size={col2}>
@@ -410,9 +429,20 @@ export default function ScheduleMeetingPage() {
                 </Box>
               </Grid>
             </Grid>
+            {/* Both are real people off the list above, not job titles: the chair is shown the meeting
+                and is told who has accepted, so "Rotating" would be nobody at all. */}
             <Row sx={{ mt: '20px', mb: 0 }}>
-              <Grid size={col2}><Field label="Chair / Lead"><SelectInput value={chair} onChange={e => setChair(e.target.value)}><option>Venkata Cherukuri (CMD)</option><option>Rotating</option><option>External facilitator</option></SelectInput></Field></Grid>
-              <Grid size={col2}><Field label="Minute Taker"><SelectInput value={minuteTaker} onChange={e => setMinuteTaker(e.target.value)}><option>Pallavi (EA)</option><option>Self</option><option>Nominated per meeting</option></SelectInput></Field></Grid>
+              <Grid size={col2}><Field label="Chair / Lead" hint="runs the meeting">
+                <SelectInput value={chair} onChange={e => setChair(e.target.value)}>
+                  {candidates.map(n => <option key={n} value={n}>{n === meName ? `${n} (you)` : n}</option>)}
+                </SelectInput>
+              </Field></Grid>
+              <Grid size={col2}><Field label="Minute Taker" hint="writes the minutes">
+                <SelectInput value={minuteTaker} onChange={e => setMinuteTaker(e.target.value)}>
+                  <option value="">— Nominate on the day —</option>
+                  {candidates.map(n => <option key={n} value={n}>{n === meName ? `${n} (you)` : n}</option>)}
+                </SelectInput>
+              </Field></Grid>
             </Row>
           </Card>
 

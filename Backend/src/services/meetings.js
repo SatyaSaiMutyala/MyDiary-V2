@@ -103,7 +103,7 @@ function mergeExternal(incoming, existing = []) {
 export async function createMeeting(input, me) {
   const attendees = input.attendees?.length ? input.attendees : [me.name];
   const agenda = input.agenda?.length ? input.agenda : ['Discussion'];
-  return Meeting.create({
+  const m = await Meeting.create({
     type: input.type,
     title: input.title,
     date: input.date,
@@ -130,6 +130,32 @@ export async function createMeeting(input, me) {
     minutes: {},
     ...peopleDefaults(attendees),
     createdBy: { id: me._id, name: me.name },
+  });
+  await notifyInvited(m, attendees, me);
+  return m;
+}
+
+/**
+ * Tells the people put on a meeting that they are on it.
+ *
+ * Being added to someone else's meeting is not something you go looking for, so until this was sent
+ * the only way to find out was to open My Meetings and notice a new row. The organiser is left out —
+ * they already know — and so is anybody whose name is not an account, which an external guest's is
+ * not.
+ *
+ * @param {any} m @param {string[]} names @param {any} me @param {boolean} [added] worded for an edit
+ */
+async function notifyInvited(m, names, me, added = false) {
+  const others = names.filter((n) => !sameName(n, me.name));
+  if (!others.length) return 0;
+  const when = `${m.date} at ${m.time}`;
+  return notify({
+    userNames: others,
+    type: 'meeting',
+    icon: '📅',
+    text: added
+      ? html`<strong>${me.name}</strong> added you to <em>${m.title}</em> — ${when}.`
+      : html`<strong>${me.name}</strong> has put you on <em>${m.title}</em> — ${when}. It is now in your meetings.`,
   });
 }
 
@@ -159,8 +185,10 @@ export const meetingSnapshot = (m) => ({
  * re-align agendaTimes, a title change is pushed to the meeting's action items and decisions.
  * @param {any} m @param {Record<string, any>} patch
  */
-export async function patchMeeting(m, patch) {
+export async function patchMeeting(m, patch, me) {
   const before = meetingSnapshot(m);
+  /** @type {string[]} */
+  let newlyInvited = [];
   for (const f of ['title', 'type', 'date', 'time', 'dur', 'chair', 'loc', 'mode', 'subBadge', 'clientCode', 'clientName', 'parkingLot', 'contributions', 'carriedOver', 'polls', 'contextCard']) {
     if (patch[f] !== undefined) {
       m[f] = patch[f];
@@ -169,6 +197,8 @@ export async function patchMeeting(m, patch) {
   }
   if (patch.attendees !== undefined) {
     const attendees = patch.attendees.length ? patch.attendees : m.attendees;
+    // Only the new names: everybody already on it was told when they were put on it.
+    newlyInvited = attendees.filter((a) => !m.attendees.some((b) => sameName(a, b)));
     const { presence, preRead } = peopleDefaults(attendees, { presence: m.presence, preRead: m.preRead });
     m.attendees = attendees;
     m.presence = presence;
@@ -184,6 +214,7 @@ export async function patchMeeting(m, patch) {
     m.agenda = agenda;
   }
   await m.save();
+  if (me && newlyInvited.length) await notifyInvited(m, newlyInvited, me, true);
   if (before.title !== m.title) {
     await Promise.all([
       ActionItem.updateMany({ meetingId: m._id }, { $set: { meetingTitle: m.title } }),

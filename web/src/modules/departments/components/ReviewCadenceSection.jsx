@@ -3,7 +3,7 @@ import Grid from '@mui/material/Grid';
 import { tokens, fonts } from '../../../theme/tokens';
 import { Btn, TextLink, TabBar, Icon } from '../../../components';
 import { describeWeekly, describeMonthly } from '../../../utils/departments';
-import { EMPLOYEES } from '../../../data/employees';
+import { usePeopleOptions } from '../../../data/people';
 import DeptSection, { SectionNote } from './DeptSection';
 import LiveInput, { TimeInput } from './LiveInput';
 import { DowChips, DomGroup, RagGroup, RowDel } from './Chips';
@@ -26,6 +26,7 @@ function HeroTile({ label, topColor = tokens.teal, children }) {
 
 /** renderReviewCadenceSection (prototype 12499–12610) */
 export default function ReviewCadenceSection({ dept: d, tab, onTab, api }) {
+  const { people } = usePeopleOptions();
   if (!d.reviewCadence) return null;
   const rc = d.reviewCadence;
   const weeklyDaysLabel = describeWeekly(rc.weekly.daysOfWeek || []);
@@ -75,7 +76,7 @@ export default function ReviewCadenceSection({ dept: d, tab, onTab, api }) {
           <HeroTile label="Dept Owner" topColor="#DD6B20">
             <LiveInput value={rc.owner || ''} placeholder="e.g. HR Head" list="dept-owner-datalist" onCommit={(v) => api.updateRC('owner', v)} sx={heroInputSx} />
             <Box component="datalist" id="dept-owner-datalist">
-              {EMPLOYEES.flatMap(g => g.people.map(p => <option key={p.name} value={p.name}>{p.role}</option>))}
+              {people.map(p => <option key={p.name} value={p.name}>{p.role}</option>)}
             </Box>
           </HeroTile>
         </Grid>

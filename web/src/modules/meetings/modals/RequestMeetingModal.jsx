@@ -7,7 +7,7 @@ import { useAuth } from '../../../auth/AuthContext';
 import { useAppStore } from '../../../store/AppStore';
 import { errorMessage } from '../../../store/api/baseApi';
 import { useCreateRequestMutation } from '../../../store/api/meetingRequestsApi';
-import { EMPLOYEES } from '../../../data/employees';
+import { usePeopleOptions } from '../../../data/people';
 import { addDaysISO } from '../../../utils/dates';
 import { useDialog } from '../../../components/Dialogs';
 import { DateInput, DurationInput, TimeInput } from '../../../components/DateTimeInput';
@@ -23,7 +23,9 @@ export default function RequestMeetingModal({ open, onClose }) {
   const { user } = useAuth();
   const [createRequest, { isLoading: sending }] = useCreateRequestMutation();
   const me = user?.name || state.viewer.name;
-  const others = EMPLOYEES.flatMap(g => (g.people || []).map(p => p.name)).filter(n => n !== me);
+  // Real colleagues: a request sent to a name off the sample roster reached nobody.
+  const { names } = usePeopleOptions();
+  const others = names.filter(n => n !== me);
 
   const [to, setTo] = useState('');
   const [date, setDate] = useState(addDaysISO(2));

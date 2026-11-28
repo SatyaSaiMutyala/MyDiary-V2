@@ -5,15 +5,13 @@ import { Btn, TextLink, VSection, Field, TextInput, TextArea, SelectInput, DelBt
 import { tokens, fonts } from '../../../theme/tokens';
 import { errorMessage } from '../../../store/api/baseApi';
 import { useCreateProjectMutation, useUpdateProjectMutation } from '../../../store/api/projectsApi';
-import { useListUsersQuery } from '../../../store/api/usersApi';
 import { PROJ_CATEGORIES, PROJ_STATUSES } from '../../../data/projects';
-import { EMPLOYEES } from '../../../data/employees';
+import { usePeopleOptions } from '../../../data/people';
 import { WIZ_STEPS, draftToBody, newId } from '../utils';
 import { useDialog } from '../../../components/Dialogs';
 import { DateInput } from '../../../components/DateTimeInput';
 
-const DATALIST_ID = 'proj-emp-datalist';
-const listProps = { inputProps: { list: DATALIST_ID } };
+const personSelectSx = { width: '100%', minHeight: 36, p: '8px 10px', border: `1px solid ${tokens.line}`, borderRadius: '6px', bgcolor: tokens.card, fontSize: 13, color: tokens.ink, fontFamily: 'inherit', cursor: 'pointer', '&:focus': { outline: 'none', borderColor: tokens.teal } };
 const hint = (txt) => <Box sx={{ fontSize: 12, color: tokens.slate, mb: '10px' }}>{txt}</Box>;
 const rowSx = (bg = tokens.cream) => ({ p: '6px 10px', bgcolor: bg, borderRadius: '5px', alignItems: 'center' });
 const PRI_OPTS = [['low', 'Low'], ['medium', 'Med'], ['high', 'High'], ['critical', 'Crit']];
@@ -33,9 +31,10 @@ export default function ProjectWizardModal({ draft: initialDraft, onClose, onSav
   const saving = creating.isLoading || updating.isLoading;
   // A second click before React has re-rendered the disabled button must not create a second project.
   const inFlight = useRef(false);
-  // People picker: the real accounts (admins can read them), falling back to the roster for everyone else.
-  const { data: accounts } = useListUsersQuery({ limit: 200, fields: 'name', sort: 'name' });
-  const peopleNames = accounts?.items?.length ? accounts.items.map(u => u.name) : EMPLOYEES.flatMap(g => g.people).map(e => e.name);
+  // The real staff list, through the directory every signed-in person may read. It used to try
+  // GET /api/users (admin-only) and fall back to the bundled sample roster, so a project could be
+  // owned by, and its tasks assigned to, people who have no account at all.
+  const { names: peopleNames } = usePeopleOptions();
 
   // imperative-style draft edit (PROJ_DRAFT.x = v; renderProjectModal())
   const ed = (fn) => setD(prev => { const next = JSON.parse(JSON.stringify(prev)); fn(next); return next; });
@@ -81,7 +80,6 @@ export default function ProjectWizardModal({ draft: initialDraft, onClose, onSav
   return (
     <Modal open onClose={onClose} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: { xs: 1.5, md: 2.5 } }} slotProps={{ backdrop: { sx: { bgcolor: 'rgba(26,58,47,0.6)', backdropFilter: 'blur(4px)' } } }}>
       <Box sx={{ bgcolor: tokens.card, borderRadius: '14px', boxShadow: tokens.shadowLg, width: 780, maxWidth: '100%', maxHeight: '92vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', outline: 'none' }}>
-        <datalist id={DATALIST_ID}>{peopleNames.map(name => <option key={name} value={name} />)}</datalist>
 
         {/* .visit-modal-head */}
         <Box sx={{ p: { xs: '16px 18px', md: '20px 28px' }, background: `linear-gradient(135deg, ${tokens.greenDeep}, ${tokens.tealDark})`, color: '#fff', display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -113,7 +111,7 @@ export default function ProjectWizardModal({ draft: initialDraft, onClose, onSav
             <VSection head="Project Details">
               <Grid container spacing="12px" sx={{ mb: '12px' }}>
                 <Grid size={{ xs: 12, sm: 6 }}><Field label="Project Code"><TextInput value={d.code} onChange={e => ed(x => { x.code = e.target.value; })} /></Field></Grid>
-                <Grid size={{ xs: 12, sm: 6 }}><Field label="Owner"><TextInput value={d.owner} onChange={e => ed(x => { x.owner = e.target.value; })} {...listProps} /></Field></Grid>
+                <Grid size={{ xs: 12, sm: 6 }}><Field label="Owner"><Box component="select" value={d.owner || ''} onChange={e => ed(x => { x.owner = e.target.value; })} sx={personSelectSx}><option value="">Choose an owner…</option>{peopleNames.map(n => <option key={n} value={n}>{n}</option>)}</Box></Field></Grid>
               </Grid>
               <Field label="Project Name" req sx={{ mb: '12px' }}><TextInput value={d.name} onChange={e => ed(x => { x.name = e.target.value; })} placeholder="e.g. NABL Surveillance Audit — Dec 2026 Prep" /></Field>
               <Field label="Description" req sx={{ mb: '12px' }}><TextArea value={d.description} onChange={e => ed(x => { x.description = e.target.value; })} placeholder="What is this project about? Scope, objectives, success criteria..." sx={{ '& textarea.MuiInputBase-input': { minHeight: 80, resize: 'vertical', lineHeight: 1.5 } }} /></Field>
@@ -136,7 +134,7 @@ export default function ProjectWizardModal({ draft: initialDraft, onClose, onSav
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: '5px', m: '8px 0' }}>
                   {d.team.map((t, i) => (
                     <Grid container key={i} spacing={1} sx={rowSx()}>
-                      <Grid size={{ xs: 12, sm: 'grow' }}><TextInput value={t.name} onChange={e => ed(x => { x.team[i].name = e.target.value; })} placeholder="Name" {...listProps} /></Grid>
+                      <Grid size={{ xs: 12, sm: 'grow' }}><Box component="select" value={t.name || ''} onChange={e => ed(x => { x.team[i].name = e.target.value; })} sx={personSelectSx}><option value="">Choose a colleague…</option>{peopleNames.map(n => <option key={n} value={n}>{n}</option>)}</Box></Grid>
                       <Grid size={{ xs: 10, sm: 'grow' }}><TextInput value={t.role || ''} onChange={e => ed(x => { x.team[i].role = e.target.value; })} placeholder="Role (e.g. Project Lead, Analyst)" /></Grid>
                       <Grid size="auto"><DelBtn onClick={() => ed(x => { x.team.splice(i, 1); })} /></Grid>
                     </Grid>
@@ -169,7 +167,7 @@ export default function ProjectWizardModal({ draft: initialDraft, onClose, onSav
                   <Grid container key={m.id || i} spacing={1} sx={rowSx()}>
                     <Grid size={{ xs: 12, sm: 'grow' }}><TextInput value={m.name || ''} onChange={e => ed(x => { x.milestones[i].name = e.target.value; })} placeholder="Milestone name" /></Grid>
                     <Grid size={{ xs: 6, sm: 3 }}><DateInput value={m.dueDate || ''} onChange={e => ed(x => { x.milestones[i].dueDate = e.target.value; })} /></Grid>
-                    <Grid size={{ xs: 5, sm: 3 }}><TextInput value={m.owner || ''} onChange={e => ed(x => { x.milestones[i].owner = e.target.value; })} placeholder="Owner" {...listProps} /></Grid>
+                    <Grid size={{ xs: 5, sm: 3 }}><Box component="select" value={m.owner || ''} onChange={e => ed(x => { x.milestones[i].owner = e.target.value; })} sx={personSelectSx}><option value="">Owner…</option>{peopleNames.map(n => <option key={n} value={n}>{n}</option>)}</Box></Grid>
                     <Grid size="auto"><DelBtn onClick={() => ed(x => { x.milestones.splice(i, 1); })} /></Grid>
                   </Grid>
                 ))}
@@ -191,7 +189,7 @@ export default function ProjectWizardModal({ draft: initialDraft, onClose, onSav
                   {d.tasks.map((t, i) => (
                     <Grid container key={t.id || i} spacing="6px" sx={rowSx()}>
                       <Grid size={{ xs: 12, md: 'grow' }}><TextInput value={t.title || ''} onChange={e => ed(x => { x.tasks[i].title = e.target.value; })} placeholder="Task title" /></Grid>
-                      <Grid size={{ xs: 6, md: 2 }}><TextInput value={t.assignee || ''} onChange={e => ed(x => { x.tasks[i].assignee = e.target.value; })} placeholder="Assignee" {...listProps} /></Grid>
+                      <Grid size={{ xs: 6, md: 2 }}><Box component="select" value={t.assignee || ''} onChange={e => ed(x => { x.tasks[i].assignee = e.target.value; })} sx={personSelectSx}><option value="">Assignee…</option>{peopleNames.map(n => <option key={n} value={n}>{n}</option>)}</Box></Grid>
                       <Grid size={{ xs: 6, md: 2 }}><DateInput value={t.dueDate || ''} onChange={e => ed(x => { x.tasks[i].dueDate = e.target.value; })} /></Grid>
                       <Grid size={{ xs: 5, md: 1.5 }}><SelectInput value={t.priority} onChange={e => ed(x => { x.tasks[i].priority = e.target.value; })}>{PRI_OPTS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</SelectInput></Grid>
                       <Grid size={{ xs: 5, md: 2 }}><SelectInput title="Link to milestone" value={t.milestoneId || ''} onChange={e => ed(x => { x.tasks[i].milestoneId = e.target.value || null; })}>{msOpts}</SelectInput></Grid>
@@ -226,7 +224,7 @@ export default function ProjectWizardModal({ draft: initialDraft, onClose, onSav
                       <Grid size={{ xs: 12, md: 'grow' }}><TextInput value={r.title || ''} onChange={e => ed(x => { x.risks[i].title = e.target.value; })} placeholder="Risk title" /></Grid>
                       <Grid size={{ xs: 4, md: 1.5 }}><SelectInput value={r.severity} onChange={e => ed(x => { x.risks[i].severity = e.target.value; })}>{PRI_OPTS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</SelectInput></Grid>
                       <Grid size={{ xs: 8, md: 3 }}><TextInput value={r.mitigation || ''} onChange={e => ed(x => { x.risks[i].mitigation = e.target.value; })} placeholder="Mitigation plan" /></Grid>
-                      <Grid size={{ xs: 5, md: 1.5 }}><TextInput value={r.owner || ''} onChange={e => ed(x => { x.risks[i].owner = e.target.value; })} placeholder="Owner" {...listProps} /></Grid>
+                      <Grid size={{ xs: 5, md: 1.5 }}><Box component="select" value={r.owner || ''} onChange={e => ed(x => { x.risks[i].owner = e.target.value; })} sx={personSelectSx}><option value="">Owner…</option>{peopleNames.map(n => <option key={n} value={n}>{n}</option>)}</Box></Grid>
                       <Grid size={{ xs: 5, md: 2 }}><SelectInput title="Link to milestone" value={r.milestoneId || ''} onChange={e => ed(x => { x.risks[i].milestoneId = e.target.value || null; })}>{msOpts}</SelectInput></Grid>
                       <Grid size="auto"><DelBtn onClick={() => ed(x => { x.risks.splice(i, 1); })} /></Grid>
                     </Grid>

@@ -1,26 +1,28 @@
-import { useState } from 'react';
 import { Box, ButtonBase, InputBase } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { tokens, fonts } from '../../../theme/tokens';
 import { CHANNELS } from '../../../data/logs';
-import { ModalShell, FootNote, Btn, TextLink, AddBtn, Chip, FieldLabel, Field, TextInput, TextArea, Icon } from '../../../components';
-import { useListUsersQuery } from '../../../store/api/usersApi';
-import { EMPLOYEE_OPTIONS } from '../utils';
+import { ModalShell, FootNote, Btn, TextLink, AddBtn, Chip, FieldLabel, Field, TextInput, TextArea, Icon, PeoplePicker } from '../../../components';
+import { usePeopleOptions } from '../../../data/people';
 import { useDialog } from '../../../components/Dialogs';
 import { DateInput, DurationInput, TimeInput } from '../../../components/DateTimeInput';
 
-const DATALIST_ID = 'log-int-datalist';
 const fuInputSx = { p: '6px 8px', border: `1px solid ${tokens.line}`, borderRadius: '4px', bgcolor: '#fff', fontSize: 11, fontFamily: 'inherit', height: 'auto', boxSizing: 'border-box', '&:focus': { outline: 'none', borderColor: tokens.teal } };
 
 /** .followup-row — text | owner (140px) | date (135px) | × */
-function FollowUpRow({ fu, onChange, onRemove }) {
+function FollowUpRow({ fu, onChange, onRemove, people = [] }) {
   return (
     <Grid container spacing={1} sx={{ alignItems: 'center', p: '8px 10px', bgcolor: tokens.cream, border: `1px solid ${tokens.line}`, borderRadius: '6px', mb: '6px' }}>
       <Grid size={{ xs: 12, md: 'grow' }}>
         <InputBase value={fu.text || ''} placeholder="Follow-up action" onChange={e => onChange('text', e.target.value)} sx={{ width: '100%', '& .MuiInputBase-input': fuInputSx }} />
       </Grid>
       <Grid size={{ xs: 6, md: 'auto' }}>
-        <InputBase value={fu.owner || ''} placeholder="Owner" inputProps={{ list: DATALIST_ID }} onChange={e => onChange('owner', e.target.value)} sx={{ width: { xs: '100%', md: 140 }, '& .MuiInputBase-input': fuInputSx }} />
+        {/* A follow-up with an owner is somebody's job, so the owner is an account, not a typed name. */}
+        <Box component="select" value={fu.owner || ''} onChange={e => onChange('owner', e.target.value)}
+          sx={{ width: { xs: '100%', md: 160 }, ...fuInputSx, border: `1px solid ${tokens.line}`, borderRadius: '4px', bgcolor: tokens.card, fontFamily: 'inherit', cursor: 'pointer' }}>
+          <option value="">Owner…</option>
+          {people.map(p => <option key={p.name} value={p.name}>{p.name}</option>)}
+        </Box>
       </Grid>
       <Grid size={{ xs: 5, md: 'auto' }}>
         <DateInput value={fu.deadline || ''} onChange={e => onChange('deadline', e.target.value)} sx={{ width: { xs: '100%', md: 135 } }} inputSx={fuInputSx} />
@@ -38,22 +40,23 @@ function FollowUpRow({ fu, onChange, onRemove }) {
  */
 export default function LogModal({ open, draft, setDraft, viewer, onClose, onSave }) {
   const dlg = useDialog();
-  const [intAdd, setIntAdd] = useState('');
-  // The internal datalist is the real roster: GET /api/users (admin-only, so everyone else gets the
-  // bundled roster instead — the names are the same people).
-  const { data: userPage } = useListUsersQuery({ limit: 200, fields: 'name,title', sort: 'name' }, { skip: !open });
-  const people = userPage?.items?.length ? userPage.items.map(u => ({ name: u.name, role: u.title || '' })) : EMPLOYEE_OPTIONS;
+  // The real staff list, through the directory every signed-in person may read. It used to come from
+  // GET /api/users, which only an admin may read, and fall back to the bundled sample roster — so an
+  // ordinary employee was quietly offered names belonging to nobody.
+  const { people, loading: loadingPeople } = usePeopleOptions();
   if (!draft) return null;
   const d = draft;
   const upd = fn => setDraft(prev => { const c = JSON.parse(JSON.stringify(prev)); fn(c); return c; });
 
-  const addLogPerson = async (kind) => {
-    if (kind === 'int') {
-      const v = intAdd.trim();
-      if (!v) return;
-      upd(c => c.with.push({ name: v, type: 'internal' }));
-      setIntAdd('');
-    } else {
+  /** Colleagues, picked off the staff list; the chips keep whichever externals are already there. */
+  const setInternals = (names) => upd(c => {
+    const ext = c.with.filter(p => p.type === 'external');
+    c.with = [...names.map(n => ({ name: n, type: 'internal' })), ...ext];
+  });
+
+  /** Somebody from outside TrustLab, who has no account to pick. */
+  const addExternalPerson = async () => {
+    {
       const name = (await dlg.prompt('External person name (e.g. "Priya Menon (Adani HR)"):') || '').trim();
       if (!name) return;
       const email = await dlg.prompt('Email (optional):');
@@ -97,11 +100,12 @@ export default function LogModal({ open, draft, setDraft, viewer, onClose, onSav
             </Chip>
           ))}
         </Box>
-        <Box sx={{ display: 'flex', gap: '6px', flexWrap: { xs: 'wrap', sm: 'nowrap' } }}>
-          <TextInput value={intAdd} onChange={e => setIntAdd(e.target.value)} placeholder="Internal: search TDPL employee..." inputProps={{ list: DATALIST_ID }} onKeyDown={e => { if (e.key === 'Enter') { addLogPerson('int'); e.preventDefault(); } }} sx={{ flex: 1, minWidth: { xs: '100%', sm: 0 } }} />
-          <datalist id={DATALIST_ID}>{people.map(p => <option key={p.name} value={p.name}>{p.role}</option>)}</datalist>
-          <AddBtn onClick={() => addLogPerson('int')}>+ Internal</AddBtn>
-          <AddBtn ext onClick={() => addLogPerson('ext')}>+ External</AddBtn>
+        <Box sx={{ display: 'flex', gap: '6px', alignItems: 'flex-start', flexWrap: { xs: 'wrap', sm: 'nowrap' } }}>
+          <Box sx={{ flex: 1, minWidth: { xs: '100%', sm: 0 } }}>
+            <PeoplePicker value={d.with.filter(p => p.type !== 'external').map(p => p.name)} onChange={setInternals}
+              people={people} loading={loadingPeople} placeholder="Add a colleague from the staff list…" emptyNote="No staff accounts yet." />
+          </Box>
+          <AddBtn ext onClick={addExternalPerson}>+ External</AddBtn>
         </Box>
       </Box>
 
@@ -130,7 +134,7 @@ export default function LogModal({ open, draft, setDraft, viewer, onClose, onSav
           <TextLink onClick={() => upd(c => c.followUps.push({ id: 'fu' + Date.now() + c.followUps.length, text: '', owner: '', deadline: '', done: false }))}>+ Add Follow-up</TextLink>
         </Box>
         {d.followUps.map((fu, i) => (
-          <FollowUpRow key={fu.id || i} fu={fu} onChange={(k, v) => upd(c => { c.followUps[i][k] = v; })} onRemove={() => upd(c => c.followUps.splice(i, 1))} />
+          <FollowUpRow key={fu.id || i} fu={fu} people={people} onChange={(k, v) => upd(c => { c.followUps[i][k] = v; })} onRemove={() => upd(c => c.followUps.splice(i, 1))} />
         ))}
       </Box>
     </ModalShell>

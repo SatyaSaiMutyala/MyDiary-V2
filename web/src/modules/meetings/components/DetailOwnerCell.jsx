@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Box } from '@mui/material';
 import { tokens, fonts } from '../../../theme/tokens';
-import { EMPLOYEES } from '../../../data/employees';
+import { usePeopleOptions, groupByDepartment } from '../../../data/people';
 import { initials, ownerAvatarColor } from '../../../utils/people';
 
 /**
@@ -10,6 +10,7 @@ import { initials, ownerAvatarColor } from '../../../utils/people';
  *  onSelect(name, isExternal)
  */
 export default function DetailOwnerCell({ action: a, open, onToggle, onClose, onSelect }) {
+  const { people } = usePeopleOptions();
   const [q, setQ] = useState('');
   const ref = useRef(null);
   const inputRef = useRef(null);
@@ -26,7 +27,10 @@ export default function DetailOwnerCell({ action: a, open, onToggle, onClose, on
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const query = q.toLowerCase().trim();
-  const groups = EMPLOYEES.map(g => ({ group: g.group, people: g.people.filter(p => !query || p.name.toLowerCase().includes(query) || p.role.toLowerCase().includes(query)) })).filter(g => g.people.length);
+  // An action item's owner is a person who will be notified about it, so the list is the real one.
+  const groups = groupByDepartment(people)
+    .map(g => ({ group: g.group, people: g.people.filter(p => !query || p.name.toLowerCase().includes(query) || (p.role || '').toLowerCase().includes(query)) }))
+    .filter(g => g.people.length);
   const visible = groups.flatMap(g => g.people);
   const showExtCta = query.length > 0;
 

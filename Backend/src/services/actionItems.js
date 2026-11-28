@@ -120,7 +120,40 @@ export async function patchAction(a, patch, me) {
   await a.save();
   if (statusChanged || before.desc !== a.desc) await syncDependents(a);
   if (ownerChanged && a.owner) await notifyOwner(me, a);
+  if (statusChanged) await notifyStatus(me, a);
   return before;
+}
+
+/**
+ * Tells whoever set the task that its status moved.
+ *
+ * The screen that moves it says "chair notified" / "blocker raised — expect a reply", and until this
+ * was sent that was not true of anything: a blocker could sit on somebody's board for a week with
+ * the one person who could clear it never hearing about it. Nobody is told about their own change,
+ * and a task somebody set for themselves notifies no one.
+ *
+ * @param {any} me @param {any} a
+ */
+async function notifyStatus(me, a) {
+  const setter = a.createdBy?.name;
+  if (!setter || cleanName(setter).toLowerCase() === cleanName(me.name).toLowerCase()) return 0;
+  const what = short(a.desc || 'a task', 60);
+  const where = a.meetingTitle ? html` in <em>${a.meetingTitle}</em>` : '';
+  if (a.status === 'blocked') {
+    return notify({
+      userName: setter,
+      type: 'action',
+      icon: '⚠',
+      text: html`<strong>${me.name}</strong> is blocked on "${what}"${where} — they need you to unblock it.`,
+    });
+  }
+  const moved = a.status === 'done' ? 'completed' : a.status === 'in-progress' ? 'started on' : `moved to ${a.status}`;
+  return notify({
+    userName: setter,
+    type: 'action',
+    icon: a.status === 'done' ? '✓' : '⏳',
+    text: html`<strong>${me.name}</strong> has ${moved} "${what}"${where}.`,
+  });
 }
 
 /** Refreshes the { id, desc, status } snapshot other items keep of this one. @param {any} a */

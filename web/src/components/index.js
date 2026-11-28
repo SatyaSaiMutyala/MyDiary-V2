@@ -10,3 +10,4 @@ export { FieldLabel, TextInput, TextArea, SelectInput, Field, SearchBox, FilterS
 export { default as ModalShell, FootNote } from './ModalShell';
 export { DialogProvider, useDialog } from './Dialogs';
 export { DateInput, TimeInput, DurationInput, durationToMinutes, formatDuration } from './DateTimeInput';
+export { default as PeoplePicker } from './PeoplePicker';

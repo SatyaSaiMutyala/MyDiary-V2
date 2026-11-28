@@ -190,7 +190,7 @@ export const get = async (req, res) => {
 /** PATCH /api/meetings/:id @type {import('express').RequestHandler} */
 export const update = async (req, res) => {
   const m = await meetings.findMeetingOr404(req.params.id, currentUser(req));
-  const before = await meetings.patchMeeting(m, req.body);
+  const before = await meetings.patchMeeting(m, req.body, currentUser(req));
   const details = describeChanges(before, meetings.meetingSnapshot(m), meetings.MEETING_CHANGE_FIELDS);
   res.locals.audit = details ? { entity: m.title, entityId: m._id.toString(), details } : false;
   await respond(req, res, m);

@@ -3,7 +3,7 @@ import { Box, InputBase, Modal } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/AppStore';
 import { TYPES } from '../data/meetings';
-import { EMPLOYEES } from '../data/employees';
+import { usePeopleOptions } from '../data/people';
 import { formatDate, parseDate } from '../utils/dates';
 import { tokens, fonts } from '../theme/tokens';
 import { useAuth } from '../auth/AuthContext';
@@ -25,6 +25,7 @@ function Kbd({ children }) {
  * props: open, onClose
  */
 export default function CommandPalette({ open, onClose }) {
+  const { people } = usePeopleOptions();
   const dlg = useDialog();
   const { state } = useAppStore();
   const { status } = useAuth();
@@ -92,14 +93,14 @@ export default function CommandPalette({ open, onClose }) {
       }
     });
     // People
-    EMPLOYEES.forEach(g => g.people.forEach(p => {
-      if (query && (p.name.toLowerCase().includes(query) || p.role.toLowerCase().includes(query))) {
-        out.push({ label: p.name, sub: 'Person · ' + p.role, ico: '', do: () => dlg.alert('Person profile for ' + p.name + ' — would open their meetings, actions and recent activity.'), group: 'People' });
+    people.forEach(p => {
+      if (query && (p.name.toLowerCase().includes(query) || (p.role || '').toLowerCase().includes(query) || (p.department || '').toLowerCase().includes(query))) {
+        out.push({ label: p.name, sub: ['Person', p.role, p.department].filter(Boolean).join(' · '), ico: '', do: () => dlg.alert('Person profile for ' + p.name + ' — would open their meetings, actions and recent activity.'), group: 'People' });
       }
-    }));
+    });
     const limit = query ? 30 : 50;
     return out.slice(0, limit);
-  }, [q, serverQ, server, serverError, serverBusy, state.meetings, state.decisions, navigate]);
+  }, [q, serverQ, server, serverError, serverBusy, state.meetings, state.decisions, navigate, people]);
 
   // Keep focused row visible
   useEffect(() => {
