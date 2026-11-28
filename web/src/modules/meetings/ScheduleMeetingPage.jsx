@@ -23,30 +23,68 @@ const SUB_BADGE = { internal: 'subType', customer: 'purpose', supplier: 'topic',
 const CLIENT_NAME = { customer: 'customer', supplier: 'supplier', consultants: 'consultant', other: 'host' };
 const SUB_BADGE_DEFAULT = { internal: 'Ops Review', customer: 'New Business Pitch', supplier: 'Price Negotiation', consultants: 'QMS / NABL', board: 'Board Meeting (Ordinary)' };
 
+/** Reads "5m", "1h", "1h 30m", "90" → minutes, for the running total on the agenda card. */
+function toMinutes(v) {
+  const t = String(v ?? '').trim().toLowerCase();
+  if (!t) return 0;
+  const h = /(\d+(?:\.\d+)?)\s*h/.exec(t);
+  const m = /(\d+)\s*m/.exec(t);
+  if (!h && !m) return /^\d+$/.test(t) ? Number(t) : 0;
+  return Math.round((h ? Number(h[1]) * 60 : 0) + (m ? Number(m[1]) : 0));
+}
+
+/** 95 → "1h 35m". */
+const fromMinutes = (n) => (n >= 60 ? `${Math.floor(n / 60)}h${n % 60 ? ` ${n % 60}m` : ''}` : `${n}m`);
+
 /**
- * One .agenda-item row (editable): the line itself, its minutes, and a note under it.
+ * One agenda item being written: the line, how long it gets, and the note that goes with it.
  *
- * The note is the half-sentence the chair needs in the room and nowhere else — who presents, what to
- * bring, the figure to have ready. It sits under the item it belongs to rather than in one block at
- * the end, so it stays attached when items are added, deleted or reordered.
+ * Every box here is a labelled, bordered field, the same ones the rest of the form uses. Written as
+ * bare text on a tinted row they did not read as something to type into, and people scrolled past
+ * the agenda without filling it in.
+ *
+ * The note is the half-sentence the chair needs in the room and nowhere else: who presents, what to
+ * bring, the figure to have ready. It belongs to its item, so it stays attached when items are
+ * added, deleted or reordered.
  */
-function AgendaItem({ idx, item, onChange, onDelete, autoFocus }) {
+function AgendaItem({ idx, item, onChange, onDelete, canDelete, autoFocus }) {
+  const hasText = Boolean((item.text ?? '').trim());
+  const hasNote = Boolean((item.note ?? '').trim());
   return (
-    <Box sx={{ p: '10px 12px', bgcolor: tokens.cream, border: `1px solid ${tokens.line}`, borderRadius: tokens.radiusSm }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: '6px', sm: '10px' } }}>
-        <Box component="span" sx={{ color: tokens.slateSofter, cursor: 'grab', p: '2px', fontSize: 14, userSelect: 'none' }}>⋮⋮</Box>
-        <Box sx={{ width: 24, height: 24, borderRadius: '50%', bgcolor: tokens.greenDeep, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: fonts.mono, fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{String(idx + 1).padStart(2, '0')}</Box>
-        <Box component="input" type="text" autoFocus={autoFocus} value={item.text} placeholder="Agenda item..." onChange={e => onChange({ ...item, text: e.target.value })}
-          sx={{ flex: 1, minWidth: 0, bgcolor: 'transparent', border: 'none', fontSize: 13, outline: 'none', p: '2px 4px', borderRadius: '3px', fontFamily: 'inherit', color: tokens.ink, '&:focus': { bgcolor: '#fff', boxShadow: `0 0 0 2px ${tokens.teal}` }, '&::placeholder': { color: tokens.slateSoft } }} />
-        <DurationInput size="sm" value={item.time} onChange={e => onChange({ ...item, time: e.target.value })}
-          sx={{ width: 64, flexShrink: 0 }} inputSx={{ bgcolor: '#fff' }} />
-        <DelBtn onClick={onDelete} />
+    <Box sx={{
+      bgcolor: tokens.card, border: `1px solid ${tokens.line}`, borderRadius: tokens.radius, overflow: 'hidden',
+      transition: 'border-color .15s, box-shadow .15s',
+      '&:hover': { borderColor: tokens.slateSofter },
+      '&:focus-within': { borderColor: tokens.teal, boxShadow: '0 0 0 3px rgba(15,118,110,.10)' },
+    }}>
+      {/* The strip says which item this is and gives the one control that is not a field. */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', p: '8px 12px', bgcolor: hasText || hasNote ? tokens.tealSofter : tokens.cream, borderBottom: `1px solid ${tokens.lineSoft}` }}>
+        <Box component="span" title="Drag to reorder" sx={{ color: tokens.slateSofter, cursor: 'grab', fontSize: 13, userSelect: 'none', display: { xs: 'none', sm: 'block' } }}>⋮⋮</Box>
+        <Box sx={{ width: 24, height: 24, borderRadius: '6px', bgcolor: hasText ? tokens.teal : tokens.slateSofter, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: fonts.mono, fontSize: 11, fontWeight: 700, flexShrink: 0, transition: 'background .15s' }}>{String(idx + 1).padStart(2, '0')}</Box>
+        <Box sx={{ flex: 1, fontFamily: fonts.mono, fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: hasText ? tokens.tealDark : tokens.slateSoft }}>
+          Item {idx + 1}
+        </Box>
+        <DelBtn onClick={onDelete} disabled={!canDelete} title={canDelete ? 'Remove this item' : 'A meeting needs at least one agenda item'} sx={{ opacity: canDelete ? 1 : 0.3, pointerEvents: canDelete ? 'auto' : 'none' }} />
       </Box>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px', mt: '6px', ml: { xs: '28px', sm: '44px' }, mr: { xs: 0, sm: '96px' } }}>
-        <Icon name="note" size={14} sx={{ color: tokens.slateSofter }} />
-        <Box component="input" type="text" value={item.note ?? ''} placeholder="Note (optional) — who presents, what to bring, numbers to have ready"
-          onChange={e => onChange({ ...item, note: e.target.value })}
-          sx={{ flex: 1, minWidth: 0, bgcolor: 'transparent', border: 'none', borderBottom: `1px dashed ${tokens.line}`, fontSize: 12, outline: 'none', p: '2px 4px', fontFamily: 'inherit', color: tokens.slate, '&:focus': { bgcolor: '#fff', borderBottomColor: tokens.teal, color: tokens.ink }, '&::placeholder': { color: tokens.slateSofter } }} />
+
+      <Box sx={{ p: { xs: '12px', sm: '14px 16px' } }}>
+        <Row sx={{ mb: '10px' }}>
+          <Grid size={{ xs: 12, sm: 8, md: 9 }}>
+            <Field label="Agenda item" req>
+              <TextInput autoFocus={autoFocus} value={item.text} placeholder="e.g. Branch TAT dip in W45–W46"
+                onChange={e => onChange({ ...item, text: e.target.value })} />
+            </Field>
+          </Grid>
+          <Grid size={{ xs: 12, sm: 4, md: 3 }}>
+            <Field label="Time" hint="how long">
+              <DurationInput value={item.time} onChange={e => onChange({ ...item, time: e.target.value })} sx={{ width: '100%' }} />
+            </Field>
+          </Grid>
+        </Row>
+        <Field label="Note" hint="optional">
+          <TextInput value={item.note ?? ''} placeholder="Who presents · what to bring · numbers to have ready"
+            onChange={e => onChange({ ...item, note: e.target.value })} />
+        </Field>
       </Box>
     </Box>
   );
@@ -97,10 +135,15 @@ export default function ScheduleMeetingPage() {
   const setTg = (k, v) => setTgState(s => ({ ...s, [k]: v }));
 
   // Card 3 — agenda
-  const [agenda, setAgenda] = useState([{ text: 'Opening & context setting', time: '5m', note: '' }, { text: '', time: '15m', note: '' }, { text: '', time: '10m', note: '' }]);
+  // Nothing is written for them: an agenda somebody else drafted gets saved unread, and "Opening &
+  // context setting" was turning up as item 01 of meetings that never had an opening.
+  const [agenda, setAgenda] = useState([{ text: '', time: '10m', note: '' }]);
   const [focusIdx, setFocusIdx] = useState(-1);
   const [outcome, setOutcome] = useState('');
   const addAgenda = () => { setAgenda(a => [...a, { text: '', time: '10m', note: '' }]); setFocusIdx(agenda.length); };
+  // What the card's header reports: only lines that have been written count, and only their minutes.
+  const filledAgenda = agenda.filter(a => a.text.trim()).length;
+  const agendaMinutes = agenda.filter(a => a.text.trim()).reduce((n, a) => n + toMinutes(a.time), 0);
   const delAgenda = (i) => { setAgenda(a => a.filter((_, j) => j !== i)); setFocusIdx(-1); };
 
   // Card 4 — attendees
@@ -313,15 +356,32 @@ export default function ScheduleMeetingPage() {
           </Card>
 
           {/* Card 3 — Agenda Items */}
-          <Card num={3} title="Agenda Items" sub="What we're meeting about · ordered list">
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: '8px', mb: '12px' }}>
+          <Card num={3} title="Agenda Items" sub="What we're meeting about · ordered list"
+            right={<Box sx={{ fontFamily: fonts.mono, fontSize: 11, letterSpacing: '0.06em', color: 'rgba(255,255,255,.8)' }}>
+              {filledAgenda === 0 ? 'nothing written yet' : <>
+                <Box component="strong" sx={{ color: '#fff' }}>{filledAgenda}</Box> item{filledAgenda === 1 ? '' : 's'}
+                {agendaMinutes ? <> · <Box component="strong" sx={{ color: tokens.yellow }}>{fromMinutes(agendaMinutes)}</Box> planned</> : null}
+              </>}
+            </Box>}>
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: '10px', p: '10px 14px', mb: '14px', bgcolor: tokens.tealSofter, border: `1px solid ${tokens.tealSoft}`, borderRadius: tokens.radiusSm }}>
+              <Icon name="tip" size={16} sx={{ color: tokens.teal, mt: '1px' }} />
+              <Box sx={{ fontSize: 12.5, color: tokens.slate, lineHeight: 1.5 }}>
+                One line per thing you will cover, in the order you will cover it. The <Box component="strong" sx={{ color: tokens.tealDark }}>note</Box> under each line is for who presents it, what to bring and the numbers to have ready — it shows up on the agenda and in the minutes.
+              </Box>
+            </Box>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: '12px', mb: '14px' }}>
               {agenda.map((it, i) => (
-                <AgendaItem key={i} idx={i} item={it} autoFocus={i === focusIdx} onChange={n => setAgenda(a => a.map((x, j) => j === i ? n : x))} onDelete={() => delAgenda(i)} />
+                <AgendaItem key={i} idx={i} item={it} autoFocus={i === focusIdx} canDelete={agenda.length > 1} onChange={n => setAgenda(a => a.map((x, j) => j === i ? n : x))} onDelete={() => delAgenda(i)} />
               ))}
             </Box>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center' }}>
-              <TextLink onClick={addAgenda}>+ Add agenda item</TextLink>
-              <TextLink sx={{ ml: '14px' }} onClick={() => navigate('/templates')}><Icon name="clipboard" />Load from template…</TextLink>
+            {/* A full-width dashed slot rather than a text link: it is the next thing most people
+                want, and as a link among links it was read as a footnote. */}
+            <Box component="button" type="button" onClick={addAgenda}
+              sx={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', p: '13px', bgcolor: tokens.card, border: `1.5px dashed ${tokens.slateSofter}`, borderRadius: tokens.radius, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13.5, fontWeight: 700, color: tokens.teal, transition: 'all .15s', '&:hover': { borderColor: tokens.teal, bgcolor: tokens.tealSofter }, '&:focus-visible': { outline: 'none', borderColor: tokens.teal, boxShadow: '0 0 0 3px rgba(15,118,110,.12)' } }}>
+              <Box component="span" sx={{ fontSize: 16, lineHeight: 1 }}>+</Box> Add another agenda item
+            </Box>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'flex-end', gap: 1, mt: '10px' }}>
+              <TextLink onClick={() => navigate('/templates')}><Icon name="clipboard" />Or load a ready-made agenda from a template…</TextLink>
             </Box>
             <Row sx={{ mt: '14px', mb: 0 }}><Grid size={col1}><Field label="Expected Outcome" hint="what success looks like"><TextArea value={outcome} onChange={e => setOutcome(e.target.value)} placeholder="e.g. Signed MoU · Approved budget · Clarity on next 30-day action plan" /></Field></Grid></Row>
           </Card>

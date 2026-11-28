@@ -71,13 +71,18 @@ function AgendaBlock({ m }) {
               ) : null}
             </View>
             {plan ? (
-              <AppText
-                variant="meta"
-                color={colors.inkMuted}
-                style={styles.plan}
-              >
-                {plan}
-              </AppText>
+              <View style={styles.planRow}>
+                <AppText variant="label" color={colors.teal}>
+                  Note
+                </AppText>
+                <AppText
+                  variant="meta"
+                  color={colors.inkSoft}
+                  style={styles.planText}
+                >
+                  {plan}
+                </AppText>
+              </View>
             ) : null}
             {note?.disc ? (
               <AppText
@@ -398,7 +403,17 @@ const styles = StyleSheet.create({
   },
   agendaTitle: { flex: 1 },
   note: { marginTop: vs(6), marginLeft: s(34) },
-  plan: { marginTop: vs(4), marginLeft: s(34), fontStyle: 'italic' },
+  planRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: s(8),
+    marginTop: vs(6),
+    marginLeft: s(34),
+    paddingLeft: s(8),
+    borderLeftWidth: s(2),
+    borderLeftColor: colors.tealLine,
+  },
+  planText: { flex: 1 },
   divider: { marginTop: vs(10) },
   actionRow: {
     flexDirection: 'row',

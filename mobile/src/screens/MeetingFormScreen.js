@@ -38,57 +38,75 @@ const typeOptions = meetingTypes.map(t => ({ id: t.id, label: t.label }));
 const durationOptions = durations.map(d => ({ id: d.id, label: d.label }));
 
 /**
- * One agenda line being edited: number, text, duration, remove — and a note under it.
+ * One agenda item being written: the line, how long it gets, and the note that goes with it.
+ *
+ * Every box is a labelled field, like the rest of the form. Written as bare inputs on one row they
+ * did not read as something to type into, and the agenda came through empty.
  *
  * The note is the half-sentence the chair wants in the room: who presents, what to bring, the figure
- * to have ready. It is kept with the item rather than in one block at the end, so it stays attached
+ * to have ready. It is kept with its item rather than in one block at the end, so it stays attached
  * when lines are added or removed, and it is the same field the website writes.
  */
-function AgendaRow({ index, item, onChange, onRemove }) {
+function AgendaRow({ index, item, onChange, onRemove, canRemove }) {
+  const hasText = Boolean((item.text ?? '').trim());
+  const hasNote = Boolean((item.note ?? '').trim());
+  const live = hasText || hasNote;
   return (
     <View style={styles.agendaItem}>
-      <View style={styles.agendaRow}>
-        <View style={styles.number}>
+      {/* The strip says which item this is and holds the one control that is not a field. */}
+      <View style={[styles.agendaHead, live && styles.agendaHeadLive]}>
+        <View style={[styles.number, live && styles.numberLive]}>
           <AppText variant="metaStrong" color={colors.white}>
             {String(index + 1).padStart(2, '0')}
           </AppText>
         </View>
-        <View style={styles.agendaField}>
-          <TextField
-            value={item.text}
-            onChangeText={text => onChange({ ...item, text })}
-            placeholder="Agenda item…"
-          />
-        </View>
-        <View style={styles.agendaTime}>
-          <TextField
-            value={item.time}
-            onChangeText={time => onChange({ ...item, time })}
-            placeholder="10m"
-            textAlign="center"
-            maxLength={6}
-          />
-        </View>
-        <Pressable
-          onPress={onRemove}
-          hitSlop={s(8)}
-          accessibilityRole="button"
-          accessibilityLabel={`Remove agenda item ${index + 1}`}
-          style={styles.remove}
+        <AppText
+          variant="label"
+          color={live ? colors.tealDeep : colors.inkMuted}
+          style={styles.agendaHeadText}
         >
-          <X size={s(16)} color={colors.inkMuted} strokeWidth={2} />
-        </Pressable>
+          Item {index + 1}
+        </AppText>
+        {canRemove ? (
+          <Pressable
+            onPress={onRemove}
+            hitSlop={s(10)}
+            accessibilityRole="button"
+            accessibilityLabel={`Remove agenda item ${index + 1}`}
+          >
+            <X size={s(16)} color={colors.inkMuted} strokeWidth={2} />
+          </Pressable>
+        ) : null}
       </View>
-      <View style={styles.noteRow}>
-        <NotebookPen size={s(14)} color={colors.inkMuted} strokeWidth={2} />
-        <View style={styles.noteField}>
-          <TextField
-            value={item.note ?? ''}
-            onChangeText={note => onChange({ ...item, note })}
-            placeholder="Note (optional)"
-            accessibilityLabel={`Note for agenda item ${index + 1}`}
-          />
+
+      <View style={styles.agendaBody}>
+        <TextField
+          label="Agenda item"
+          value={item.text}
+          onChangeText={text => onChange({ ...item, text })}
+          placeholder="e.g. Branch TAT dip in W45–W46"
+          accessibilityLabel={`Agenda item ${index + 1}`}
+        />
+        <View style={styles.agendaTimeRow}>
+          <View style={styles.agendaTime}>
+            <TextField
+              label="Time"
+              value={item.time}
+              onChangeText={time => onChange({ ...item, time })}
+              placeholder="10m"
+              textAlign="center"
+              maxLength={6}
+            />
+          </View>
         </View>
+        <TextField
+          label="Note (optional)"
+          icon={NotebookPen}
+          value={item.note ?? ''}
+          onChangeText={note => onChange({ ...item, note })}
+          placeholder="Who presents · what to bring"
+          accessibilityLabel={`Note for agenda item ${index + 1}`}
+        />
       </View>
     </View>
   );
@@ -381,25 +399,31 @@ export function MeetingFormScreen() {
       </FormCard>
 
       <FormCard title="Agenda">
+        <AppText
+          variant="meta"
+          color={colors.inkMuted}
+          style={styles.agendaHint}
+        >
+          One line per thing you will cover, in the order you will cover it. The
+          note under each line is for who presents it and what to bring — it
+          shows up on the agenda and in the minutes.
+        </AppText>
         {agenda.map((item, i) => (
           <AgendaRow
             key={i}
             index={i}
             item={item}
+            canRemove={agenda.length > 1}
             onChange={next =>
               setAgenda(list => list.map((x, j) => (j === i ? next : x)))
             }
             onRemove={() =>
-              setAgenda(list =>
-                list.length === 1
-                  ? [{ text: '', time: '10m' }]
-                  : list.filter((_, j) => j !== i),
-              )
+              setAgenda(list => list.filter((_, j) => j !== i))
             }
           />
         ))}
         <Button
-          label="Add agenda item"
+          label="Add another agenda item"
           size="sm"
           variant="outline"
           iconLeft={Plus}
@@ -443,23 +467,45 @@ const styles = StyleSheet.create({
   number: {
     width: s(24),
     height: s(24),
-    borderRadius: s(12),
-    backgroundColor: colors.tealDeep,
+    borderRadius: s(6),
+    backgroundColor: colors.inkFaint,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: fieldGap,
   },
-  agendaItem: { marginBottom: vs(4) },
-  agendaField: { flex: 1 },
-  agendaTime: { width: s(54) },
-  noteRow: {
+  numberLive: { backgroundColor: colors.teal },
+  /**
+   * Each item is its own card. A note is a second field, and six inputs in a flat list read as one
+   * long form rather than three things to talk about — the same reason the website groups them.
+   */
+  agendaHint: { marginBottom: vs(12), lineHeight: vs(17) },
+  /**
+   * Each item is its own card. A note is a second field, and five inputs in a flat list read as one
+   * long form rather than three things to talk about — the same reason the website groups them.
+   */
+  agendaItem: {
+    marginBottom: vs(12),
+    borderWidth: hairline,
+    borderColor: colors.line,
+    borderRadius: radius.sm,
+    backgroundColor: colors.white,
+    overflow: 'hidden',
+  },
+  agendaHead: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: s(6),
-    marginLeft: s(32),
-    marginTop: -vs(4),
+    alignItems: 'center',
+    gap: s(8),
+    paddingVertical: vs(7),
+    paddingHorizontal: s(10),
+    backgroundColor: colors.ground,
+    borderBottomWidth: hairline,
+    borderBottomColor: colors.line,
   },
-  noteField: { flex: 1 },
+  // A line that has been written on is worth seeing from the top of the card.
+  agendaHeadLive: { backgroundColor: colors.tealTint },
+  agendaHeadText: { flex: 1 },
+  agendaBody: { paddingTop: vs(10), paddingHorizontal: s(10) },
+  agendaTimeRow: { flexDirection: 'row' },
+  agendaTime: { width: s(96) },
   remove: { marginBottom: fieldGap },
   addAgenda: { alignSelf: 'flex-start', marginBottom: vs(12) },
 });

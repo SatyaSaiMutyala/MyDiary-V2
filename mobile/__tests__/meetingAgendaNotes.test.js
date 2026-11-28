@@ -69,15 +69,26 @@ function mount() {
         n.props?.onChangeText &&
         n.type?.name === 'TextField',
     );
-  const noteFields = () => inputs('Note (optional)');
+  /**
+   * Found by what the field is for, not by its placeholder: the wording of the prompt is a design
+   * decision that will change again, and the test should not break when it does.
+   */
+  const byLabel = re =>
+    tree.root.findAll(
+      n =>
+        re.test(n.props?.accessibilityLabel ?? '') &&
+        n.props?.onChangeText &&
+        n.type?.name === 'TextField',
+    );
+  const noteFields = () => byLabel(/^Note for agenda item/);
   return {
     tree,
     title: () => inputs('e.g. Q3 Operations Review')[0],
-    agendaFields: () => inputs('Agenda item…'),
+    agendaFields: () => byLabel(/^Agenda item \d/),
     noteFields,
     addAgenda: () =>
       tree.root.findAll(
-        n => n.props?.label === 'Add agenda item' && n.props?.onPress,
+        n => n.props?.label === 'Add another agenda item' && n.props?.onPress,
       )[0],
     save: () =>
       tree.root.findAll(
